@@ -11,7 +11,8 @@
     "test": "node scripts/verify-tests.mjs",
     "backup": "node scripts/backup.mjs",
     "restore": "node scripts/restore.mjs",
-    "change-password": "node scripts/change-admin-password.mjs"
+    "change-password": "node scripts/change-admin-password.mjs",
+    "migrate:turso": "node scripts/migrate-to-turso.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
