@@ -1,7 +1,7 @@
 # Manual de Operación para Administradores
 ## Proyecto RIFA (80.000 Números)
 
-Este manual está diseñado para **Alan** y su **esposa**, administradores del sistema, para guiar la operativa diaria de la rifa familiar desde cualquier celular o computadora.
+Este manual está diseñado para **Alan** e **Yilda**, administradores del sistema, para guiar la operativa diaria de la rifa familiar desde cualquier celular o computadora.
 
 ---
 
@@ -10,7 +10,7 @@ Este manual está diseñado para **Alan** y su **esposa**, administradores del s
 - **Dirección Web:** `http://tu-dominio/admin/login` (o en local `http://localhost:3000/admin/login`).
 - **Cuentas Individuales:**
   - **Administrador 1 (Alan):** Usuario `alan` | Contraseña: `Rifa2026!Admin1`
-  - **Administradora 2 (Esposa):** Usuario `esposa` | Contraseña: `Rifa2026!Admin2`
+  - **Administradora 2 (Yilda):** Usuario `esposa` | Contraseña: `Rifa2026!Admin2`
 - Ambas cuentas tienen permisos completos e independientes. El sistema registra en el historial de auditoría el nombre exacto de quién realizó cada confirmación o cambio.
 
 ---

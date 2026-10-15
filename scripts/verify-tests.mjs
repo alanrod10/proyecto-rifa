@@ -160,7 +160,7 @@ async function runAllTests() {
       sql: 'SELECT is_direct_sale, created_by_admin FROM orders WHERE id = ?',
       args: [dirOrderId]
     });
-    assert(Number(checkDirect.rows[0].is_direct_sale) === 1 && checkDirect.rows[0].created_by_admin === 'esposa', '7. Registrar una venta directa', `Venta directa registrada por administradora @esposa`);
+    assert(Number(checkDirect.rows[0].is_direct_sale) === 1 && checkDirect.rows[0].created_by_admin === 'esposa', '7. Registrar una venta directa', `Venta directa registrada por administradora Yilda (@esposa)`);
 
     // -------------------------------------------------------------
     // PRUEBA 8: Rechazar asignaciones duplicadas
@@ -315,9 +315,9 @@ async function runAllTests() {
     const pass1Valid = await bcrypt.compare('Rifa2026!Admin1', admin1.password_hash);
     const pass2Valid = await bcrypt.compare('Rifa2026!Admin2', admin2.password_hash);
     assert(
-      adminsRes.rows.length >= 2 && pass1Valid && pass2Valid,
+      adminsRes.rows.length >= 2 && pass1Valid && pass2Valid && admin2.display_name === 'Yilda',
       '14. Verificar permisos de ambos administradores',
-      `Admin 1 (@alan) y Admin 2 (@esposa) validados independientemente con bcrypt.`
+      `Admin 1 (@alan) y Admin 2 (@esposa - Yilda) validados con permisos y nombre visible correcto.`
     );
 
     // -------------------------------------------------------------

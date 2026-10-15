@@ -81,7 +81,7 @@ El sistema implementa tres espacios desacoplados conectados a la misma fuente de
 - No expone enlaces a pedidos de otros usuarios ni requiere crear contraseñas.
 
 ### C. Panel Administrativo Privado (`/admin`)
-- Protegido por autenticación individual para los dos administradores (esposo y esposa).
+- Protegido por autenticación individual para los dos administradores (Alan e Yilda).
 - Acceso con usuario y contraseña únicos (hash bcrypt).
 - **Secciones:**
   - **Dashboard:** Resumen en tiempo real: disponibles, reservados, vendidos, cobrado en efectivo vs transferencia, recaudación potencial restante.

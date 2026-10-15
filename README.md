@@ -25,7 +25,7 @@ El sistema está dividido en tres espacios independientes conectados a la misma 
    - Botón para copiar el enlace privado.
 
 3. **Panel Administrativo Protegido (`/admin`):**
-   - Acceso individual con contraseñas protegidas por `bcrypt` para ambos administradores (**Alan** y **Administradora**).
+   - Acceso individual con contraseñas protegidas por `bcrypt` para ambos administradores (**Alan** e **Yilda**).
    - **Resumen / Dashboard:** Métricas en vivo de recaudación efectiva (Efectivo vs. Transferencia), dinero pendiente, potencial restante y reservas por vencer.
    - **Ventas Directas:** Registro presencial mano a mano con selección múltiple o al azar.
    - **Solicitudes Web:** Verificación de pagos con confirmación en 1 clic y opción de cancelación con liberación de números.
@@ -79,7 +79,7 @@ La aplicación estará disponible inmediatamente en:
 - **Administrador 1:**
   - Usuario: `alan`
   - Contraseña inicial: `Rifa2026!Admin1`
-- **Administrador 2:**
+- **Administradora 2 (Yilda):**
   - Usuario: `esposa`
   - Contraseña inicial: `Rifa2026!Admin2`
 

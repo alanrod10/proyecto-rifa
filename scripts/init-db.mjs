@@ -77,7 +77,7 @@ async function main() {
 
       const admin2User = process.env.DEFAULT_ADMIN2_USERNAME || 'esposa';
       const admin2Pass = process.env.DEFAULT_ADMIN2_PASSWORD || 'Rifa2026!Admin2';
-      const admin2Name = process.env.DEFAULT_ADMIN2_NAME || 'Administradora';
+      const admin2Name = process.env.DEFAULT_ADMIN2_NAME || 'Yilda';
 
       const hash1 = await bcrypt.hash(admin1Pass, 10);
       const hash2 = await bcrypt.hash(admin2Pass, 10);
