@@ -9,8 +9,16 @@ console.log('    PROYECTO RIFA — SUITE COMPLETA DE PRUEBAS OBLIGATORIAS');
 console.log('                 (20 Puntos de Verificación)');
 console.log('================================================================\n');
 
-const DB_PATH = path.join(process.cwd(), 'rifa.db');
-const client = createClient({ url: `file:${DB_PATH}` });
+const REAL_DB_PATH = path.join(process.cwd(), 'rifa.db');
+const TEST_DB_PATH = path.join(process.cwd(), 'backups/test_isolated.db');
+
+// Crear copia de base de datos aislada para pruebas
+if (fs.existsSync(TEST_DB_PATH)) {
+  fs.unlinkSync(TEST_DB_PATH);
+}
+fs.copyFileSync(REAL_DB_PATH, TEST_DB_PATH);
+
+const client = createClient({ url: `file:${TEST_DB_PATH}` });
 const SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'clave_secreta_super_segura_cambiar_en_produccion_minimo_32_caracteres';
 const jwtKey = new TextEncoder().encode(SECRET_KEY);
 
@@ -324,7 +332,7 @@ async function runAllTests() {
     // PRUEBA 15: Comprobar persistencia después de reiniciar
     // -------------------------------------------------------------
     client.close();
-    const newClient = createClient({ url: `file:${DB_PATH}` });
+    const newClient = createClient({ url: `file:${TEST_DB_PATH}` });
     const persistCheck = await newClient.execute({ sql: 'SELECT code, payment_status FROM orders WHERE code = ?', args: [orderCode] });
     assert(
       persistCheck.rows.length === 1 && persistCheck.rows[0].payment_status === 'paid',
@@ -345,7 +353,7 @@ async function runAllTests() {
     // PRUEBA 17: Respaldar y restaurar la base
     // -------------------------------------------------------------
     const backupTestPath = path.join(process.cwd(), 'backups/test_backup.db');
-    fs.copyFileSync(DB_PATH, backupTestPath);
+    fs.copyFileSync(TEST_DB_PATH, backupTestPath);
     const backupClient = createClient({ url: `file:${backupTestPath}` });
     const backupCheck = await backupClient.execute('SELECT COUNT(*) as count FROM numbers');
     backupClient.close();
@@ -389,6 +397,10 @@ async function runAllTests() {
   } catch (err) {
     console.error('Error fatal durante las pruebas:', err);
     failedCount++;
+  } finally {
+    if (fs.existsSync(TEST_DB_PATH)) {
+      try { fs.unlinkSync(TEST_DB_PATH); } catch {}
+    }
   }
 
   console.log('\n================================================================');

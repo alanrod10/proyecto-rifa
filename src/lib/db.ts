@@ -11,10 +11,13 @@ export function getDb(): Client {
     const dbUrl = process.env.DATABASE_URL || 'file:./rifa.db';
     const authToken = process.env.DATABASE_AUTH_TOKEN || undefined;
 
-    // Si es una ruta relativa de archivo local, asegurar la resolución correcta
+    // Si es una ruta relativa de archivo local, asegurar la resolución absoluta
     let finalUrl = dbUrl;
-    if (dbUrl.startsWith('file:') && !dbUrl.includes('/') && !dbUrl.includes('\\')) {
-      finalUrl = `file:${path.join(process.cwd(), dbUrl.replace('file:', ''))}`;
+    if (dbUrl.startsWith('file:')) {
+      const filePath = dbUrl.replace('file:', '');
+      if (!path.isAbsolute(filePath)) {
+        finalUrl = `file:${path.resolve(process.cwd(), filePath)}`;
+      }
     }
 
     clientInstance = createClient({

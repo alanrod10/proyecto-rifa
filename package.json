@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "node scripts/seed.mjs",
+    "seed": "node scripts/init-db.mjs",
+    "test": "node scripts/verify-tests.mjs",
     "backup": "node scripts/backup.mjs",
-    "restore": "node scripts/restore.mjs"
+    "restore": "node scripts/restore.mjs",
+    "change-password": "node scripts/change-admin-password.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
