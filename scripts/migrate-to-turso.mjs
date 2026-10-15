@@ -1,20 +1,47 @@
 import { createClient } from '@libsql/client';
 import fs from 'fs';
 import path from 'path';
+import readline from 'readline';
 
 const localDbPath = path.resolve(process.cwd(), 'rifa.db');
-const TURSO_URL = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN;
+
+function askQuestion(promptText) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question(promptText, (answer) => {
+      rl.close();
+      resolve(answer.trim().replace(/^["']|["']$/g, ''));
+    });
+  });
+}
 
 async function migrate() {
   console.log('====================================================');
   console.log('   MIGRACIÓN DE DATOS A TURSO LIBSQL (NUBE $0)');
   console.log('====================================================');
 
-  if (!TURSO_URL || !TURSO_URL.startsWith('libsql://')) {
-    console.error('\nError: Debe proporcionar las credenciales de Turso.');
-    console.error('Uso:');
-    console.error('  TURSO_DATABASE_URL="libsql://tu-db.turso.io" TURSO_AUTH_TOKEN="tu-token" node scripts/migrate-to-turso.mjs');
+  let tursoUrl = (process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || '').trim().replace(/^["']|["']$/g, '');
+  let tursoToken = (process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN || '').trim().replace(/^["']|["']$/g, '');
+
+  if (!tursoUrl || !tursoUrl.startsWith('libsql://')) {
+    console.log('\nPor favor ingresá las credenciales que te dio Turso en la web:');
+    tursoUrl = await askQuestion('\n1. Pegá aquí la URL de Turso (empieza con libsql://): ');
+  }
+
+  if (!tursoToken) {
+    tursoToken = await askQuestion('\n2. Pegá aquí el Token de Turso: ');
+  }
+
+  if (!tursoUrl || !tursoUrl.startsWith('libsql://')) {
+    console.error('\nError: La URL de Turso debe comenzar con "libsql://" (ej: libsql://rifa-prod-alanrod10.turso.io).');
+    process.exit(1);
+  }
+
+  if (!tursoToken) {
+    console.error('\nError: El token de Turso no puede estar vacío.');
     process.exit(1);
   }
 
@@ -26,8 +53,8 @@ async function migrate() {
   console.log(`\n1. Conectando a base local: ${localDbPath}`);
   const local = createClient({ url: `file:${localDbPath}` });
 
-  console.log(`2. Conectando a Turso remoto: ${TURSO_URL}`);
-  const remote = createClient({ url: TURSO_URL, authToken: TURSO_TOKEN });
+  console.log(`2. Conectando a Turso remoto: ${tursoUrl}`);
+  const remote = createClient({ url: tursoUrl, authToken: tursoToken });
 
   try {
     // 1. Crear esquema en Turso
