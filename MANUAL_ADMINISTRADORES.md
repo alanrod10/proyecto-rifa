@@ -10,7 +10,7 @@ Este manual está diseñado para **Alan** e **Yilda**, administradores del siste
 - **Dirección Web:** `http://tu-dominio/admin/login` (o en local `http://localhost:3000/admin/login`).
 - **Cuentas Individuales:**
   - **Administrador 1 (Alan):** Usuario `alan` | Contraseña: `Rifa2026!Admin1`
-  - **Administradora 2 (Yilda):** Usuario `esposa` | Contraseña: `Rifa2026!Admin2`
+  - **Administradora 2 (Yilda):** Usuario `yilda` | Contraseña: `Rifa2026!Admin2`
 - Ambas cuentas tienen permisos completos e independientes. El sistema registra en el historial de auditoría el nombre exacto de quién realizó cada confirmación o cambio.
 
 ---

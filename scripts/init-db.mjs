@@ -75,7 +75,7 @@ async function main() {
       const admin1Pass = process.env.DEFAULT_ADMIN1_PASSWORD || 'Rifa2026!Admin1';
       const admin1Name = process.env.DEFAULT_ADMIN1_NAME || 'Alan';
 
-      const admin2User = process.env.DEFAULT_ADMIN2_USERNAME || 'esposa';
+      const admin2User = process.env.DEFAULT_ADMIN2_USERNAME || 'yilda';
       const admin2Pass = process.env.DEFAULT_ADMIN2_PASSWORD || 'Rifa2026!Admin2';
       const admin2Name = process.env.DEFAULT_ADMIN2_NAME || 'Yilda';
 

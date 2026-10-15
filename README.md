@@ -80,7 +80,7 @@ La aplicación estará disponible inmediatamente en:
   - Usuario: `alan`
   - Contraseña inicial: `Rifa2026!Admin1`
 - **Administradora 2 (Yilda):**
-  - Usuario: `esposa`
+  - Usuario: `yilda`
   - Contraseña inicial: `Rifa2026!Admin2`
 
 ---

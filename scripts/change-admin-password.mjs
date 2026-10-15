@@ -103,7 +103,7 @@ async function main() {
 
   // Si no se proporcionó usuario por argumento, solicitarlo interactivamente
   if (!username) {
-    username = (await askText('Usuario administrador (alan / esposa): ')).toLowerCase();
+    username = (await askText('Usuario administrador (alan / yilda): ')).toLowerCase();
   }
 
   if (!username) {
@@ -120,7 +120,7 @@ async function main() {
 
     if (adminCheck.rows.length === 0) {
       console.error(`\nError: No se encontró ningún administrador con el usuario "${username}".`);
-      console.error('Los usuarios válidos registrados son "alan" y "esposa".');
+      console.error('Los usuarios válidos registrados son "alan" y "yilda".');
       process.exit(1);
     }
 

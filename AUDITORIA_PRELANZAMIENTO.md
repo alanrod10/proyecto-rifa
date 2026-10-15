@@ -16,7 +16,7 @@ Se realizó una auditoría integral técnica, criptográfica, transaccional y le
 - **Órdenes reales registradas:** 0 órdenes (base limpia, sin residuos de pruebas).
 - **Cuentas administrativas registradas:**
   - `alan` (Nombre visible: Alan).
-  - `esposa` (Nombre visible: Yilda).
+  - `yilda` (Nombre visible: Yilda).
 - **Copia de seguridad preventiva generada y verificada:**
   - Archivo: `backups/backup_2026-10-15T17-50-01.db` (5.38 MB).
   - Metadatos: `backups/backup_2026-10-15T17-50-01.json`.
@@ -42,7 +42,7 @@ Se realizó una auditoría integral técnica, criptográfica, transaccional y le
    - Uso recomendado:
      ```bash
      npm run change-password alan
-     npm run change-password esposa
+     npm run change-password yilda
      ```
 3. **Secreto de Sesión JWT (`ADMIN_SECRET_KEY`):**
    - Las sesiones de los administradores se firman mediante tokens JWT (algoritmo HS256) emitidos en cookies `httpOnly`, `SameSite=Lax`, con vigencia de 7 días.
@@ -106,7 +106,7 @@ Se auditó minuciosamente el código de los endpoints y los controladores de dat
 4. ✓ Cálculo del importe en backend (3 × $100 = $300).
 5. ✓ Consulta mediante token privado de 48 caracteres hex.
 6. ✓ Confirmación de pago por administrador y transición a `sold`.
-7. ✓ Registro de venta directa presencial por administradora Yilda (`@esposa`).
+7. ✓ Registro de venta directa presencial por administradora Yilda (`@yilda`).
 8. ✓ Rechazo de asignación de número ya vendido (HTTP 409).
 9. ✓ Concurrencia simultánea con bloqueo ACID.
 10. ✓ Prevención de asignaciones parciales (Rollback íntegro).
@@ -125,7 +125,7 @@ Se auditó minuciosamente el código de los endpoints y los controladores de dat
 Se levantó el servidor de producción con `npm run start` en el puerto 3000 y se ejecutaron peticiones HTTP reales:
 - **`GET /api/settings`:** HTTP 200 con configuración y estadísticas públicas.
 - **`GET /api/numbers?limit=3`:** HTTP 200 con paginación e información de estado sin datos personales.
-- **`POST /api/admin/auth/login`:** HTTP 200 con credenciales de `esposa`, emitiendo cookie segura con `displayName: "Yilda"`.
+- **`POST /api/admin/auth/login`:** HTTP 200 con credenciales de `yilda`, emitiendo cookie segura con `displayName: "Yilda"`.
 
 ---
 
@@ -160,9 +160,9 @@ Antes de recibir compras reales, deben completarse los siguientes pasos:
    ```
    *El sistema solicitará de forma enmascarada con asteriscos (`*`) la nueva contraseña y su confirmación.*
    
-   Luego, ejecutar para Yilda (su usuario de acceso es `esposa` y su nombre visible es **Yilda**):
+   Luego, ejecutar para Yilda (su usuario de acceso es `yilda` y su nombre visible es **Yilda**):
    ```bash
-   npm run change-password esposa
+   npm run change-password yilda
    ```
    *El cambio se aplica inmediatamente y queda asentado en la auditoría sin exponer claves.*
 
@@ -197,7 +197,7 @@ Antes de recibir compras reales, deben completarse los siguientes pasos:
 | Componente | Estado | Verificación |
 | :--- | :---: | :--- |
 | **80.000 Números** | **100% Intactos** | 80.000 registros del 00001 al 80000 en estado `available` en `rifa.db`. |
-| **Cuentas Administradoras** | **Verificadas** | Alan (`alan`) e Yilda (`esposa`, nombre visible `Yilda`). |
+| **Cuentas Administradoras** | **Verificadas** | Alan (`alan`) e Yilda (`yilda`, nombre visible `Yilda`). |
 | **Suite de Pruebas** | **20/20 Aprobadas** | Ejecutadas en sandbox aislado (`backups/test_isolated.db`) sin tocar `rifa.db`. |
 | **Compilación de Producción** | **Aprobada (0 Errores)** | Next.js 15.5.28 (`npm run build`), 28/28 rutas dinámicas y estáticas generadas. |
 | **Integridad Transaccional** | **ACID Garantizado** | Bloqueo exclusivo contra dobles reservas y reversión en fallos parciales. |

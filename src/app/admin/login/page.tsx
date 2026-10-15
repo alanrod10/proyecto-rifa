@@ -79,7 +79,7 @@ export default function AdminLoginPage() {
                 <input
                   type="text"
                   required
-                  placeholder="ej: alan o esposa"
+                  placeholder="ej: alan o yilda"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"

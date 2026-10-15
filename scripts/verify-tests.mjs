@@ -154,7 +154,7 @@ async function runAllTests() {
         code, buyer_id, buyer_name, buyer_phone, payment_method, payment_status,
         unit_price, numbers_count, total_amount, numbers_list, private_token, expires_at,
         is_direct_sale, created_by_admin, paid_at, confirmed_by_admin
-      ) VALUES (?, ?, 'Maria Lopez', '3884222333', 'cash', 'paid', 100, 2, 200, ?, 'dirtoken777777777777777777777777', CURRENT_TIMESTAMP, 1, 'esposa', CURRENT_TIMESTAMP, 'esposa')`,
+      ) VALUES (?, ?, 'Maria Lopez', '3884222333', 'cash', 'paid', 100, 2, 200, ?, 'dirtoken777777777777777777777777', CURRENT_TIMESTAMP, 1, 'yilda', CURRENT_TIMESTAMP, 'yilda')`,
       args: [directCode, buyerId, JSON.stringify(directNums)]
     });
     const dirOrderId = Number(directOrder.lastInsertRowid);
@@ -168,7 +168,7 @@ async function runAllTests() {
       sql: 'SELECT is_direct_sale, created_by_admin FROM orders WHERE id = ?',
       args: [dirOrderId]
     });
-    assert(Number(checkDirect.rows[0].is_direct_sale) === 1 && checkDirect.rows[0].created_by_admin === 'esposa', '7. Registrar una venta directa', `Venta directa registrada por administradora Yilda (@esposa)`);
+    assert(Number(checkDirect.rows[0].is_direct_sale) === 1 && checkDirect.rows[0].created_by_admin === 'yilda', '7. Registrar una venta directa', `Venta directa registrada por administradora Yilda (@yilda)`);
 
     // -------------------------------------------------------------
     // PRUEBA 8: Rechazar asignaciones duplicadas
@@ -319,13 +319,13 @@ async function runAllTests() {
     // -------------------------------------------------------------
     const adminsRes = await client.execute('SELECT username, password_hash, display_name FROM admins');
     const admin1 = adminsRes.rows.find(a => a.username === 'alan');
-    const admin2 = adminsRes.rows.find(a => a.username === 'esposa');
+    const admin2 = adminsRes.rows.find(a => a.username === 'yilda');
     const pass1Valid = await bcrypt.compare('Rifa2026!Admin1', admin1.password_hash);
     const pass2Valid = await bcrypt.compare('Rifa2026!Admin2', admin2.password_hash);
     assert(
       adminsRes.rows.length >= 2 && pass1Valid && pass2Valid && admin2.display_name === 'Yilda',
       '14. Verificar permisos de ambos administradores',
-      `Admin 1 (@alan) y Admin 2 (@esposa - Yilda) validados con permisos y nombre visible correcto.`
+      `Admin 1 (@alan) y Admin 2 (@yilda - Yilda) validados con permisos y nombre visible correcto.`
     );
 
     // -------------------------------------------------------------
