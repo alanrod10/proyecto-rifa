@@ -19,7 +19,7 @@ async function runRestore() {
     }
 
     const files = fs.readdirSync(backupDir)
-      .filter(f => f.endsWith('.db'))
+      .filter(f => f.endsWith('.db') && !f.startsWith('pre_restore'))
       .sort()
       .reverse();
 
@@ -31,9 +31,7 @@ async function runRestore() {
     backupFile = path.join(backupDir, files[0]);
     console.log(`Seleccionando automáticamente el respaldo más reciente: ${files[0]}`);
   } else {
-    if (!path.isAbsolute(backupFile)) {
-      backupFile = path.join(backupDir, backupFile);
-    }
+    backupFile = path.resolve(process.cwd(), backupFile);
   }
 
   if (!fs.existsSync(backupFile)) {
