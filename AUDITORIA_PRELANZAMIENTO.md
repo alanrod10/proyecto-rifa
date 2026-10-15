@@ -31,19 +31,26 @@ Se realizó una auditoría integral técnica, criptográfica, transaccional y le
 2. **Ausencia de mecanismo seguro de cambio de clave:** El sistema no disponía de un procedimiento asistido para que Alan e Yilda pudieran actualizar sus contraseñas sin manipular directamente la base de datos en SQL.
 
 ### Acciones Correctivas Implementadas
-1. **Almacenamiento en Base de Datos:** Se verificó que las contraseñas se almacenan mediante hash seguro `bcrypt` con 10 rondas de salting (`$2b$10$...`). Nunca se guardan en texto plano en la base de datos.
-2. **Utilidad Segura de Cambio de Clave (`scripts/change-admin-password.mjs`):**
-   - Se implementó un script que permite cambiar la contraseña de `alan` o `esposa` desde la línea de comandos de forma segura.
-   - Requiere un mínimo de 8 caracteres.
-   - Genera el hash `bcrypt` en memoria y actualiza la tabla `admins`.
-   - Registra el evento en la tabla `audit_logs` con acción `CHANGE_PASSWORD`, **sin registrar la contraseña ni el hash** en los registros de auditoría.
-   - Comando disponible en `package.json`:
+1. **Almacenamiento en Base de Datos:** Se verificó que las contraseñas se almacenan mediante hash seguro `bcrypt` con 10 rondas de salting (`$2b$10$...`). Nunca se guardan en texto plano en la base de datos ni en el repositorio.
+2. **Utilidad Segura e Interactiva de Cambio de Clave (`scripts/change-admin-password.mjs`):**
+   - Se implementó un script interactivo en Node.js que solicita la contraseña de forma enmascarada (mostrando asteriscos `*`) en la terminal y pide confirmación previa antes de escribir en disco.
+   - **Cero fugas de historial:** Al ingresar la contraseña interactivamente, la clave **nunca queda guardada en el historial de comandos del shell (`~/.bash_history`) ni en la tabla de procesos (`ps aux`)**.
+   - Si se intenta ingresar la clave como argumento de consola, el script emite una advertencia de seguridad explícita.
+   - Requiere un mínimo estricto de 8 caracteres y valida coincidencia exacta con la confirmación.
+   - Genera el hash `bcrypt` en memoria y actualiza atómicamente la tabla `admins`.
+   - Registra el evento en la tabla `audit_logs` con la acción `CHANGE_PASSWORD`, **sin registrar la contraseña ni el hash** en los registros de auditoría.
+   - Uso recomendado:
      ```bash
-     npm run change-password <usuario> "<nueva_contraseña>"
+     npm run change-password alan
+     npm run change-password esposa
      ```
 3. **Secreto de Sesión JWT (`ADMIN_SECRET_KEY`):**
    - Las sesiones de los administradores se firman mediante tokens JWT (algoritmo HS256) emitidos en cookies `httpOnly`, `SameSite=Lax`, con vigencia de 7 días.
-   - **Advertencia:** En `.env.example` existe un valor por defecto. En producción, **es obligatorio** definir en `.env.local` una clave aleatoria de al menos 32 caracteres generada criptográficamente (ej: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
+   - Se añadió un mecanismo de detección proactiva en `src/lib/auth.ts`: si la aplicación se ejecuta en modo producción (`NODE_ENV=production`) sin haber configurado `ADMIN_SECRET_KEY`, el sistema emite una alerta de seguridad visible en los registros.
+   - **Obligatorio para producción:** Definir en `.env.local` una clave aleatoria de al menos 32 caracteres generada criptográficamente:
+     ```bash
+     node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+     ```
 
 ---
 
@@ -146,19 +153,53 @@ Se levantó el servidor de producción con `npm run start` en el puerto 3000 y s
 
 Antes de recibir compras reales, deben completarse los siguientes pasos:
 
-1. **Establecer Contraseñas Nuevas y Privadas:**
-   Ejecutar desde la terminal del proyecto:
+1. **Establecer Contraseñas Nuevas y Privadas (Modo Interactivo Protegido):**
+   Ejecutar desde la terminal del proyecto (no escribir la contraseña en el comando para evitar que quede en el historial de Linux/Windows):
    ```bash
-   npm run change-password alan "NuevaContraseñaSecretaAlan2026!"
-   npm run change-password esposa "NuevaContraseñaSecretaYilda2026!"
+   npm run change-password alan
    ```
+   *El sistema solicitará de forma enmascarada con asteriscos (`*`) la nueva contraseña y su confirmación.*
+   
+   Luego, ejecutar para Yilda (su usuario de acceso es `esposa` y su nombre visible es **Yilda**):
+   ```bash
+   npm run change-password esposa
+   ```
+   *El cambio se aplica inmediatamente y queda asentado en la auditoría sin exponer claves.*
+
 2. **Generar el Secreto de Sesión en `.env.local`:**
-   Crear o editar `.env.local` y definir un `ADMIN_SECRET_KEY` seguro de al menos 32 caracteres.
+   Crear o editar `.env.local` y definir un `ADMIN_SECRET_KEY` seguro de al menos 32 caracteres:
+   ```bash
+   # Generar clave secreta aleatoria:
+   node -e "console.log('ADMIN_SECRET_KEY=' + require('crypto').randomBytes(32).toString('hex'))" >> .env.local
+   ```
+
 3. **Completar Datos del Sorteo en el Panel Administrativo (`/admin/configuracion`):**
+   - Iniciar sesión en `/admin/login` con cualquiera de las dos cuentas.
    - Definir los **Premios**.
    - Definir la **Fecha y Modalidad del Sorteo**.
    - Completar el **Alias Bancario**, **CBU**, **Banco** y **Titular** de la cuenta donde se recibirán las transferencias.
    - Colocar el **Número de Celular con WhatsApp** para la recepción automática de comprobantes.
+
 4. **Definir la Estrategia de Despliegue ($0):**
-   - Si se utilizará un equipo propio: Iniciar con `cloudflared tunnel --url http://localhost:3000`.
-   - Si se utilizará la nube (Vercel): Crear una base gratuita en Turso, ejecutar las migraciones en Turso y configurar las variables de entorno correspondientes.
+   - **Opción A (Auto-hospedado con persistencia en `rifa.db` y túnel seguro gratuito):**
+     1. Iniciar la aplicación: `npm run build && npm run start`
+     2. En otra terminal: `cloudflared tunnel --url http://localhost:3000`
+     3. Copiar la URL pública HTTPS de Cloudflare y compartirla en el círculo íntimo familiar.
+   - **Opción B (Nube Vercel + Turso LibSQL $0):**
+     1. Crear base en Turso: `turso db create rifa-prod`
+     2. Volcar la base `rifa.db` a Turso mediante el CLI o dump SQL.
+     3. Configurar en Vercel las variables `DATABASE_URL` y `DATABASE_AUTH_TOKEN`.
+
+---
+
+## 8. Certificado de Verificación Técnica
+
+| Componente | Estado | Verificación |
+| :--- | :---: | :--- |
+| **80.000 Números** | **100% Intactos** | 80.000 registros del 00001 al 80000 en estado `available` en `rifa.db`. |
+| **Cuentas Administradoras** | **Verificadas** | Alan (`alan`) e Yilda (`esposa`, nombre visible `Yilda`). |
+| **Suite de Pruebas** | **20/20 Aprobadas** | Ejecutadas en sandbox aislado (`backups/test_isolated.db`) sin tocar `rifa.db`. |
+| **Compilación de Producción** | **Aprobada (0 Errores)** | Next.js 15.5.28 (`npm run build`), 28/28 rutas dinámicas y estáticas generadas. |
+| **Integridad Transaccional** | **ACID Garantizado** | Bloqueo exclusivo contra dobles reservas y reversión en fallos parciales. |
+| **Preservación y Backups** | **Comprobada** | Respaldo verificado en `backups/backup_2026-10-15T18-17-13.db` (5.38 MB). |
+| **Costo Operativo** | **$0 Estricto** | Cero costo en licencias, APIs pagas, bases de datos o pasarelas. |

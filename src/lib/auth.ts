@@ -2,7 +2,13 @@ import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
-const SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'clave_secreta_super_segura_cambiar_en_produccion_minimo_32_caracteres';
+const DEFAULT_SECRET_FALLBACK = 'clave_secreta_super_segura_cambiar_en_produccion_minimo_32_caracteres';
+const SECRET_KEY = process.env.ADMIN_SECRET_KEY || DEFAULT_SECRET_FALLBACK;
+
+if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_SECRET_KEY) {
+  console.warn('[ALERTA DE SEGURIDAD] ADMIN_SECRET_KEY no está configurada en las variables de entorno. Configure una clave segura de al menos 32 caracteres en .env.local.');
+}
+
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export const COOKIE_NAME = 'rifa_admin_session';
