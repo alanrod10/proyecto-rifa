@@ -71,6 +71,8 @@ export default function PublicPortal() {
     numbers_count: number;
     numbers: number[];
     total_amount: number;
+    payment_method: 'transfer' | 'cash';
+    buyer_name: string;
     expires_at: string;
   } | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -221,7 +223,11 @@ export default function PublicPortal() {
       }
 
       // Éxito
-      setOrderSuccess(data.order);
+      setOrderSuccess({
+        ...data.order,
+        payment_method: data.order.payment_method || paymentMethod,
+        buyer_name: buyerName.trim(),
+      });
       setSelectedNumbers([]);
       setIsModalOpen(false);
       fetchSettings(); // Actualizar estadísticas
@@ -361,9 +367,14 @@ export default function PublicPortal() {
             <div className="flex items-center space-x-3 text-emerald-700">
               <CheckCircle className="w-8 h-8 flex-shrink-0" />
               <div>
-                <h3 className="text-xl font-extrabold">¡Solicitud de Reserva Registrada!</h3>
+                <h3 className="text-xl font-extrabold">
+                  {orderSuccess.payment_method === 'cash'
+                    ? '¡Reserva Registrada para Pago en Efectivo!'
+                    : '¡Solicitud de Reserva Registrada!'}
+                </h3>
                 <p className="text-sm text-emerald-800">
-                  Referencia de pedido: <strong>{orderSuccess.code}</strong>
+                  Referencia de pedido: <strong>{orderSuccess.code}</strong> • Medio:{' '}
+                  <strong>{orderSuccess.payment_method === 'cash' ? 'Efectivo' : 'Transferencia Bancaria'}</strong>
                 </p>
               </div>
             </div>
@@ -379,9 +390,15 @@ export default function PublicPortal() {
                 <strong>Total a abonar:</strong>{' '}
                 <span className="font-bold text-slate-900 text-base">{formatCurrency(orderSuccess.total_amount)}</span>
               </p>
-              <p className="text-xs text-slate-500">
-                Tus números están reservados de forma segura. Tenés {settings?.reserve_hours || 48} horas para enviar el comprobante de pago.
-              </p>
+              {orderSuccess.payment_method === 'cash' ? (
+                <p className="text-xs text-slate-600">
+                  Tus números están reservados de forma segura. Tenés <strong>{settings?.reserve_hours || 48} horas</strong> para coordinar y entregar el pago en efectivo a los administradores.
+                </p>
+              ) : (
+                <p className="text-xs text-slate-600">
+                  Tus números están reservados de forma segura. Tenés <strong>{settings?.reserve_hours || 48} horas</strong> para realizar la transferencia y enviar el comprobante de pago.
+                </p>
+              )}
             </div>
 
             {/* Enlace Privado Único */}
@@ -408,9 +425,26 @@ export default function PublicPortal() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
+              {settings?.contact_phone && (
+                <a
+                  href={`https://wa.me/${formatWhatsAppPhone(settings.contact_phone)}?text=${encodeURIComponent(
+                    orderSuccess.payment_method === 'cash'
+                      ? `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)} para abonar en efectivo. Quiero coordinar la entrega del dinero.`
+                      : `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)}. Te envío el comprobante de pago.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow"
+                >
+                  <Phone className="w-4 h-4" />
+                  {orderSuccess.payment_method === 'cash'
+                    ? 'Coordinar pago en efectivo por WhatsApp'
+                    : 'Enviar comprobante por WhatsApp'}
+                </a>
+              )}
               <Link
                 href={`/pedido/${orderSuccess.private_token}`}
-                className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow"
+                className="inline-flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow"
               >
                 Ver Mi Comprobante Digital
                 <ArrowRight className="w-4 h-4" />

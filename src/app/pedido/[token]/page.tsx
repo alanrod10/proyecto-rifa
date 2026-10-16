@@ -126,9 +126,12 @@ export default function BuyerPrivateOrderPage() {
     );
   }
 
-  // Pre-cargar mensaje para WhatsApp
+  // Pre-cargar mensaje para WhatsApp diferenciando Transferencia vs Efectivo
   const formattedNumbers = order.numbers.map(formatTicketNumber).join(', ');
-  const whatsappMsg = `Hola! Soy ${order.buyer_name}. Tengo la reserva ${order.code} de la rifa por ${order.numbers_count} número(s) (${formattedNumbers}) por un total de ${formatCurrency(order.total_amount)}. Te envío el comprobante de pago.`;
+  const whatsappMsg =
+    order.payment_method === 'cash'
+      ? `Hola! Soy ${order.buyer_name}. Tengo la reserva ${order.code} de la rifa por ${order.numbers_count} número(s) (${formattedNumbers}) por un total de ${formatCurrency(order.total_amount)} para abonar en efectivo. Quiero coordinar la entrega del dinero.`
+      : `Hola! Soy ${order.buyer_name}. Tengo la reserva ${order.code} de la rifa por ${order.numbers_count} número(s) (${formattedNumbers}) por un total de ${formatCurrency(order.total_amount)}. Te envío el comprobante de pago.`;
   const whatsappUrl = raffle.contact_phone 
     ? `https://wa.me/${formatWhatsAppPhone(raffle.contact_phone)}?text=${encodeURIComponent(whatsappMsg)}`
     : null;
@@ -273,8 +276,16 @@ export default function BuyerPrivateOrderPage() {
           {order.payment_status === 'pending' && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs space-y-3">
               <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
-                <Landmark className="w-5 h-5 text-amber-600" />
-                <span>¿Cómo abonar tu reserva?</span>
+                {order.payment_method === 'transfer' ? (
+                  <Landmark className="w-5 h-5 text-amber-600" />
+                ) : (
+                  <Banknote className="w-5 h-5 text-amber-600" />
+                )}
+                <span>
+                  {order.payment_method === 'transfer'
+                    ? '¿Cómo abonar tu reserva por Transferencia?'
+                    : '¿Cómo abonar tu reserva en Efectivo?'}
+                </span>
               </div>
 
               {order.payment_method === 'transfer' ? (
@@ -291,8 +302,13 @@ export default function BuyerPrivateOrderPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-1 text-slate-700">
-                  <p>Coordiná la entrega de los <strong>{formatCurrency(order.total_amount)}</strong> en efectivo directamente con los administradores.</p>
+                <div className="space-y-1.5 text-slate-700">
+                  <p>
+                    Elegiste abonar en <strong>Efectivo</strong>. Por favor comunicate con los administradores para coordinar la entrega de los <strong>{formatCurrency(order.total_amount)}</strong>.
+                  </p>
+                  <p className="text-[11px] text-amber-900">
+                    Una vez que entregues el efectivo, los administradores marcarán tu reserva como <strong>PAGADA</strong> y este comprobante se actualizará automáticamente.
+                  </p>
                 </div>
               )}
 
@@ -305,7 +321,9 @@ export default function BuyerPrivateOrderPage() {
                   className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow"
                 >
                   <Phone className="w-4 h-4" />
-                  Enviar comprobante por WhatsApp
+                  {order.payment_method === 'transfer'
+                    ? 'Enviar comprobante por WhatsApp'
+                    : 'Coordinar pago en efectivo por WhatsApp'}
                 </a>
               )}
 
