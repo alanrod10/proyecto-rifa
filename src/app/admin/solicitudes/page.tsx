@@ -215,13 +215,22 @@ export default function AdminSolicitudesPage() {
           </p>
         </div>
 
-        <button
-          onClick={fetchOrders}
-          className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Actualizar</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link
+            href="/admin/compradores"
+            className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-3 py-2 rounded-xl transition shadow-sm"
+          >
+            <span>Agrupado por Celular</span>
+          </Link>
+
+          <button
+            onClick={fetchOrders}
+            className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Actualizar</span>
+          </button>
+        </div>
       </div>
 
       {feedback && (
@@ -317,16 +326,25 @@ export default function AdminSolicitudesPage() {
 
                     <td className="py-3.5 px-4">
                       <span className="font-semibold text-slate-900 block">{ord.buyer_name}</span>
-                      <a 
-                        href={waVoucherUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        title="Enviar comprobante por WhatsApp al comprador"
-                        className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-mono text-[11px]"
-                      >
-                        <Phone className="w-3 h-3" />
-                        <span>{ord.buyer_phone}</span>
-                      </a>
+                      <div className="flex items-center flex-wrap gap-2 mt-0.5">
+                        <a 
+                          href={waVoucherUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          title="Enviar comprobante por WhatsApp al comprador"
+                          className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-mono text-[11px]"
+                        >
+                          <Phone className="w-3 h-3" />
+                          <span>{ord.buyer_phone}</span>
+                        </a>
+                        <Link
+                          href={`/admin/compradores?search=${encodeURIComponent(ord.buyer_phone)}`}
+                          className="text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-800 border border-slate-200 px-1.5 py-0.5 rounded font-medium transition"
+                          title="Ver todas las compras y el total de números de este celular"
+                        >
+                          Ver total →
+                        </Link>
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4 max-w-xs">

@@ -22,8 +22,16 @@ export async function GET(request: NextRequest) {
 
     if (search && search.trim().length > 0) {
       const q = `%${search.trim()}%`;
-      where += ' AND (b.name LIKE ? OR b.phone LIKE ?)';
-      args.push(q, q);
+      where += ` AND (
+        b.name LIKE ? 
+        OR b.phone LIKE ? 
+        OR EXISTS (
+          SELECT 1 FROM orders o2 
+          WHERE (o2.buyer_id = b.id OR o2.buyer_phone = b.phone)
+            AND (o2.buyer_name LIKE ? OR o2.code LIKE ? OR o2.numbers_list LIKE ?)
+        )
+      )`;
+      args.push(q, q, q, q, q);
     }
 
     const countRes = await db.execute({
@@ -37,9 +45,10 @@ export async function GET(request: NextRequest) {
               b.id, b.name, b.phone, b.created_at,
               COUNT(o.id) as total_orders,
               COALESCE(SUM(CASE WHEN o.payment_status IN ('paid', 'pending') THEN o.numbers_count ELSE 0 END), 0) as total_numbers,
-              COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN o.total_amount ELSE 0 END), 0) as total_paid_amount
+              COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN o.total_amount ELSE 0 END), 0) as total_paid_amount,
+              COALESCE(SUM(CASE WHEN o.payment_status = 'pending' THEN o.total_amount ELSE 0 END), 0) as total_pending_amount
             FROM buyers b
-            LEFT JOIN orders o ON b.id = o.buyer_id
+            LEFT JOIN orders o ON (b.id = o.buyer_id OR b.phone = o.buyer_phone)
             WHERE ${where}
             GROUP BY b.id
             ORDER BY b.id DESC
@@ -47,36 +56,84 @@ export async function GET(request: NextRequest) {
       args: [...args, limit, offset]
     });
 
-    // Para cada comprador, traer también sus pedidos recientes con tokens privados para recuperación
+    // Para cada teléfono/comprador, consolidar todos los nombres registrados, todos los números y sus compras individuales
     const buyers = [];
     for (const row of buyersRes.rows) {
       const buyerId = Number(row.id);
+      const buyerPhone = row.phone as string;
       const ordersRes = await db.execute({
-        sql: `SELECT id, code, payment_status, payment_method, numbers_count, total_amount, 
-                     numbers_list, private_token, created_at
-              FROM orders WHERE buyer_id = ? ORDER BY id DESC`,
-        args: [buyerId]
+        sql: `SELECT id, code, buyer_name, payment_status, payment_method, numbers_count, total_amount, 
+                     numbers_list, private_token, is_direct_sale, created_at
+              FROM orders 
+              WHERE buyer_id = ? OR buyer_phone = ? 
+              ORDER BY id DESC`,
+        args: [buyerId, buyerPhone]
       });
 
-      buyers.push({
-        id: buyerId,
-        name: row.name as string,
-        phone: row.phone as string,
-        created_at: row.created_at as string,
-        total_orders: Number(row.total_orders),
-        total_numbers: Number(row.total_numbers),
-        total_paid_amount: Number(row.total_paid_amount),
-        orders: ordersRes.rows.map(o => ({
+      const nameMap = new Map<string, string>();
+      const baseName = String(row.name || '').trim();
+      if (baseName) {
+        nameMap.set(baseName.toLowerCase(), baseName);
+      }
+
+      const paidNumbersSet = new Set<number>();
+      const pendingNumbersSet = new Set<number>();
+
+      const mappedOrders = ordersRes.rows.map(o => {
+        const orderBuyerName = String(o.buyer_name || baseName).trim();
+        if (orderBuyerName) {
+          const lower = orderBuyerName.toLowerCase();
+          const existing = nameMap.get(lower);
+          if (!existing || orderBuyerName.length > existing.length) {
+            nameMap.set(lower, orderBuyerName);
+          }
+        }
+
+        const nums = safeJsonParse<number[]>(o.numbers_list as string, []);
+        const status = o.payment_status as string;
+        if (status === 'paid') {
+          nums.forEach(n => paidNumbersSet.add(n));
+        } else if (status === 'pending') {
+          nums.forEach(n => pendingNumbersSet.add(n));
+        }
+
+        return {
           id: Number(o.id),
           code: o.code as string,
-          payment_status: o.payment_status as string,
+          buyer_name: orderBuyerName,
+          payment_status: status,
           payment_method: o.payment_method as string,
           numbers_count: Number(o.numbers_count),
           total_amount: Number(o.total_amount),
-          numbers: safeJsonParse<number[]>(o.numbers_list as string, []),
+          numbers: nums,
           private_token: o.private_token as string,
+          is_direct_sale: Boolean(o.is_direct_sale),
           created_at: o.created_at as string,
-        }))
+        };
+      });
+
+      // Ordenar los nombres dejando primero el nombre más completo (más largo)
+      const allNames = Array.from(nameMap.values()).sort((a, b) => b.length - a.length);
+      const primaryName = allNames[0] || baseName;
+
+      const paidNumbers = Array.from(paidNumbersSet).sort((a, b) => a - b);
+      const pendingNumbers = Array.from(pendingNumbersSet).sort((a, b) => a - b);
+      const activeNumbers = Array.from(new Set([...paidNumbers, ...pendingNumbers])).sort((a, b) => a - b);
+
+      buyers.push({
+        id: buyerId,
+        name: primaryName,
+        all_names: allNames,
+        phone: buyerPhone,
+        created_at: row.created_at as string,
+        total_orders: mappedOrders.length,
+        total_numbers: activeNumbers.length,
+        paid_numbers: paidNumbers,
+        pending_numbers: pendingNumbers,
+        active_numbers: activeNumbers,
+        total_paid_amount: Number(row.total_paid_amount),
+        total_pending_amount: Number(row.total_pending_amount),
+        orders: mappedOrders
       });
     }
 

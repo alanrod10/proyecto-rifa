@@ -6,28 +6,38 @@ import {
   Users, Search, Phone, Ticket, Copy, ExternalLink, RefreshCw, 
   ChevronDown, ChevronUp, CheckCircle, Clock, Trash2, ArrowLeftRight
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone, buildBuyerWhatsAppUrl } from '@/lib/utils';
+import { 
+  formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone, 
+  buildBuyerWhatsAppUrl, buildBuyerSummaryWhatsAppUrl 
+} from '@/lib/utils';
 
 interface BuyerOrder {
   id: number;
   code: string;
+  buyer_name: string;
   payment_status: string;
   payment_method: string;
   numbers_count: number;
   total_amount: number;
   numbers: number[];
   private_token: string;
+  is_direct_sale?: boolean;
   created_at: string;
 }
 
 interface BuyerItem {
   id: number;
   name: string;
+  all_names: string[];
   phone: string;
   created_at: string;
   total_orders: number;
   total_numbers: number;
+  paid_numbers: number[];
+  pending_numbers: number[];
+  active_numbers: number[];
   total_paid_amount: number;
+  total_pending_amount: number;
   orders: BuyerOrder[];
 }
 
@@ -44,10 +54,11 @@ export default function AdminCompradoresPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
 
-  const fetchBuyers = async () => {
+  const fetchBuyers = async (customSearch?: string) => {
     try {
       setLoading(true);
-      const url = `/api/admin/buyers?page=${page}&limit=30&search=${encodeURIComponent(search.trim())}`;
+      const query = customSearch !== undefined ? customSearch : search;
+      const url = `/api/admin/buyers?page=${page}&limit=30&search=${encodeURIComponent(query.trim())}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -65,13 +76,22 @@ export default function AdminCompradoresPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlSearch = params.get('search');
+      if (urlSearch && page === 1 && !search) {
+        setSearch(urlSearch);
+        fetchBuyers(urlSearch);
+        return;
+      }
+    }
     fetchBuyers();
   }, [page]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchBuyers();
+    fetchBuyers(search);
   };
 
   const copyUrl = (token: string) => {
@@ -183,14 +203,16 @@ export default function AdminCompradoresPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Directorio de Compradores</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            Compradores Agrupados por Celular
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Consultá participantes, pedidos históricos, cambiá medio de pago o eliminá registros de prueba.
+            Unifica todas las compras de un mismo número de teléfono (incluso si se anotó con variantes de nombre), muestra todos sus números elegidos juntos y envía el resumen total por WhatsApp.
           </p>
         </div>
 
         <button
-          onClick={fetchBuyers}
+          onClick={() => fetchBuyers()}
           className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -209,7 +231,7 @@ export default function AdminCompradoresPage() {
       <form onSubmit={handleSearch} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
         <input
           type="text"
-          placeholder="Buscar por nombre o número de celular..."
+          placeholder="Buscar por cualquier nombre usado, número de celular, código o número de rifa..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -222,7 +244,7 @@ export default function AdminCompradoresPage() {
         </button>
       </form>
 
-      {/* Listado de Compradores */}
+      {/* Listado de Compradores Agrupados por Teléfono */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-slate-400 text-xs">Cargando compradores...</div>
@@ -232,65 +254,103 @@ export default function AdminCompradoresPage() {
           <div className="divide-y divide-slate-100">
             {buyers.map((buyer) => {
               const isExpanded = expandedBuyerId === buyer.id;
-              const latestOrder = buyer.orders && buyer.orders.length > 0 ? buyer.orders[0] : null;
-              const mainBuyerWaUrl = latestOrder
-                ? buildBuyerWhatsAppUrl({
-                    buyerName: buyer.name,
-                    buyerPhone: buyer.phone,
-                    orderCode: latestOrder.code,
-                    numbers: latestOrder.numbers,
-                    totalAmount: latestOrder.total_amount,
-                    paymentStatus: latestOrder.payment_status,
-                    privateToken: latestOrder.private_token,
-                  })
-                : `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(`Hola ${buyer.name}! Te escribimos desde la administración de la Gran Rifa Familiar.`)}`;
+              const paidSet = new Set(buyer.paid_numbers || []);
+              const pendingSet = new Set(buyer.pending_numbers || []);
+              const allActiveNums = buyer.active_numbers || [];
+              const allNames = buyer.all_names && buyer.all_names.length > 0 ? buyer.all_names : [buyer.name];
+
+              const summaryWaUrl =
+                buyer.orders && buyer.orders.length > 0
+                  ? buildBuyerSummaryWhatsAppUrl({
+                      buyerName: buyer.name,
+                      buyerPhone: buyer.phone,
+                      paidNumbers: buyer.paid_numbers || [],
+                      pendingNumbers: buyer.pending_numbers || [],
+                      totalPaidAmount: buyer.total_paid_amount || 0,
+                      totalPendingAmount: buyer.total_pending_amount || 0,
+                      orders: buyer.orders,
+                    })
+                  : `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(`Hola ${buyer.name}! Te escribimos desde la administración de la Gran Rifa Familiar.`)}`;
 
               return (
                 <div key={buyer.id} className="p-4 sm:p-5 hover:bg-slate-50/60 transition">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl">
+                      <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl flex-shrink-0">
                         <Users className="w-5 h-5" />
                       </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900 text-sm">{buyer.name}</h4>
-                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+                      <div className="space-y-1">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <h4 className="font-bold text-slate-900 text-sm">{buyer.name}</h4>
                           <a 
-                            href={mainBuyerWaUrl} 
+                            href={summaryWaUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            title="Enviar comprobante por WhatsApp"
-                            className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-mono"
+                            title="Enviar resumen con el TOTAL de números que tiene este celular por WhatsApp"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 font-mono text-xs font-bold transition"
                           >
-                            <Phone className="w-3 h-3" />
+                            <Phone className="w-3 h-3 text-emerald-600" />
                             <span>{buyer.phone}</span>
                           </a>
+                        </div>
+
+                        {allNames.length > 1 && (
+                          <div className="flex items-center flex-wrap gap-1.5 text-[11px] text-slate-600">
+                            <span className="font-semibold text-slate-500">Nombres en sus compras:</span>
+                            {allNames.map((alias, idx) => (
+                              <span
+                                key={idx}
+                                className="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md font-medium"
+                              >
+                                {alias}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500">
+                          <span><strong>{buyer.total_orders}</strong> compra(s) registrada(s)</span>
                           <span>•</span>
-                          <span>{buyer.total_orders} pedido(s)</span>
-                          <span>•</span>
-                          <span>{buyer.total_numbers} número(s)</span>
+                          <span className="text-emerald-700 font-semibold">
+                            <strong>{buyer.total_numbers}</strong> número(s) en total
+                          </span>
+                          {(buyer.paid_numbers?.length || 0) > 0 && (
+                            <span className="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                              {buyer.paid_numbers.length} pagado(s)
+                            </span>
+                          )}
+                          {(buyer.pending_numbers?.length || 0) > 0 && (
+                            <span className="text-[11px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
+                              {buyer.pending_numbers.length} pendiente(s)
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                      <div className="text-right mr-1">
+                    <div className="flex items-center justify-between lg:justify-end flex-wrap gap-2 w-full lg:w-auto">
+                      <div className="text-right mr-2">
                         <span className="block text-[10px] text-slate-400 uppercase font-semibold">Total Pagado</span>
                         <span className="text-sm font-bold text-emerald-700">
                           {formatCurrency(buyer.total_paid_amount)}
                         </span>
+                        {buyer.total_pending_amount > 0 && (
+                          <span className="block text-[11px] font-semibold text-amber-700">
+                            Pendiente: {formatCurrency(buyer.total_pending_amount)}
+                          </span>
+                        )}
                       </div>
 
-                      {latestOrder && (
+                      {buyer.orders && buyer.orders.length > 0 && (
                         <a
-                          href={mainBuyerWaUrl}
+                          href={summaryWaUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
-                          title="Enviar comprobante de su último pedido por WhatsApp"
+                          className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
+                          title="Enviar mensaje por WhatsApp con el total acumulado de números de esta persona"
                         >
                           <Phone className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Reenviar Comprobante</span>
+                          <span>WhatsApp Total ({buyer.total_numbers} nros)</span>
                         </a>
                       )}
 
@@ -306,19 +366,59 @@ export default function AdminCompradoresPage() {
 
                       <button
                         onClick={() => setExpandedBuyerId(isExpanded ? null : buyer.id)}
-                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition"
-                        title={isExpanded ? 'Ocultar pedidos' : 'Ver pedidos'}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition"
+                        title={isExpanded ? 'Ocultar compras individuales' : 'Ver compras individuales'}
                       >
+                        <span>{isExpanded ? 'Ocultar compras' : `Ver ${buyer.total_orders} compra(s)`}</span>
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
-                  {/* Detalle Desplegable de Pedidos del Comprador */}
+                  {/* Consolidado de TODOS los números que eligió este número de teléfono */}
+                  {allActiveNums.length > 0 && (
+                    <div className="mt-3 p-3 bg-slate-50/90 rounded-2xl border border-slate-200/80">
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                          <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Todos los números elegidos por el celular {buyer.phone} ({allActiveNums.length}):</span>
+                        </span>
+                        <div className="flex items-center gap-3 text-[10px] font-semibold">
+                          <span className="inline-flex items-center gap-1 text-emerald-700">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Pagado
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-amber-700">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Pendiente de pago
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 font-mono text-xs">
+                        {allActiveNums.map(num => {
+                          const isPaid = paidSet.has(num);
+                          const isPending = pendingSet.has(num);
+                          return (
+                            <span
+                              key={num}
+                              title={isPaid ? 'Número Pagado' : isPending ? 'Reserva Pendiente de Pago' : ''}
+                              className={`px-2 py-0.5 rounded-lg font-bold border ${
+                                isPaid
+                                  ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                                  : 'bg-amber-50 text-amber-900 border-amber-300'
+                              }`}
+                            >
+                              {formatTicketNumber(num)} {isPaid ? '✓' : '⏳'}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Detalle Desplegable de Pedidos Individuales del Comprador */}
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-slate-100 space-y-3 animate-fade-in">
                       <span className="text-xs font-bold text-slate-700 uppercase tracking-wide block">
-                        Historial de Operaciones:
+                        Detalle de cada compra individual ({buyer.orders.length}):
                       </span>
 
                       {buyer.orders.length === 0 ? (
@@ -327,7 +427,7 @@ export default function AdminCompradoresPage() {
                         <div className="space-y-2">
                           {buyer.orders.map((ord) => {
                             const waLink = buildBuyerWhatsAppUrl({
-                              buyerName: buyer.name,
+                              buyerName: ord.buyer_name || buyer.name,
                               buyerPhone: buyer.phone,
                               orderCode: ord.code,
                               numbers: ord.numbers,
@@ -341,6 +441,9 @@ export default function AdminCompradoresPage() {
                                 <div className="space-y-1">
                                   <div className="flex items-center flex-wrap gap-2">
                                     <span className="font-mono font-bold text-slate-800">{ord.code}</span>
+                                    <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium">
+                                      Anotado como: <strong>{ord.buyer_name || buyer.name}</strong>
+                                    </span>
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                       ord.payment_status === 'paid'
                                         ? 'bg-emerald-100 text-emerald-800'
@@ -360,7 +463,7 @@ export default function AdminCompradoresPage() {
                                     </span>
                                     <button
                                       type="button"
-                                      onClick={() => handleTogglePaymentMethod(ord, buyer.name)}
+                                      onClick={() => handleTogglePaymentMethod(ord, ord.buyer_name || buyer.name)}
                                       disabled={actionLoading}
                                       title="Cambiar entre Efectivo y Transferencia"
                                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-emerald-400 text-[11px] text-slate-700 font-medium transition"
@@ -371,7 +474,7 @@ export default function AdminCompradoresPage() {
                                     <span className="text-slate-400 text-[11px]">{formatDate(ord.created_at)}</span>
                                   </div>
                                   <div className="flex flex-wrap gap-1 font-mono text-[11px] text-slate-700">
-                                    <span>Números:</span>
+                                    <span>Números de esta compra:</span>
                                     {ord.numbers.map(n => (
                                       <span key={n} className="bg-white px-1 rounded border border-slate-200">
                                         {formatTicketNumber(n)}
@@ -383,16 +486,16 @@ export default function AdminCompradoresPage() {
                                 <div className="flex items-center flex-wrap gap-2 self-end md:self-center">
                                   <span className="font-bold text-slate-900 mr-1">{formatCurrency(ord.total_amount)}</span>
 
-                                  {/* Botón Reenviar por WhatsApp */}
+                                  {/* Botón Reenviar este pedido puntual por WhatsApp */}
                                   <a
                                     href={waLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
-                                    title="Reenviar enlace por WhatsApp"
+                                    title="Reenviar comprobante de esta compra puntual por WhatsApp"
                                   >
                                     <Phone className="w-3.5 h-3.5" />
-                                    <span>Reenviar</span>
+                                    <span>Reenviar este</span>
                                   </a>
 
                                   {/* Botón Copiar Token */}
@@ -416,7 +519,7 @@ export default function AdminCompradoresPage() {
 
                                   {/* Botón Eliminar este pedido */}
                                   <button
-                                    onClick={() => handleDeleteOrder(ord, buyer.name)}
+                                    onClick={() => handleDeleteOrder(ord, ord.buyer_name || buyer.name)}
                                     disabled={actionLoading}
                                     className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
                                     title="Eliminar este pedido y liberar sus números"

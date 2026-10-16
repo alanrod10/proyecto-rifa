@@ -138,6 +138,69 @@ export function buildBuyerWhatsAppUrl(params: {
 }
 
 /**
+ * Construye el enlace de WhatsApp hacia el comprador con el RESUMEN UNIFICADO de todos los números
+ * que tiene registrados bajo su número de teléfono (sumando todas sus compras individuales).
+ */
+export function buildBuyerSummaryWhatsAppUrl(params: {
+  buyerName: string;
+  buyerPhone: string;
+  paidNumbers: number[];
+  pendingNumbers: number[];
+  totalPaidAmount: number;
+  totalPendingAmount: number;
+  orders: {
+    code: string;
+    payment_status: string;
+    payment_method: string;
+    numbers: number[];
+    total_amount: number;
+    private_token: string;
+  }[];
+  origin?: string;
+}): string {
+  const waPhone = formatWhatsAppPhone(params.buyerPhone);
+  const baseOrigin =
+    params.origin ||
+    (typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'https://proyecto-rifa.vercel.app');
+
+  const paidList = [...(params.paidNumbers || [])].sort((a, b) => a - b);
+  const pendingList = [...(params.pendingNumbers || [])].sort((a, b) => a - b);
+  const allActiveNumbers = Array.from(new Set([...paidList, ...pendingList])).sort((a, b) => a - b);
+
+  let message = `Hola ${params.buyerName}! Te enviamos el resumen total de todos tus números en la Gran Rifa Familiar:\n\n`;
+  message += `• Total acumulado: ${allActiveNumbers.length} número(s)\n`;
+
+  if (allActiveNumbers.length > 0) {
+    message += `• Todos tus números: ${allActiveNumbers.map(formatTicketNumber).join(', ')}\n`;
+  }
+
+  if (paidList.length > 0) {
+    message += `\n✅ PAGADOS (${paidList.length}): ${paidList.map(formatTicketNumber).join(', ')} (${formatCurrency(params.totalPaidAmount)})`;
+  }
+
+  if (pendingList.length > 0) {
+    message += `\n⏳ PENDIENTES DE PAGO (${pendingList.length}): ${pendingList.map(formatTicketNumber).join(', ')} (Pendiente: ${formatCurrency(params.totalPendingAmount)})`;
+  }
+
+  const activeOrders = (params.orders || []).filter(
+    o => o.payment_status === 'paid' || o.payment_status === 'pending'
+  );
+
+  if (activeOrders.length > 0) {
+    message += `\n\nDetalle de tus comprobantes (${activeOrders.length}):`;
+    for (const ord of activeOrders) {
+      const statusText = ord.payment_status === 'paid' ? 'PAGADO ✅' : 'PENDIENTE ⏳';
+      const methodText = ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia';
+      message += `\n• ${ord.code} (${methodText} - ${statusText}): ${baseOrigin}/pedido/${ord.private_token}`;
+    }
+  }
+
+  return `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
+}
+
+/**
  * Sanitiza un campo de texto contra inyección de fórmulas en CSV (Excel / Calc)
  * y escapa comillas dobles internas
  */

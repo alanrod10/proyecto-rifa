@@ -94,15 +94,22 @@ export async function POST(request: NextRequest) {
         }, { status: 409 });
       }
 
-      // 4. Crear o reutilizar comprador (sin sobrescribir el nombre histórico desde el formulario público)
+      // 4. Crear o reutilizar comprador (conservando el nombre más completo en el directorio principal)
       let buyerId: number;
       const existingBuyer = await tx.execute({
-        sql: 'SELECT id FROM buyers WHERE phone = ? LIMIT 1',
+        sql: 'SELECT id, name FROM buyers WHERE phone = ? LIMIT 1',
         args: [cleanPhone]
       });
 
       if (existingBuyer.rows.length > 0) {
         buyerId = Number(existingBuyer.rows[0].id);
+        const currentName = String(existingBuyer.rows[0].name || '').trim();
+        if (buyer_name.trim().length > currentName.length) {
+          await tx.execute({
+            sql: 'UPDATE buyers SET name = ? WHERE id = ?',
+            args: [buyer_name.trim(), buyerId]
+          });
+        }
       } else {
         const insertBuyer = await tx.execute({
           sql: 'INSERT INTO buyers (name, phone) VALUES (?, ?)',
