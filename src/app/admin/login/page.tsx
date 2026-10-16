@@ -1,5 +1,6 @@
 'use client';
 
+import ThemeToggle from '@/components/ThemeToggle';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -41,20 +42,21 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-between p-4 text-white">
-      <div className="max-w-md w-full mx-auto pt-8">
+    <div className="theme-night min-h-screen bg-night-900 flex flex-col justify-between p-4 text-white">
+      <div className="max-w-md w-full mx-auto pt-8 flex items-center justify-between">
         <Link 
           href="/" 
-          className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1.5 transition"
+          className="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1.5 transition"
         >
           ← Volver al Portal Público
         </Link>
+        <ThemeToggle variant="night" />
       </div>
 
       <div className="max-w-md w-full mx-auto my-auto">
-        <div className="bg-slate-800 rounded-3xl p-8 border border-slate-700 shadow-2xl space-y-6">
+        <div className="bg-night-800 rounded-3xl p-8 border border-night-700 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl w-14 h-14 mx-auto flex items-center justify-center border border-emerald-500/20">
+            <div className="p-3 bg-brand-500/10 text-brand-400 rounded-2xl w-14 h-14 mx-auto flex items-center justify-center border border-brand-500/20">
               <Lock className="w-7 h-7" />
             </div>
             <h2 className="text-2xl font-black text-white">Panel Administrativo</h2>
@@ -75,14 +77,14 @@ export default function AdminLoginPage() {
                 Usuario
               </label>
               <div className="relative">
-                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   required
                   placeholder="ej: alan o yilda"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-night-900 border border-night-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -92,14 +94,14 @@ export default function AdminLoginPage() {
                 Contraseña
               </label>
               <div className="relative">
-                <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-night-900 border border-night-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -107,22 +109,22 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? 'Verificando...' : 'Ingresar al Panel'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          <div className="border-t border-slate-700/60 pt-4 text-center">
-            <span className="text-[11px] text-slate-500 block">
+          <div className="border-t border-night-700/60 pt-4 text-center">
+            <span className="text-[11px] text-slate-400 block">
               Protegido mediante hash bcrypt y tokens JWT con expiración automática.
             </span>
           </div>
         </div>
       </div>
 
-      <footer className="text-center text-xs text-slate-600 py-4">
+      <footer className="text-center text-xs text-slate-400 py-4">
         Proyecto RIFA • Panel Seguro
       </footer>
     </div>

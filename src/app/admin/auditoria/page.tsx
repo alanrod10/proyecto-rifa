@@ -55,14 +55,14 @@ export default function AdminAuditoriaPage() {
 
         <button
           onClick={fetchLogs}
-          className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 text-xs bg-surface hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Actualizar</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-slate-400 text-xs">Cargando registros de auditoría...</div>
         ) : logs.length === 0 ? (
@@ -129,7 +129,7 @@ export default function AdminAuditoriaPage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Anterior
             </button>
@@ -137,7 +137,7 @@ export default function AdminAuditoriaPage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Siguiente
             </button>

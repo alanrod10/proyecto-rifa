@@ -162,7 +162,7 @@ export default function AdminConfiguracionPage() {
 
         <button
           onClick={fetchSettings}
-          className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 text-xs bg-surface hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Recargar</span>
@@ -181,16 +181,16 @@ export default function AdminConfiguracionPage() {
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-300 text-red-800 text-xs rounded-2xl flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* BLOQUE 1: INFORMACIÓN PÚBLICA PRINCIPAL */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-700" />
+            <Sparkles className="w-4 h-4 text-brand-link" />
             Información Pública y Portada
           </h3>
 
@@ -204,7 +204,7 @@ export default function AdminConfiguracionPage() {
                 name="raffle_name"
                 value={formData.raffle_name}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
 
@@ -219,7 +219,7 @@ export default function AdminConfiguracionPage() {
                 name="ticket_price"
                 value={formData.ticket_price}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-brand-link focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
               <span className="text-[10px] text-slate-400 mt-0.5 block">
                 Las órdenes ya emitidas conservan su precio histórico.
@@ -236,7 +236,7 @@ export default function AdminConfiguracionPage() {
               rows={2}
               value={formData.raffle_description}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
           </div>
 
@@ -250,7 +250,7 @@ export default function AdminConfiguracionPage() {
                 rows={3}
                 value={formData.prizes}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
 
@@ -263,16 +263,16 @@ export default function AdminConfiguracionPage() {
                 rows={3}
                 value={formData.draw_date}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
           </div>
         </div>
 
         {/* BLOQUE 2: CONDICIONES DE RESERVAS */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-            <Clock className="w-4 h-4 text-emerald-700" />
+            <Clock className="w-4 h-4 text-brand-link" />
             Condiciones de Reservas y Disponibilidad
           </h3>
 
@@ -288,7 +288,7 @@ export default function AdminConfiguracionPage() {
                 name="reserve_hours"
                 value={formData.reserve_hours}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
               <span className="text-[10px] text-slate-400 mt-0.5 block">
                 Tiempo que el comprador tiene para enviar comprobante antes de liberar el número.
@@ -303,7 +303,7 @@ export default function AdminConfiguracionPage() {
                 name="public_reservations_enabled"
                 value={formData.public_reservations_enabled}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               >
                 <option value="true">Abierta (Cualquiera puede solicitar números)</option>
                 <option value="false">Pausada (Solo consulta, no se aceptan nuevas reservas)</option>
@@ -320,15 +320,15 @@ export default function AdminConfiguracionPage() {
               rows={3}
               value={formData.rules_terms}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none font-sans"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-sans"
             />
           </div>
         </div>
 
         {/* BLOQUE 3: DATOS BANCARIOS Y CONTACTO WHATSAPP */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-            <Landmark className="w-4 h-4 text-emerald-700" />
+            <Landmark className="w-4 h-4 text-brand-link" />
             Datos Bancarios para Transferencias e Instrucciones
           </h3>
 
@@ -343,7 +343,7 @@ export default function AdminConfiguracionPage() {
                 name="bank_alias"
                 value={formData.bank_alias}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono text-emerald-700 font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono text-brand-link font-bold focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
 
@@ -357,7 +357,7 @@ export default function AdminConfiguracionPage() {
                 name="bank_cbu"
                 value={formData.bank_cbu}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
 
@@ -371,7 +371,7 @@ export default function AdminConfiguracionPage() {
                 name="bank_name"
                 value={formData.bank_name}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
 
@@ -385,7 +385,7 @@ export default function AdminConfiguracionPage() {
                 name="bank_holder"
                 value={formData.bank_holder}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
           </div>
@@ -405,7 +405,7 @@ export default function AdminConfiguracionPage() {
                   name="contact_phone"
                   value={formData.contact_phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -424,7 +424,7 @@ export default function AdminConfiguracionPage() {
                   name="contact_phone_secondary"
                   value={formData.contact_phone_secondary}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -439,7 +439,7 @@ export default function AdminConfiguracionPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-8 py-3 rounded-2xl text-sm transition shadow-lg flex items-center gap-2 disabled:opacity-50"
+            className="bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 py-3 rounded-2xl text-sm transition shadow-lg flex items-center gap-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? 'Guardando...' : 'Guardar Configuración'}</span>
@@ -448,9 +448,9 @@ export default function AdminConfiguracionPage() {
       </form>
 
       {/* BLOQUE 4: CAMBIO DE CONTRASEÑA DESDE EL PANEL WEB */}
-      <form onSubmit={handlePasswordChange} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+      <form onSubmit={handlePasswordChange} className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <Lock className="w-4 h-4 text-emerald-700" />
+          <Lock className="w-4 h-4 text-brand-link" />
           Seguridad de Mi Cuenta — Cambiar Contraseña
         </h3>
         <p className="text-xs text-slate-500">
@@ -466,7 +466,7 @@ export default function AdminConfiguracionPage() {
 
         {pwdError && (
           <div className="p-3 bg-red-50 border border-red-300 text-red-800 text-xs rounded-xl flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
             <span>{pwdError}</span>
           </div>
         )}
@@ -481,7 +481,7 @@ export default function AdminConfiguracionPage() {
               required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
           </div>
 
@@ -495,7 +495,7 @@ export default function AdminConfiguracionPage() {
               minLength={8}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
           </div>
 
@@ -509,7 +509,7 @@ export default function AdminConfiguracionPage() {
               minLength={8}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
           </div>
         </div>
@@ -518,7 +518,7 @@ export default function AdminConfiguracionPage() {
           <button
             type="submit"
             disabled={changingPassword}
-            className="bg-slate-800 hover:bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow flex items-center gap-2 disabled:opacity-50"
+            className="bg-night-800 hover:bg-night-700 border border-night-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow flex items-center gap-2 disabled:opacity-50"
           >
             <Lock className="w-3.5 h-3.5" />
             <span>{changingPassword ? 'Actualizando...' : 'Actualizar Mi Contraseña'}</span>
@@ -527,9 +527,9 @@ export default function AdminConfiguracionPage() {
       </form>
 
       {/* BLOQUE 5: RESPALDOS EN LA NUBE Y EXPORTACIÓN */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+      <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <Database className="w-4 h-4 text-emerald-700" />
+          <Database className="w-4 h-4 text-brand-link" />
           Copias de Seguridad en la Nube y Exportación para Excel
         </h3>
         <p className="text-xs text-slate-500">
@@ -539,7 +539,7 @@ export default function AdminConfiguracionPage() {
         <div className="flex flex-wrap gap-3 pt-1">
           <a
             href="/api/admin/backup"
-            className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm"
+            className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>Descargar Respaldo Completo (.JSON)</span>

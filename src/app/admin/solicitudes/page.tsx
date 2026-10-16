@@ -218,14 +218,14 @@ export default function AdminSolicitudesPage() {
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <Link
             href="/admin/compradores"
-            className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-3 py-2 rounded-xl transition shadow-sm"
+            className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 hover:bg-brand-100 text-emerald-800 border border-emerald-300 font-bold px-3 py-2 rounded-xl transition shadow-sm"
           >
             <span>Agrupado por Celular</span>
           </Link>
 
           <button
             onClick={fetchOrders}
-            className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm"
+            className="inline-flex items-center gap-1.5 text-xs bg-surface hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Actualizar</span>
@@ -241,7 +241,7 @@ export default function AdminSolicitudesPage() {
       )}
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-surface p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Selector de Estados */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
           {[
@@ -256,7 +256,7 @@ export default function AdminSolicitudesPage() {
               onClick={() => { setStatusFilter(tab.id); setPage(1); }}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition whitespace-nowrap ${
                 statusFilter === tab.id
-                  ? 'bg-slate-900 text-white font-bold'
+                  ? 'bg-brand-600 text-white font-bold'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
             >
@@ -272,11 +272,11 @@ export default function AdminSolicitudesPage() {
             placeholder="Buscar por código, nombre o celular..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-64 px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full md:w-64 px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
           />
           <button
             type="submit"
-            className="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition"
+            className="bg-night-800 hover:bg-night-700 border border-night-700 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition"
           >
             Buscar
           </button>
@@ -284,7 +284,7 @@ export default function AdminSolicitudesPage() {
       </div>
 
       {/* Listado de Pedidos */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-slate-400 text-xs">Cargando solicitudes...</div>
         ) : orders.length === 0 ? (
@@ -332,14 +332,14 @@ export default function AdminSolicitudesPage() {
                           target="_blank" 
                           rel="noopener noreferrer"
                           title="Enviar comprobante por WhatsApp al comprador"
-                          className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-mono text-[11px]"
+                          className="inline-flex items-center gap-1 text-brand-link hover:underline font-mono text-[11px]"
                         >
                           <Phone className="w-3 h-3" />
                           <span>{ord.buyer_phone}</span>
                         </a>
                         <Link
                           href={`/admin/compradores?search=${encodeURIComponent(ord.buyer_phone)}`}
-                          className="text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-800 border border-slate-200 px-1.5 py-0.5 rounded font-medium transition"
+                          className="text-[10px] bg-slate-100 hover:bg-brand-50 text-slate-600 hover:text-brand-link border border-slate-200 px-1.5 py-0.5 rounded font-medium transition"
                           title="Ver todas las compras y el total de números de este celular"
                         >
                           Ver total →
@@ -375,7 +375,7 @@ export default function AdminSolicitudesPage() {
                         onClick={() => handleTogglePaymentMethod(ord)}
                         disabled={actionLoading === ord.id}
                         title="Hacé clic para cambiar entre Efectivo y Transferencia"
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 text-xs font-medium transition"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-brand-50 hover:text-brand-link border border-slate-200 hover:border-brand-300 text-xs font-medium transition"
                       >
                         <span>{ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}</span>
                         <ArrowLeftRight className="w-3 h-3 text-slate-400" />
@@ -407,7 +407,7 @@ export default function AdminSolicitudesPage() {
                         <button
                           onClick={() => handleConfirmPayment(ord.id)}
                           disabled={actionLoading === ord.id}
-                          className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm"
+                          className="bg-brand-600 hover:bg-brand-700 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm"
                         >
                           Confirmar Pago
                         </button>
@@ -430,7 +430,7 @@ export default function AdminSolicitudesPage() {
                         href={waVoucherUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-medium transition"
+                        className="inline-flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white px-2.5 py-1 rounded-lg text-xs font-medium transition"
                         title="Enviar comprobante digital por WhatsApp"
                       >
                         <Phone className="w-3.5 h-3.5" />
@@ -461,7 +461,7 @@ export default function AdminSolicitudesPage() {
                       <button
                         onClick={() => handleDeleteOrder(ord)}
                         disabled={actionLoading === ord.id}
-                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2 py-1 rounded-lg text-xs font-semibold transition"
+                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white border border-red-200 hover:border-red-600 px-2 py-1 rounded-lg text-xs font-semibold transition"
                         title="Eliminar registro definitivamente y liberar sus números"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -483,7 +483,7 @@ export default function AdminSolicitudesPage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Anterior
             </button>
@@ -491,7 +491,7 @@ export default function AdminSolicitudesPage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Siguiente
             </button>

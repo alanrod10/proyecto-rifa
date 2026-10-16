@@ -70,7 +70,7 @@ export default function AdminNumerosPage() {
 
         <button
           onClick={fetchNumbers}
-          className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 text-xs bg-surface hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Actualizar</span>
@@ -78,7 +78,7 @@ export default function AdminNumerosPage() {
       </div>
 
       {/* Filtros y Buscador */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-surface p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
           {[
             { id: 'all', label: 'Todos (80.000)' },
@@ -91,7 +91,7 @@ export default function AdminNumerosPage() {
               onClick={() => { setStatus(tab.id); setPage(1); }}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition whitespace-nowrap ${
                 status === tab.id
-                  ? 'bg-slate-900 text-white font-bold'
+                  ? 'bg-brand-600 text-white font-bold'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
             >
@@ -106,11 +106,11 @@ export default function AdminNumerosPage() {
             placeholder="Buscar número específico (ej: 54321)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full md:w-64 px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full md:w-64 px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
           />
           <button
             type="submit"
-            className="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition"
+            className="bg-night-800 hover:bg-night-700 border border-night-700 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition"
           >
             Buscar
           </button>
@@ -118,7 +118,7 @@ export default function AdminNumerosPage() {
       </div>
 
       {/* Tabla de Números */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-slate-400 text-xs">Cargando números...</div>
         ) : numbers.length === 0 ? (
@@ -157,7 +157,7 @@ export default function AdminNumerosPage() {
 
                     <td className="py-3 px-4 font-mono font-semibold text-slate-700">
                       {item.order_code ? (
-                        <Link href={`/admin/solicitudes?search=${item.order_code}`} className="text-emerald-700 hover:underline">
+                        <Link href={`/admin/solicitudes?search=${item.order_code}`} className="text-brand-link hover:underline">
                           {item.order_code}
                         </Link>
                       ) : (
@@ -183,7 +183,7 @@ export default function AdminNumerosPage() {
                           })}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-emerald-600 hover:underline font-semibold"
+                          className="inline-flex items-center gap-1 text-brand-link hover:underline font-semibold"
                           title="Enviar comprobante por WhatsApp"
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
@@ -211,7 +211,7 @@ export default function AdminNumerosPage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Anterior
             </button>
@@ -219,7 +219,7 @@ export default function AdminNumerosPage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Siguiente
             </button>

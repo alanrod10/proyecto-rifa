@@ -1,5 +1,6 @@
 'use client';
 
+import ThemeToggle from '@/components/ThemeToggle';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -67,8 +68,8 @@ export default function AdminLayout({
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-        <p className="text-sm font-medium animate-pulse text-emerald-400">Verificando credenciales de administrador...</p>
+      <div className="theme-night min-h-screen bg-night-900 flex items-center justify-center text-white">
+        <p className="text-sm font-medium animate-pulse text-brand-400">Verificando credenciales de administrador...</p>
       </div>
     );
   }
@@ -84,34 +85,36 @@ export default function AdminLayout({
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-800">
+    <div className="min-h-screen flex flex-col bg-page text-slate-800">
       {/* Barra Superior del Panel */}
-      <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30">
+      <header className="theme-night bg-night-900 text-white border-b border-night-800 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-1.5 bg-emerald-600 rounded-lg text-white">
+            <div className="p-1.5 bg-brand-600 rounded-lg text-white">
               <Ticket className="w-5 h-5" />
             </div>
             <div>
               <span className="font-extrabold text-sm tracking-tight block">Panel de Administración</span>
-              <span className="text-[11px] text-emerald-400">Rifa 80.000 Números</span>
+              <span className="text-[11px] text-brand-400">Rifa 80.000 Números</span>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
             {admin && (
-              <div className="hidden sm:flex items-center space-x-2 bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-xs">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="hidden sm:flex items-center space-x-2 bg-night-800 border border-night-700 px-3 py-1 rounded-full text-xs">
+                <Shield className="w-3.5 h-3.5 text-brand-400" />
                 <span className="text-slate-300">
                   {admin.displayName} <span className="text-slate-400">(@{admin.username})</span>
                 </span>
               </div>
             )}
 
+            <ThemeToggle variant="night" />
+
             <Link
               href="/"
               target="_blank"
-              className="text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1 transition"
+              className="text-xs text-slate-300 hover:text-white bg-night-800 hover:bg-night-700 px-2.5 py-1.5 rounded-lg border border-night-700 flex items-center gap-1 transition"
             >
               <span>Ver Portal</span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -128,7 +131,7 @@ export default function AdminLayout({
         </div>
 
         {/* Barra de Navegación Horizontal */}
-        <nav className="bg-slate-950 border-t border-slate-800/80 px-4 overflow-x-auto">
+        <nav className="bg-night-950 border-t border-night-800/80 px-4 overflow-x-auto">
           <div className="max-w-7xl mx-auto flex space-x-1 py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -139,8 +142,8 @@ export default function AdminLayout({
                   href={item.href}
                   className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition ${
                     isActive
-                      ? 'bg-emerald-600 text-white font-bold'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                      ? 'bg-brand-600 text-white font-bold'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-night-800'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />

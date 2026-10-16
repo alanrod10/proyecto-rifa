@@ -1,5 +1,6 @@
 'use client';
 
+import ThemeToggle from '@/components/ThemeToggle';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -88,9 +89,9 @@ export default function BuyerPrivateOrderPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-page">
         <div className="text-center space-y-3">
-          <RefreshCw className="w-8 h-8 text-emerald-700 animate-spin mx-auto" />
+          <RefreshCw className="w-8 h-8 text-brand-link animate-spin mx-auto" />
           <p className="text-sm font-medium text-slate-600">Cargando comprobante digital...</p>
         </div>
       </div>
@@ -99,9 +100,9 @@ export default function BuyerPrivateOrderPage() {
 
   if (error || !order || !raffle) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-        <div className="bg-white max-w-md w-full p-6 rounded-2xl border border-slate-200 shadow-xl text-center space-y-4">
-          <div className="p-3 bg-red-100 text-red-600 rounded-full w-12 h-12 mx-auto flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-page">
+        <div className="bg-surface max-w-md w-full p-6 rounded-2xl border border-slate-200 shadow-xl text-center space-y-4">
+          <div className="p-3 bg-red-100 text-red-600 dark:text-red-400 rounded-full w-12 h-12 mx-auto flex items-center justify-center">
             <AlertCircle className="w-6 h-6" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Enlace no encontrado</h2>
@@ -111,7 +112,7 @@ export default function BuyerPrivateOrderPage() {
           <div className="pt-2 flex flex-col gap-2">
             <Link
               href="/"
-              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium py-2.5 rounded-xl text-sm transition"
+              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-xl text-sm transition"
             >
               Ir al Portal Principal
             </Link>
@@ -151,40 +152,43 @@ export default function BuyerPrivateOrderPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-100 py-6 px-4 flex flex-col items-center">
+    <div className="min-h-screen bg-page py-6 px-4 flex flex-col items-center">
       {/* Botón Volver */}
       <div className="max-w-xl w-full mb-4 flex items-center justify-between">
         <Link 
           href="/" 
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700 transition"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-brand-link transition"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver a la portada
         </Link>
-        <button
-          onClick={() => fetchOrderData(true)}
-          disabled={refreshing}
-          className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-emerald-700 bg-white border border-slate-300 px-2.5 py-1 rounded-lg transition"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          Actualizar estado
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchOrderData(true)}
+            disabled={refreshing}
+            className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-brand-link bg-surface border border-slate-300 px-2.5 py-1 rounded-lg transition"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            Actualizar estado
+          </button>
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Tarjeta Tipo Boleto / Comprobante */}
-      <div className="max-w-xl w-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+      <div className="max-w-xl w-full bg-surface rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
         {/* Cabecera del Comprobante */}
-        <div className="bg-emerald-800 text-white p-6 relative">
+        <div className="theme-night bg-gradient-to-br from-night-900 to-night-950 text-white p-6 relative">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold tracking-wider text-emerald-200">
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-300">
               Comprobante de Reserva
             </span>
-            <span className="font-mono font-bold text-sm bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-600/40">
+            <span className="font-mono font-bold text-sm bg-white/10 px-3 py-1 rounded-full border border-white/15">
               Ref: {order.code}
             </span>
           </div>
           <h2 className="text-2xl font-black mt-2">{raffle.name}</h2>
-          <p className="text-xs text-emerald-100 mt-1">
+          <p className="text-xs text-slate-300 mt-1">
             Titular: <strong className="text-white">{order.buyer_name}</strong> •{' '}
             <a
               href={buyerWaVoucherUrl}
@@ -200,7 +204,7 @@ export default function BuyerPrivateOrderPage() {
           {/* Insignia de Estado */}
           <div className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black shadow-sm">
             {order.payment_status === 'paid' && (
-              <span className="bg-emerald-500 text-white flex items-center gap-1.5 px-3 py-1 rounded-full">
+              <span className="bg-emerald-700 text-white flex items-center gap-1.5 px-3 py-1 rounded-full">
                 <CheckCircle className="w-4 h-4" />
                 PAGO CONFIRMADO — PARTICIPANDO
               </span>
@@ -218,7 +222,7 @@ export default function BuyerPrivateOrderPage() {
               </span>
             )}
             {order.payment_status === 'cancelled' && (
-              <span className="bg-red-500 text-white flex items-center gap-1.5 px-3 py-1 rounded-full">
+              <span className="bg-red-600 text-white flex items-center gap-1.5 px-3 py-1 rounded-full">
                 <XCircle className="w-4 h-4" />
                 RESERVA CANCELADA
               </span>
@@ -244,9 +248,9 @@ export default function BuyerPrivateOrderPage() {
               {order.numbers.map(num => (
                 <div 
                   key={num}
-                  className="bg-emerald-700 text-white font-mono font-bold text-sm px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1"
+                  className="bg-brand-600 text-white font-mono font-bold text-sm px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1"
                 >
-                  <Ticket className="w-3.5 h-3.5 text-emerald-300" />
+                  <Ticket className="w-3.5 h-3.5 text-brand-200" />
                   <span>{formatTicketNumber(num)}</span>
                 </div>
               ))}
@@ -271,7 +275,7 @@ export default function BuyerPrivateOrderPage() {
             </div>
             <div className="border-t border-slate-200 pt-2 flex justify-between text-sm font-extrabold text-slate-900">
               <span>Total:</span>
-              <span className="text-emerald-700 text-base">{formatCurrency(order.total_amount)}</span>
+              <span className="text-brand-link text-base">{formatCurrency(order.total_amount)}</span>
             </div>
           </div>
 
@@ -294,8 +298,8 @@ export default function BuyerPrivateOrderPage() {
               {order.payment_method === 'transfer' ? (
                 <div className="space-y-1.5 text-slate-700">
                   <p>Realizá la transferencia por <strong>{formatCurrency(order.total_amount)}</strong> a la siguiente cuenta:</p>
-                  <div className="p-3 bg-white rounded-xl border border-amber-200 space-y-1 font-mono text-xs">
-                    {raffle.bank_alias && <p><span className="font-sans font-semibold text-slate-500">Alias:</span> <strong className="text-emerald-700 font-bold text-sm">{raffle.bank_alias}</strong></p>}
+                  <div className="p-3 bg-surface rounded-xl border border-amber-200 space-y-1 font-mono text-xs">
+                    {raffle.bank_alias && <p><span className="font-sans font-semibold text-slate-500">Alias:</span> <strong className="text-brand-link font-bold text-sm">{raffle.bank_alias}</strong></p>}
                     {raffle.bank_cbu && <p><span className="font-sans font-semibold text-slate-500">CBU:</span> {raffle.bank_cbu}</p>}
                     {raffle.bank_name && <p><span className="font-sans font-semibold text-slate-500">Banco:</span> {raffle.bank_name}</p>}
                     {raffle.bank_holder && <p><span className="font-sans font-semibold text-slate-500">Titular:</span> {raffle.bank_holder}</p>}
@@ -321,7 +325,7 @@ export default function BuyerPrivateOrderPage() {
                   href={whatsappUrlAlan}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow"
+                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow"
                 >
                   <Phone className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>
@@ -335,7 +339,7 @@ export default function BuyerPrivateOrderPage() {
                   href={whatsappUrlYilda}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow"
+                  className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow"
                 >
                   <Phone className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>
@@ -362,7 +366,7 @@ export default function BuyerPrivateOrderPage() {
                 href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(`Hola Alan! Te escribo por mi reserva ${order.code}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-700 font-semibold hover:underline"
+                className="text-brand-link font-semibold hover:underline"
               >
                 Alan ({phoneAlan})
               </a>
@@ -371,7 +375,7 @@ export default function BuyerPrivateOrderPage() {
                 href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(`Hola Yilda! Te escribo por mi reserva ${order.code}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-700 font-semibold hover:underline"
+                className="text-brand-link font-semibold hover:underline"
               >
                 Yilda ({phoneYilda})
               </a>
@@ -384,7 +388,7 @@ export default function BuyerPrivateOrderPage() {
               href={buyerWaVoucherUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
             >
               <Share2 className="w-4 h-4" />
               Enviar comprobante al WhatsApp de {order.buyer_name}

@@ -140,7 +140,7 @@ export default function AdminVentasPage() {
                 })}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-1.5 rounded-lg transition shadow-sm"
+                className="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white font-bold px-3.5 py-1.5 rounded-lg transition shadow-sm"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Enviar comprobante por WhatsApp</span>
@@ -149,7 +149,7 @@ export default function AdminVentasPage() {
             <Link
               href={`/pedido/${successOrder.private_token}`}
               target="_blank"
-              className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1.5 rounded-lg transition"
+              className="bg-brand-700 hover:bg-brand-800 text-white font-bold px-3 py-1.5 rounded-lg transition"
             >
               Abrir comprobante digital
             </Link>
@@ -165,12 +165,12 @@ export default function AdminVentasPage() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 p-4 rounded-2xl flex items-center gap-2 text-xs text-red-700">
-          <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+      <form onSubmit={handleSubmit} className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -182,7 +182,7 @@ export default function AdminVentasPage() {
               placeholder="Ej: Roberto Gomez"
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
           </div>
 
@@ -200,7 +200,7 @@ export default function AdminVentasPage() {
                 placeholder="Ej: 3884123456"
                 value={buyerPhone}
                 onChange={(e) => setBuyerPhone(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
+                className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono"
               />
             </div>
             <span className="text-[10px] text-slate-400 mt-0.5 block">
@@ -222,12 +222,12 @@ export default function AdminVentasPage() {
               value={numbersInput}
               onChange={(e) => setNumbersInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddManualNumbers(); } }}
-              className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
             <button
               type="button"
               onClick={handleAddManualNumbers}
-              className="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-xs transition"
+              className="bg-night-800 hover:bg-night-700 border border-night-700 text-white font-medium px-4 py-2 rounded-xl text-xs transition"
             >
               Agregar
             </button>
@@ -269,7 +269,7 @@ export default function AdminVentasPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedNumbers([])}
-                  className="text-red-600 hover:underline"
+                  className="text-red-600 dark:text-red-400 hover:underline"
                 >
                   Quitar todos
                 </button>
@@ -279,7 +279,7 @@ export default function AdminVentasPage() {
                 {selectedNumbers.map((num) => (
                   <span
                     key={num}
-                    className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-lg font-mono text-xs font-bold"
+                    className="inline-flex items-center gap-1 bg-brand-100 text-slate-900 border border-brand-200 px-2 py-0.5 rounded-lg font-mono text-xs font-bold"
                   >
                     {formatTicketNumber(num)}
                     <button
@@ -304,7 +304,7 @@ export default function AdminVentasPage() {
             </label>
             <div className="grid grid-cols-2 gap-2">
               <label className={`flex items-center gap-1.5 p-2.5 border rounded-xl cursor-pointer text-xs font-medium ${
-                paymentMethod === 'cash' ? 'border-emerald-600 bg-emerald-50 text-emerald-900' : 'border-slate-200'
+                paymentMethod === 'cash' ? 'border-brand-600 bg-brand-50 text-slate-900' : 'border-slate-200'
               }`}>
                 <input
                   type="radio"
@@ -313,12 +313,12 @@ export default function AdminVentasPage() {
                   checked={paymentMethod === 'cash'}
                   onChange={() => setPaymentMethod('cash')}
                 />
-                <Banknote className="w-4 h-4 text-emerald-700" />
+                <Banknote className="w-4 h-4 text-brand-link" />
                 <span>Efectivo</span>
               </label>
 
               <label className={`flex items-center gap-1.5 p-2.5 border rounded-xl cursor-pointer text-xs font-medium ${
-                paymentMethod === 'transfer' ? 'border-emerald-600 bg-emerald-50 text-emerald-900' : 'border-slate-200'
+                paymentMethod === 'transfer' ? 'border-brand-600 bg-brand-50 text-slate-900' : 'border-slate-200'
               }`}>
                 <input
                   type="radio"
@@ -327,7 +327,7 @@ export default function AdminVentasPage() {
                   checked={paymentMethod === 'transfer'}
                   onChange={() => setPaymentMethod('transfer')}
                 />
-                <Landmark className="w-4 h-4 text-emerald-700" />
+                <Landmark className="w-4 h-4 text-brand-link" />
                 <span>Transferencia</span>
               </label>
             </div>
@@ -339,7 +339,7 @@ export default function AdminVentasPage() {
             </label>
             <div className="grid grid-cols-2 gap-2">
               <label className={`flex items-center gap-1.5 p-2.5 border rounded-xl cursor-pointer text-xs font-medium ${
-                isPaid ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200'
+                isPaid ? 'border-brand-600 bg-brand-50 text-slate-900 font-bold' : 'border-slate-200'
               }`}>
                 <input
                   type="radio"
@@ -375,7 +375,7 @@ export default function AdminVentasPage() {
             placeholder="Ej: Entregó $500 en efectivo en mano"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
           />
         </div>
 
@@ -384,7 +384,7 @@ export default function AdminVentasPage() {
           <button
             type="submit"
             disabled={loading || selectedNumbers.length === 0}
-            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow disabled:opacity-50 flex items-center gap-2"
+            className="bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow disabled:opacity-50 flex items-center gap-2"
           >
             <ShoppingCart className="w-4 h-4" />
             <span>{loading ? 'Guardando...' : 'Confirmar y Guardar Venta'}</span>

@@ -1,33 +1,330 @@
 @import "tailwindcss";
 
-:root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+/*
+ * SISTEMA DE DISEÑO — Proyecto RIFA
+ * ---------------------------------------------------------------
+ * Tema oscuro (por defecto) y claro. Se controla con el atributo
+ * `data-theme` en <html> (ver ThemeToggle y el script de layout.tsx).
+ *
+ * Tokens semánticos propios: --background, --surface, --text-*,
+ *   --border-subtle, --primary*, --accent-warm, --accent-cool, --focus.
+ *
+ * Las clases de utilidad existentes (slate / emerald / amber / red /
+ * blue / purple) se re-mapean aquí mediante variables, de modo que
+ * TODA la interfaz cambia de tema sin editar componente por componente:
+ *   slate   → neutros (invertidos en oscuro)
+ *   brand   → azul eléctrico (acción principal)
+ *   emerald → éxito / pagado (verde)
+ *   amber   → terracota (cálido: reservado / pendiente / premios)
+ *   blue    → turquesa (acento secundario / información)
+ *   red     → error / destructivo (rojo, distinto de la terracota)
+ *   night   → azul noche constante (cabeceras, pies y paneles oscuros)
+ *   surface → superficie de tarjetas / campos
+ */
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #1d4ed8;
+  --color-brand-700: #1e40af;
+  --color-brand-800: #1e3a8a;
+
+  --color-night-700: #243352;
+  --color-night-800: #182540;
+  --color-night-900: #101b2d;
+  --color-night-950: #0b1220;
+
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-brand-link: #1d4ed8;
+  --color-page: #f1f5f9;
+
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-slide-up: slide-up 0.25s ease-out both;
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ============================ TEMA CLARO ============================ */
+:root,
+.theme-night {
+  color-scheme: light;
+
+  --background: #f1f5f9;
+  --background-alt: #e8eef6;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-disabled: #94a3b8;
+  --border-subtle: #dbe3ee;
+  --separator: #e6ebf3;
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --accent-warm: #c25337;
+  --accent-cool: #0891b2;
+  --accent-cool-soft: #cffafe;
+  --focus: #1d4ed8;
+
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-brand-link: #1d4ed8;
+  --color-page: #f1f5f9;
+
+  /* Neutros */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+
+  /* Éxito */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+
+  /* Terracota (cálido) */
+  --color-amber-50: #fbf1ed;
+  --color-amber-100: #f6e1d9;
+  --color-amber-200: #ecc5b7;
+  --color-amber-300: #e0a38e;
+  --color-amber-400: #d1795c;
+  --color-amber-500: #c25337;
+  --color-amber-600: #a8452c;
+  --color-amber-700: #8f3a24;
+  --color-amber-800: #75301e;
+  --color-amber-900: #5a2618;
+  --color-amber-950: #3a160f;
+
+  /* Error */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-950: #450a0a;
+
+  /* Turquesa / aqua (acento secundario e información) */
+  --color-blue-50: #ecfeff;
+  --color-blue-100: #cffafe;
+  --color-blue-200: #a5f3fc;
+  --color-blue-600: #0891b2;
+  --color-blue-700: #0e7490;
+  --color-blue-800: #155e75;
+
+  /* Violeta (venta directa) */
+  --color-purple-50: #f5f3ff;
+  --color-purple-100: #ede9fe;
+  --color-purple-700: #6d28d9;
+  --color-purple-800: #5b21b6;
+}
+
+/* ============================ TEMA OSCURO =========================== */
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  --background: #111318;
+  --background-alt: #101b2d;
+  --surface: #191e28;
+  --surface-elevated: #202632;
+  --text-primary: #f3f4f6;
+  --text-secondary: #a6b0c2;
+  --text-disabled: #6b768a;
+  --border-subtle: #30394a;
+  --separator: #262d3b;
+  --primary: #1d4ed8;
+  --primary-hover: #2563eb;
+  --accent-warm: #c25337;
+  --accent-cool: #0891b2;
+  --accent-cool-soft: #0b2a35;
+  --focus: #60a5fa;
+
+  --color-surface: #191e28;
+  --color-surface-elevated: #202632;
+  --color-brand-link: #7fb0ff;
+  --color-page: #111318;
+
+  --color-slate-50: #151922;
+  --color-slate-100: #202632;
+  --color-slate-200: #30394a;
+  --color-slate-300: #3f4a60;
+  --color-slate-400: #8a95aa;
+  --color-slate-500: #a6b0c2;
+  --color-slate-600: #b9c2d2;
+  --color-slate-700: #cdd4e0;
+  --color-slate-800: #e3e8f0;
+  --color-slate-900: #f3f4f6;
+  --color-slate-950: #ffffff;
+
+  --color-brand-50: #14213d;
+  --color-brand-100: #182a50;
+  --color-brand-200: #1e3a8a;
+
+  --color-emerald-50: #0f2a22;
+  --color-emerald-100: #12352a;
+  --color-emerald-200: #1c5a43;
+  --color-emerald-300: #4fbf94;
+  --color-emerald-400: #3dd598;
+  --color-emerald-500: #34d399;
+  --color-emerald-600: #3dd598;
+  --color-emerald-700: #5ee0ae;
+  --color-emerald-800: #86ebc4;
+  --color-emerald-900: #b4f3da;
+  --color-emerald-950: #0a1f18;
+
+  --color-amber-50: #2b1d1a;
+  --color-amber-100: #33231f;
+  --color-amber-200: #5c3b31;
+  --color-amber-300: #e8a48d;
+  --color-amber-400: #e08b6f;
+  --color-amber-500: #d96b4b;
+  --color-amber-600: #e58e72;
+  --color-amber-700: #eda78f;
+  --color-amber-800: #f3bca8;
+  --color-amber-900: #f8d3c5;
+  --color-amber-950: #2b1d1a;
+
+  --color-red-50: #2a1517;
+  --color-red-100: #3a1a1d;
+  --color-red-200: #6b2a2f;
+  --color-red-300: #f08a8a;
+  --color-red-400: #f87171;
+  --color-red-500: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-red-950: #2a1517;
+
+  --color-blue-50: #0b2a35;
+  --color-blue-100: #0e3442;
+  --color-blue-200: #155e75;
+  --color-blue-600: #22b8d6;
+  --color-blue-700: #4fd1e8;
+  --color-blue-800: #8ee3f3;
+
+  --color-purple-50: #251b3d;
+  --color-purple-100: #2d2150;
+  --color-purple-700: #c4b0f5;
+  --color-purple-800: #d8ccfa;
+}
+
+/* Zonas "azul noche" (cabeceras, pies, paneles): conservan los neutros
+   claros sobre fondo oscuro también en modo claro. */
+.theme-night {
+  color: #f1f5f9;
+}
+
+/* ============================== BASE ================================ */
+html {
+  background-color: var(--background);
 }
 
 body {
   background-color: var(--background);
-  color: var(--foreground);
+  color: var(--text-primary);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar for number grids */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  /* Foco de teclado visible y consistente */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-slate-400);
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    background-color: var(--surface);
+    color: var(--text-primary);
+  }
+
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    opacity: 0.6;
+  }
+
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Barras de desplazamiento */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-slate-100);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: var(--color-slate-300);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-slate-400);
+}
+
+/* Movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

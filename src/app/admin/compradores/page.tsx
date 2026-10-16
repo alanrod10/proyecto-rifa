@@ -213,7 +213,7 @@ export default function AdminCompradoresPage() {
 
         <button
           onClick={() => fetchBuyers()}
-          className="inline-flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 text-xs bg-surface hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-3 py-2 rounded-xl transition shadow-sm self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Actualizar</span>
@@ -228,24 +228,24 @@ export default function AdminCompradoresPage() {
       )}
 
       {/* Buscador */}
-      <form onSubmit={handleSearch} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
+      <form onSubmit={handleSearch} className="bg-surface p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
         <input
           type="text"
           placeholder="Buscar por cualquier nombre usado, número de celular, código o número de rifa..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
         />
         <button
           type="submit"
-          className="bg-slate-800 hover:bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium transition"
+          className="bg-night-800 hover:bg-night-700 border border-night-700 text-white text-xs px-4 py-2 rounded-xl font-medium transition"
         >
           Buscar
         </button>
       </form>
 
       {/* Listado de Compradores Agrupados por Teléfono */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-slate-400 text-xs">Cargando compradores...</div>
         ) : buyers.length === 0 ? (
@@ -276,7 +276,7 @@ export default function AdminCompradoresPage() {
                 <div key={buyer.id} className="p-4 sm:p-5 hover:bg-slate-50/60 transition">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl flex-shrink-0">
+                      <div className="p-2.5 bg-brand-100 text-brand-link rounded-xl flex-shrink-0">
                         <Users className="w-5 h-5" />
                       </div>
                       <div className="space-y-1">
@@ -287,7 +287,7 @@ export default function AdminCompradoresPage() {
                             target="_blank" 
                             rel="noopener noreferrer"
                             title="Enviar resumen con el TOTAL de números que tiene este celular por WhatsApp"
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 font-mono text-xs font-bold transition"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-brand-100 font-mono text-xs font-bold transition"
                           >
                             <Phone className="w-3 h-3 text-emerald-600" />
                             <span>{buyer.phone}</span>
@@ -331,7 +331,7 @@ export default function AdminCompradoresPage() {
                     <div className="flex items-center justify-between lg:justify-end flex-wrap gap-2 w-full lg:w-auto">
                       <div className="text-right mr-2">
                         <span className="block text-[10px] text-slate-400 uppercase font-semibold">Total Pagado</span>
-                        <span className="text-sm font-bold text-emerald-700">
+                        <span className="text-sm font-bold text-brand-link">
                           {formatCurrency(buyer.total_paid_amount)}
                         </span>
                         {buyer.total_pending_amount > 0 && (
@@ -346,7 +346,7 @@ export default function AdminCompradoresPage() {
                           href={summaryWaUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
+                          className="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
                           title="Enviar mensaje por WhatsApp con el total acumulado de números de esta persona"
                         >
                           <Phone className="w-3.5 h-3.5" />
@@ -357,7 +357,7 @@ export default function AdminCompradoresPage() {
                       <button
                         onClick={() => handleDeleteBuyer(buyer)}
                         disabled={actionLoading}
-                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white border border-red-200 hover:border-red-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
                         title="Eliminar comprador y liberar todos sus números"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -441,7 +441,7 @@ export default function AdminCompradoresPage() {
                                 <div className="space-y-1">
                                   <div className="flex items-center flex-wrap gap-2">
                                     <span className="font-mono font-bold text-slate-800">{ord.code}</span>
-                                    <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium">
+                                    <span className="bg-surface border border-slate-200 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium">
                                       Anotado como: <strong>{ord.buyer_name || buyer.name}</strong>
                                     </span>
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -466,7 +466,7 @@ export default function AdminCompradoresPage() {
                                       onClick={() => handleTogglePaymentMethod(ord, ord.buyer_name || buyer.name)}
                                       disabled={actionLoading}
                                       title="Cambiar entre Efectivo y Transferencia"
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-emerald-400 text-[11px] text-slate-700 font-medium transition"
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface border border-slate-200 hover:border-brand-400 text-[11px] text-slate-700 font-medium transition"
                                     >
                                       <span>{ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}</span>
                                       <ArrowLeftRight className="w-3 h-3 text-slate-400" />
@@ -476,7 +476,7 @@ export default function AdminCompradoresPage() {
                                   <div className="flex flex-wrap gap-1 font-mono text-[11px] text-slate-700">
                                     <span>Números de esta compra:</span>
                                     {ord.numbers.map(n => (
-                                      <span key={n} className="bg-white px-1 rounded border border-slate-200">
+                                      <span key={n} className="bg-surface px-1 rounded border border-slate-200">
                                         {formatTicketNumber(n)}
                                       </span>
                                     ))}
@@ -491,7 +491,7 @@ export default function AdminCompradoresPage() {
                                     href={waLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
+                                    className="inline-flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
                                     title="Reenviar comprobante de esta compra puntual por WhatsApp"
                                   >
                                     <Phone className="w-3.5 h-3.5" />
@@ -501,7 +501,7 @@ export default function AdminCompradoresPage() {
                                   {/* Botón Copiar Token */}
                                   <button
                                     onClick={() => copyUrl(ord.private_token)}
-                                    className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
+                                    className="bg-surface hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
                                     title="Copiar enlace privado"
                                   >
                                     <Copy className="w-3.5 h-3.5 inline mr-1" />
@@ -511,7 +511,7 @@ export default function AdminCompradoresPage() {
                                   <Link
                                     href={`/pedido/${ord.private_token}`}
                                     target="_blank"
-                                    className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition"
+                                    className="p-1.5 bg-surface hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition"
                                     title="Abrir comprobante"
                                   >
                                     <ExternalLink className="w-3.5 h-3.5" />
@@ -521,7 +521,7 @@ export default function AdminCompradoresPage() {
                                   <button
                                     onClick={() => handleDeleteOrder(ord, ord.buyer_name || buyer.name)}
                                     disabled={actionLoading}
-                                    className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+                                    className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white border border-red-200 hover:border-red-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
                                     title="Eliminar este pedido y liberar sus números"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -548,7 +548,7 @@ export default function AdminCompradoresPage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Anterior
             </button>
@@ -556,7 +556,7 @@ export default function AdminCompradoresPage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
+              className="px-3 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40"
             >
               Siguiente
             </button>

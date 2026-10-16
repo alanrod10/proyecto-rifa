@@ -7,6 +7,7 @@ import {
   Copy, Phone, ArrowRight, ShieldCheck, HelpCircle, X, ChevronLeft, ChevronRight,
   Landmark, Banknote, Sparkles
 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import { formatTicketNumber, formatCurrency, formatWhatsAppPhone } from '@/lib/utils';
 
 interface RaffleSettings {
@@ -261,67 +262,72 @@ export default function PublicPortal() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Barra Superior */}
-      <header className="bg-emerald-800 text-white shadow-md sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Ticket className="w-7 h-7 text-emerald-300" />
-            <div>
-              <h1 className="font-bold text-lg leading-tight tracking-tight">Gran Rifa Familiar</h1>
-              <p className="text-xs text-emerald-200">80.000 números disponibles</p>
+      <header className="theme-night bg-gradient-to-r from-night-950 to-night-900 border-b border-white/10 text-white shadow-md sticky top-0 z-30">
+        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-600/20 border border-brand-400/30 shrink-0">
+              <Ticket className="w-6 h-6 text-brand-300" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="font-bold text-base sm:text-lg leading-tight tracking-tight truncate">Gran Rifa Familiar</h1>
+              <p className="text-[11px] sm:text-xs text-slate-300 truncate">80.000 números disponibles</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2 shrink-0">
             <Link 
               href="/consultar"
-              className="text-xs sm:text-sm bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-500/40 font-medium transition"
+              className="text-xs sm:text-sm bg-brand-600 hover:bg-brand-500 text-white px-3 py-2 rounded-xl border border-white/15 font-medium transition"
             >
               Ya tengo una reserva
             </Link>
             <Link
               href="/admin/login"
-              className="text-xs text-emerald-300 hover:text-white px-2 py-1 transition"
+              className="hidden sm:inline text-xs text-slate-300 hover:text-white px-2 py-1 transition"
             >
               Admin
             </Link>
+            <ThemeToggle variant="night" />
           </div>
         </div>
       </header>
 
       {/* Hero Principal */}
-      <section className="bg-gradient-to-b from-emerald-800 to-emerald-900 text-white py-10 px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-4">
-          <span className="inline-flex items-center gap-1.5 bg-emerald-700/60 text-emerald-200 text-xs sm:text-sm px-3 py-1 rounded-full border border-emerald-500/30">
-            <Sparkles className="w-4 h-4 text-amber-300" />
+      <section className="theme-night relative overflow-hidden bg-gradient-to-b from-night-900 to-night-950 text-white py-10 sm:py-14 px-4 pb-14">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(29,78,216,0.35),transparent)]" />
+        <div className="relative max-w-4xl mx-auto text-center space-y-4">
+          <span className="inline-flex items-center gap-1.5 bg-white/10 text-slate-200 text-xs sm:text-sm px-3 py-1 rounded-full border border-white/15">
+            <Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" />
             Objetivo solidario: Pro Terreno Familiar
           </span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
             {settings?.raffle_name || 'Gran Rifa Familiar pro Terreno'}
           </h2>
-          <p className="text-emerald-100 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+          <div aria-hidden="true" className="mx-auto h-1 w-12 rounded-full bg-amber-500" />
+          <p className="text-slate-300 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
             {settings?.raffle_description || 'Rifa solidaria familiar de 80.000 números para pagar las cuotas de nuestro lote.'}
           </p>
 
           {/* Tarjetas de Métricas Clave */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-3xl mx-auto">
-            <div className="bg-emerald-950/60 rounded-xl p-3 border border-emerald-700/40">
-              <span className="block text-xs text-emerald-300 font-medium">Valor por número</span>
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <span className="block text-xs text-slate-300 font-medium">Valor por número</span>
               <span className="text-xl sm:text-2xl font-bold text-amber-300">
                 {formatCurrency(unitPrice)}
               </span>
             </div>
-            <div className="bg-emerald-950/60 rounded-xl p-3 border border-emerald-700/40">
-              <span className="block text-xs text-emerald-300 font-medium">Total de números</span>
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <span className="block text-xs text-slate-300 font-medium">Total de números</span>
               <span className="text-xl sm:text-2xl font-bold text-white">80.000</span>
             </div>
-            <div className="bg-emerald-950/60 rounded-xl p-3 border border-emerald-700/40">
-              <span className="block text-xs text-emerald-300 font-medium">Disponibles</span>
-              <span className="text-xl sm:text-2xl font-bold text-emerald-300">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <span className="block text-xs text-slate-300 font-medium">Disponibles</span>
+              <span className="text-xl sm:text-2xl font-bold text-blue-200">
                 {stats?.available?.toLocaleString('es-AR') ?? '...'}
               </span>
             </div>
-            <div className="bg-emerald-950/60 rounded-xl p-3 border border-emerald-700/40">
-              <span className="block text-xs text-emerald-300 font-medium">Vendidos</span>
-              <span className="text-xl sm:text-2xl font-bold text-emerald-400">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <span className="block text-xs text-slate-300 font-medium">Vendidos</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-100">
                 {stats?.sold?.toLocaleString('es-AR') ?? '...'}
               </span>
             </div>
@@ -331,7 +337,7 @@ export default function PublicPortal() {
 
       {/* Sección Información del Sorteo (Premios y Fechas) */}
       <section className="max-w-5xl mx-auto px-4 -mt-4 relative z-10 w-full">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200/80 p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-surface rounded-2xl shadow-xl border border-slate-200/80 p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-start space-x-3.5">
             <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-200">
               <Sparkles className="w-6 h-6" />
@@ -380,7 +386,7 @@ export default function PublicPortal() {
               </div>
             </div>
 
-            <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-200 space-y-2 text-sm">
+            <div className="mt-4 p-4 bg-surface rounded-xl border border-emerald-200 space-y-2 text-sm">
               <p>
                 <strong>Números reservados ({orderSuccess.numbers_count}):</strong>{' '}
                 <span className="font-mono text-emerald-700 font-semibold">
@@ -410,11 +416,11 @@ export default function PublicPortal() {
                   type="text" 
                   readOnly 
                   value={`${typeof window !== 'undefined' ? window.location.origin : ''}/pedido/${orderSuccess.private_token}`} 
-                  className="w-full text-xs bg-white px-3 py-2 rounded border border-emerald-300 text-slate-700 select-all font-mono"
+                  className="w-full text-xs bg-surface px-3 py-2 rounded border border-emerald-300 text-slate-700 select-all font-mono"
                 />
                 <button
                   onClick={copyPrivateUrl}
-                  className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium px-3 py-2 rounded transition whitespace-nowrap"
+                  className="flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium px-3 py-2 rounded transition whitespace-nowrap"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {copiedLink ? '¡Copiado!' : 'Copiar'}
@@ -440,7 +446,7 @@ export default function PublicPortal() {
                       href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(msg)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
+                      className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
                     >
                       <Phone className="w-4 h-4" />
                       {orderSuccess.payment_method === 'cash'
@@ -452,7 +458,7 @@ export default function PublicPortal() {
                       href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(msg)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
+                      className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
                     >
                       <Phone className="w-4 h-4" />
                       {orderSuccess.payment_method === 'cash'
@@ -464,7 +470,7 @@ export default function PublicPortal() {
               })()}
               <Link
                 href={`/pedido/${orderSuccess.private_token}`}
-                className="inline-flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
+                className="inline-flex items-center gap-2 bg-brand-700 hover:bg-brand-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
               >
                 Ver Mi Comprobante Digital
                 <ArrowRight className="w-4 h-4" />
@@ -497,25 +503,25 @@ export default function PublicPortal() {
             </span>
             <button
               onClick={() => handleRandomSelect(1)}
-              className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1.5 rounded-lg border border-emerald-200 transition"
+              className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-600 dark:text-brand-300 font-bold px-2.5 py-1.5 rounded-lg border border-brand-200 transition"
             >
               +1
             </button>
             <button
               onClick={() => handleRandomSelect(3)}
-              className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1.5 rounded-lg border border-emerald-200 transition"
+              className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-600 dark:text-brand-300 font-bold px-2.5 py-1.5 rounded-lg border border-brand-200 transition"
             >
               +3
             </button>
             <button
               onClick={() => handleRandomSelect(5)}
-              className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1.5 rounded-lg border border-emerald-200 transition"
+              className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-600 dark:text-brand-300 font-bold px-2.5 py-1.5 rounded-lg border border-brand-200 transition"
             >
               +5
             </button>
             <button
               onClick={() => handleRandomSelect(10)}
-              className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1.5 rounded-lg border border-emerald-200 transition"
+              className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-600 dark:text-brand-300 font-bold px-2.5 py-1.5 rounded-lg border border-brand-200 transition"
             >
               +10
             </button>
@@ -531,7 +537,7 @@ export default function PublicPortal() {
               placeholder="Buscar un número específico (ej: 777, 12345 o varios: 10, 25, 999)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+              className="w-full pl-10 pr-10 py-2.5 bg-surface border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-sm"
             />
             {searchTerm && (
               <button
@@ -546,7 +552,7 @@ export default function PublicPortal() {
           <button
             type="submit"
             disabled={isSearching}
-            className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition shadow-sm"
+            className="bg-brand-600 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition shadow-sm"
           >
             {isSearching ? 'Buscando...' : 'Buscar'}
           </button>
@@ -585,9 +591,9 @@ export default function PublicPortal() {
                       onClick={() => toggleSelectNumber(item.number, item.status)}
                       className={`p-2 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition flex flex-col items-center justify-center ${
                         isSelected
-                          ? 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-300 shadow'
+                          ? 'bg-brand-600 text-white border-brand-700 ring-2 ring-brand-300 shadow'
                           : isAvailable
-                          ? 'bg-white hover:bg-emerald-50 text-slate-800 border-slate-300 hover:border-emerald-500'
+                          ? 'bg-surface hover:bg-brand-50 text-slate-800 border-slate-300 hover:border-brand-500'
                           : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
                       }`}
                     >
@@ -608,12 +614,12 @@ export default function PublicPortal() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
             <div className="flex items-center gap-2 flex-wrap">
               <span>Explorando números (Página {page} de {totalPages}):</span>
-              <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+              <div className="inline-flex rounded-lg border border-slate-200 bg-surface p-0.5">
                 <button
                   type="button"
                   onClick={() => { setGridFilter('all'); setPage(1); }}
                   className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
-                    gridFilter === 'all' ? 'bg-emerald-700 text-white' : 'text-slate-600 hover:bg-slate-50'
+                    gridFilter === 'all' ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   Todos (ver estados)
@@ -622,7 +628,7 @@ export default function PublicPortal() {
                   type="button"
                   onClick={() => { setGridFilter('available'); setPage(1); }}
                   className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
-                    gridFilter === 'available' ? 'bg-emerald-700 text-white' : 'text-slate-600 hover:bg-slate-50'
+                    gridFilter === 'available' ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   Solo disponibles
@@ -633,7 +639,7 @@ export default function PublicPortal() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page <= 1 || loadingNumbers}
-                className="p-1 rounded bg-white border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -641,7 +647,7 @@ export default function PublicPortal() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages || loadingNumbers}
-                className="p-1 rounded bg-white border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -665,17 +671,20 @@ export default function PublicPortal() {
                     disabled={!isAvailable && !isSelected}
                     onClick={() => toggleSelectNumber(item.number, item.status)}
                     title={isAvailable ? 'Disponible' : item.status === 'reserved' ? 'Reservado' : 'Vendido'}
-                    className={`py-2 px-1 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition shadow-sm flex flex-col items-center justify-center ${
+                    className={`min-h-12 py-2 px-1 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition flex flex-col items-center justify-center ${
                       isSelected
-                        ? 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-300'
+                        ? 'bg-brand-600 text-white border-brand-700 ring-2 ring-brand-300 shadow-md'
                         : isAvailable
-                        ? 'bg-white hover:bg-emerald-50 text-slate-800 border-slate-200 hover:border-emerald-400'
+                        ? 'bg-surface hover:bg-brand-50 text-slate-800 border-slate-200 hover:border-brand-400'
                         : item.status === 'reserved'
                         ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-not-allowed opacity-75'
                         : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60 line-through'
                     }`}
                   >
                     <span>{formatTicketNumber(item.number)}</span>
+                    {isSelected && (
+                      <span className="text-[9px] font-sans font-semibold leading-none mt-0.5">✓ Elegido</span>
+                    )}
                     {!isAvailable && !isSelected && (
                       <span className="text-[9px] font-sans font-semibold no-underline">
                         {item.status === 'reserved' ? 'Reservado' : 'Vendido'}
@@ -692,7 +701,7 @@ export default function PublicPortal() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1 || loadingNumbers}
-              className="text-xs px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 disabled:opacity-40 font-medium hover:bg-slate-50 transition"
+              className="text-xs px-3 py-1.5 rounded-lg bg-surface border border-slate-300 text-slate-700 disabled:opacity-40 font-medium hover:bg-slate-50 transition"
             >
               Anterior
             </button>
@@ -702,7 +711,7 @@ export default function PublicPortal() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages || loadingNumbers}
-              className="text-xs px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 disabled:opacity-40 font-medium hover:bg-slate-50 transition"
+              className="text-xs px-3 py-1.5 rounded-lg bg-surface border border-slate-300 text-slate-700 disabled:opacity-40 font-medium hover:bg-slate-50 transition"
             >
               Siguiente
             </button>
@@ -712,11 +721,11 @@ export default function PublicPortal() {
 
       {/* BARRA FLOTANTE INFERIOR DEL CARRITO */}
       {selectedNumbers.length > 0 && (
-        <aside className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-2xl p-4 z-40 animate-slide-up">
+        <aside className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-md border-t border-slate-200 shadow-2xl p-4 z-40 animate-slide-up">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-100 text-emerald-800 rounded-lg">
+                <div className="p-2 bg-brand-100 text-brand-link rounded-lg">
                   <ShoppingCart className="w-5 h-5" />
                 </div>
                 <div>
@@ -732,7 +741,7 @@ export default function PublicPortal() {
               {/* Botón Vaciar */}
               <button
                 onClick={() => setSelectedNumbers([])}
-                className="text-xs text-red-600 hover:text-red-800 underline ml-2"
+                className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 underline ml-2"
               >
                 Limpiar selección
               </button>
@@ -741,7 +750,7 @@ export default function PublicPortal() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow flex items-center justify-center gap-2"
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow flex items-center justify-center gap-2"
               >
                 Solicitar Reserva
                 <ArrowRight className="w-4 h-4" />
@@ -753,8 +762,8 @@ export default function PublicPortal() {
 
       {/* MODAL DE RESERVA / CHECKOUT */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative my-8 animate-fade-in">
+        <div className="fixed inset-0 bg-night-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-surface rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative my-8 animate-fade-in">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1"
@@ -771,7 +780,7 @@ export default function PublicPortal() {
             {errorMessage && (
               <div className="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex flex-col gap-2">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                   <span>{errorMessage}</span>
                 </div>
                 {conflictNumbers.length > 0 && (
@@ -791,16 +800,16 @@ export default function PublicPortal() {
               <span className="font-semibold text-slate-700 block">
                 Números a reservar ({selectedNumbers.length}):
               </span>
-              <div className="flex flex-wrap gap-1 font-mono text-emerald-800 font-bold">
+              <div className="flex flex-wrap gap-1 font-mono text-brand-link font-bold">
                 {selectedNumbers.map(n => (
-                  <span key={n} className="bg-emerald-100/80 px-1.5 py-0.5 rounded border border-emerald-300">
+                  <span key={n} className="bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200">
                     {formatTicketNumber(n)}
                   </span>
                 ))}
               </div>
               <div className="border-t border-slate-200 pt-1.5 flex justify-between font-bold text-slate-900 text-sm">
                 <span>Total a pagar:</span>
-                <span className="text-emerald-700">{formatCurrency(totalCartAmount)}</span>
+                <span className="text-brand-link">{formatCurrency(totalCartAmount)}</span>
               </div>
             </div>
 
@@ -815,7 +824,7 @@ export default function PublicPortal() {
                   placeholder="Ej: Juan Pérez"
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -833,7 +842,7 @@ export default function PublicPortal() {
                     placeholder="Ej: 3884123456"
                     value={buyerPhone}
                     onChange={(e) => setBuyerPhone(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono"
                   />
                 </div>
                 <span className="text-[11px] text-slate-400 mt-0.5 block">
@@ -848,7 +857,7 @@ export default function PublicPortal() {
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer text-xs font-medium transition ${
-                    paymentMethod === 'transfer' ? 'border-emerald-600 bg-emerald-50 text-emerald-900' : 'border-slate-200 bg-white text-slate-700'
+                    paymentMethod === 'transfer' ? 'border-brand-600 bg-brand-50 text-slate-900' : 'border-slate-200 bg-surface text-slate-700'
                   }`}>
                     <input
                       type="radio"
@@ -856,14 +865,14 @@ export default function PublicPortal() {
                       value="transfer"
                       checked={paymentMethod === 'transfer'}
                       onChange={() => setPaymentMethod('transfer')}
-                      className="accent-emerald-700"
+                      className="accent-brand-600"
                     />
-                    <Landmark className="w-4 h-4 text-emerald-700" />
+                    <Landmark className="w-4 h-4 text-brand-link" />
                     <span>Transferencia</span>
                   </label>
 
                   <label className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer text-xs font-medium transition ${
-                    paymentMethod === 'cash' ? 'border-emerald-600 bg-emerald-50 text-emerald-900' : 'border-slate-200 bg-white text-slate-700'
+                    paymentMethod === 'cash' ? 'border-brand-600 bg-brand-50 text-slate-900' : 'border-slate-200 bg-surface text-slate-700'
                   }`}>
                     <input
                       type="radio"
@@ -871,9 +880,9 @@ export default function PublicPortal() {
                       value="cash"
                       checked={paymentMethod === 'cash'}
                       onChange={() => setPaymentMethod('cash')}
-                      className="accent-emerald-700"
+                      className="accent-brand-600"
                     />
-                    <Banknote className="w-4 h-4 text-emerald-700" />
+                    <Banknote className="w-4 h-4 text-brand-link" />
                     <span>Efectivo</span>
                   </label>
                 </div>
@@ -883,7 +892,7 @@ export default function PublicPortal() {
               {paymentMethod === 'transfer' && settings?.bank_alias && (
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1 text-slate-700">
                   <p className="font-semibold text-slate-900">Datos para la transferencia:</p>
-                  <p><strong>Alias:</strong> <span className="font-mono text-emerald-700">{settings.bank_alias}</span></p>
+                  <p><strong>Alias:</strong> <span className="font-mono text-brand-link">{settings.bank_alias}</span></p>
                   {settings.bank_cbu && <p><strong>CBU:</strong> <span className="font-mono">{settings.bank_cbu}</span></p>}
                   {settings.bank_name && <p><strong>Banco:</strong> {settings.bank_name}</p>}
                   {settings.bank_holder && <p><strong>Titular:</strong> {settings.bank_holder}</p>}
@@ -901,7 +910,7 @@ export default function PublicPortal() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow disabled:opacity-50"
+                  className="bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow disabled:opacity-50"
                 >
                   {submitting ? 'Confirmando...' : 'Confirmar Reserva'}
                 </button>
@@ -912,8 +921,8 @@ export default function PublicPortal() {
       )}
 
       {/* Pie de Página */}
-      <footer className="bg-slate-900 text-slate-400 py-8 px-4 text-xs mt-auto">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
+      <footer className="theme-night bg-night-900 text-slate-400 py-8 px-4 text-xs mt-auto">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-night-800 pb-6 mb-6">
           <div className="text-center sm:text-left">
             <h4 className="text-white font-bold text-sm">{settings?.raffle_name || 'Gran Rifa Familiar pro Terreno'}</h4>
             <p className="text-slate-400 mt-1 max-w-md">
@@ -930,7 +939,7 @@ export default function PublicPortal() {
                     href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent('Hola Alan! Quisiera hacer una consulta sobre la rifa.')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition"
+                    className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl font-medium transition"
                   >
                     <Phone className="w-4 h-4" />
                     <span>WhatsApp Alan ({phoneAlan})</span>
@@ -939,7 +948,7 @@ export default function PublicPortal() {
                     href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent('Hola Yilda! Quisiera hacer una consulta sobre la rifa.')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition"
+                    className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl font-medium transition"
                   >
                     <Phone className="w-4 h-4" />
                     <span>WhatsApp Yilda ({phoneYilda})</span>

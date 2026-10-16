@@ -12,14 +12,20 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+// Aplica el tema guardado (por defecto: oscuro) antes de pintar, para evitar destellos.
+const themeInitScript = `(function(){try{var t=localStorage.getItem('rifa-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased">
+    <html lang="es" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="min-h-screen flex flex-col antialiased">
         {children}
       </body>
     </html>
