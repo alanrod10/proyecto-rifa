@@ -16,12 +16,12 @@ export default function ThemeToggle({ className = '', variant = 'surface' }: { c
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
-    const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
     setTheme(current);
   }, []);
 
   const toggle = () => {
-    const next: Theme = theme === 'light' ? 'dark' : 'light';
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
     const root = document.documentElement;
     root.classList.add('theme-transition');
     root.setAttribute('data-theme', next);

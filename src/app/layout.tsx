@@ -16,8 +16,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-// Aplica el tema guardado (por defecto: oscuro) antes de pintar, para evitar destellos.
-const themeInitScript = `(function(){try{var t=localStorage.getItem('rifa-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+// Aplica el tema guardado (por defecto: claro) antes de pintar, para evitar destellos.
+const themeInitScript = `(function(){try{var t=localStorage.getItem('rifa-theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
 
 export default function RootLayout({
   children,
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" data-theme="dark" className={`${inter.variable} ${jetbrains.variable}`} suppressHydrationWarning>
+    <html lang="es" data-theme="light" className={`${inter.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
