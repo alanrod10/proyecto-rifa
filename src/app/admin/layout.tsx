@@ -95,7 +95,7 @@ export default function AdminLayout({
             </div>
             <div>
               <span className="font-extrabold text-sm tracking-tight block">Panel de Administración</span>
-              <span className="text-[11px] text-brand-400">Rifa 80.000 Números</span>
+              <span className="text-xs text-brand-400">Rifa 80.000 Números</span>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ export default function AdminLayout({
       </header>
 
       {/* Contenido Principal */}
-      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1">
+      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1 animate-fade-in">
         {children}
       </main>
     </div>

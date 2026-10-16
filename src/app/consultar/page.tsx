@@ -50,7 +50,7 @@ export default function ConsultarPage() {
       </header>
 
       <main className="max-w-md w-full mx-auto my-auto py-8">
-        <div className="bg-surface rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 space-y-6">
+        <div className="animate-slide-up bg-surface rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 space-y-6">
           <div className="text-center space-y-2">
             <div className="p-3 bg-brand-100 text-brand-link rounded-2xl w-14 h-14 mx-auto flex items-center justify-center">
               <Ticket className="w-7 h-7" />

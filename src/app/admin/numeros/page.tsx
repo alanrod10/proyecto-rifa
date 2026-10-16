@@ -144,7 +144,7 @@ export default function AdminNumerosPage() {
                     </td>
 
                     <td className="py-3 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
                         item.status === 'sold'
                           ? 'bg-emerald-100 text-emerald-800'
                           : item.status === 'reserved'
@@ -194,7 +194,7 @@ export default function AdminNumerosPage() {
                       )}
                     </td>
 
-                    <td className="py-3 px-4 text-slate-400 text-[11px]">
+                    <td className="py-3 px-4 text-slate-400 text-xs">
                       {formatDate(item.updated_at)}
                     </td>
                   </tr>

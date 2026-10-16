@@ -319,7 +319,7 @@ export default function AdminSolicitudesPage() {
                   <tr key={ord.id} className="hover:bg-slate-50/80 transition">
                     <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
                       {ord.code}
-                      <span className="block text-[10px] font-sans font-normal text-slate-400">
+                      <span className="block text-[11px] font-sans font-normal text-slate-400">
                         {formatDate(ord.created_at)}
                       </span>
                     </td>
@@ -332,14 +332,14 @@ export default function AdminSolicitudesPage() {
                           target="_blank" 
                           rel="noopener noreferrer"
                           title="Enviar comprobante por WhatsApp al comprador"
-                          className="inline-flex items-center gap-1 text-brand-link hover:underline font-mono text-[11px]"
+                          className="inline-flex items-center gap-1 text-brand-link hover:underline font-mono text-xs"
                         >
                           <Phone className="w-3 h-3" />
                           <span>{ord.buyer_phone}</span>
                         </a>
                         <Link
                           href={`/admin/compradores?search=${encodeURIComponent(ord.buyer_phone)}`}
-                          className="text-[10px] bg-slate-100 hover:bg-brand-50 text-slate-600 hover:text-brand-link border border-slate-200 px-1.5 py-0.5 rounded font-medium transition"
+                          className="text-[11px] bg-slate-100 hover:bg-brand-50 text-slate-600 hover:text-brand-link border border-slate-200 px-1.5 py-0.5 rounded font-medium transition"
                           title="Ver todas las compras y el total de números de este celular"
                         >
                           Ver total →
@@ -348,19 +348,19 @@ export default function AdminSolicitudesPage() {
                     </td>
 
                     <td className="py-3.5 px-4 max-w-xs">
-                      <div className="flex flex-wrap gap-1 font-mono text-[11px]">
+                      <div className="flex flex-wrap gap-1 font-mono text-xs">
                         {ord.numbers.slice(0, 6).map(n => (
                           <span key={n} className="bg-slate-100 text-slate-800 px-1 rounded border border-slate-200">
                             {formatTicketNumber(n)}
                           </span>
                         ))}
                         {ord.numbers.length > 6 && (
-                          <span className="text-slate-400 text-[10px] self-center">
+                          <span className="text-slate-400 text-[11px] self-center">
                             +{ord.numbers.length - 6} más
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                      <span className="text-[11px] text-slate-400 block mt-0.5">
                         Total: {ord.numbers_count} número(s)
                       </span>
                     </td>
@@ -383,7 +383,7 @@ export default function AdminSolicitudesPage() {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-black ${
                         ord.payment_status === 'paid' 
                           ? 'bg-emerald-100 text-emerald-800' 
                           : ord.payment_status === 'pending'
@@ -395,7 +395,7 @@ export default function AdminSolicitudesPage() {
                         {ord.payment_status === 'paid' ? 'PAGADO' : ord.payment_status === 'pending' ? 'PENDIENTE' : ord.payment_status === 'expired' ? 'VENCIDO' : 'CANCELADO'}
                       </span>
                       {ord.confirmed_by_admin && (
-                        <span className="text-[9px] text-slate-400 block mt-0.5">
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
                           Por: @{ord.confirmed_by_admin}
                         </span>
                       )}

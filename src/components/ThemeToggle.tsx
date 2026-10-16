@@ -22,7 +22,10 @@ export default function ThemeToggle({ className = '', variant = 'surface' }: { c
 
   const toggle = () => {
     const next: Theme = theme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
+    const root = document.documentElement;
+    root.classList.add('theme-transition');
+    root.setAttribute('data-theme', next);
+    window.setTimeout(() => root.classList.remove('theme-transition'), 350);
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
@@ -45,9 +48,9 @@ export default function ThemeToggle({ className = '', variant = 'surface' }: { c
       {theme === null ? (
         <span className="w-5 h-5" aria-hidden="true" />
       ) : isLight ? (
-        <Moon className="w-5 h-5" aria-hidden="true" />
+        <Moon className="w-5 h-5 animate-pop" aria-hidden="true" />
       ) : (
-        <Sun className="w-5 h-5" aria-hidden="true" />
+        <Sun className="w-5 h-5 animate-pop" aria-hidden="true" />
       )}
     </button>
   );

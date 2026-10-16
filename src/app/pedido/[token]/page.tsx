@@ -176,7 +176,7 @@ export default function BuyerPrivateOrderPage() {
       </div>
 
       {/* Tarjeta Tipo Boleto / Comprobante */}
-      <div className="max-w-xl w-full bg-surface rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+      <div className="animate-slide-up max-w-xl w-full bg-surface rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
         {/* Cabecera del Comprobante */}
         <div className="theme-night bg-gradient-to-br from-night-900 to-night-950 text-white p-6 relative">
           <div className="flex items-center justify-between">
@@ -304,7 +304,7 @@ export default function BuyerPrivateOrderPage() {
                     {raffle.bank_name && <p><span className="font-sans font-semibold text-slate-500">Banco:</span> {raffle.bank_name}</p>}
                     {raffle.bank_holder && <p><span className="font-sans font-semibold text-slate-500">Titular:</span> {raffle.bank_holder}</p>}
                   </div>
-                  <p className="text-[11px] text-amber-900 pt-1">
+                  <p className="text-xs text-amber-900 pt-1">
                     Una vez realizada la transferencia, envianos el comprobante por WhatsApp a cualquiera de los dos contactos para validar tu pago:
                   </p>
                 </div>
@@ -313,7 +313,7 @@ export default function BuyerPrivateOrderPage() {
                   <p>
                     Elegiste abonar en <strong>Efectivo</strong>. Por favor comunicate con cualquiera de los administradores para coordinar la entrega de los <strong>{formatCurrency(order.total_amount)}</strong>:
                   </p>
-                  <p className="text-[11px] text-amber-900">
+                  <p className="text-xs text-amber-900">
                     Una vez que entregues el efectivo, los administradores marcarán tu reserva como <strong>PAGADA</strong> y este comprobante se actualizará automáticamente.
                   </p>
                 </div>
@@ -350,7 +350,7 @@ export default function BuyerPrivateOrderPage() {
                 </a>
               </div>
 
-              <p className="text-[11px] text-slate-500 text-center">
+              <p className="text-xs text-slate-500 text-center">
                 Vencimiento de la reserva: {formatDate(order.expires_at)}
               </p>
             </div>
@@ -401,7 +401,7 @@ export default function BuyerPrivateOrderPage() {
               <Copy className="w-4 h-4" />
               {copied ? '¡Enlace copiado al portapapeles!' : 'Copiar enlace privado de este comprobante'}
             </button>
-            <p className="text-[11px] text-slate-400 text-center">
+            <p className="text-xs text-slate-400 text-center">
               Guardá este enlace. Te permitirá volver a consultar esta constancia en cualquier momento.
             </p>
           </div>

@@ -117,7 +117,7 @@ export default function AdminLoginPage() {
           </form>
 
           <div className="border-t border-night-700/60 pt-4 text-center">
-            <span className="text-[11px] text-slate-400 block">
+            <span className="text-xs text-slate-400 block">
               Protegido mediante hash bcrypt y tokens JWT con expiración automática.
             </span>
           </div>

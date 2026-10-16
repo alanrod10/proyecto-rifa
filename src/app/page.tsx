@@ -270,7 +270,7 @@ export default function PublicPortal() {
             </span>
             <div className="min-w-0">
               <h1 className="font-bold text-base sm:text-lg leading-tight tracking-tight truncate">Gran Rifa Familiar</h1>
-              <p className="text-[11px] sm:text-xs text-slate-300 truncate">80.000 números disponibles</p>
+              <p className="text-xs sm:text-xs text-slate-300 truncate">80.000 números disponibles</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -294,7 +294,7 @@ export default function PublicPortal() {
       {/* Hero Principal */}
       <section className="theme-night relative overflow-hidden bg-gradient-to-b from-night-900 to-night-950 text-white py-10 sm:py-14 px-4 pb-14">
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(29,78,216,0.35),transparent)]" />
-        <div className="relative max-w-4xl mx-auto text-center space-y-4">
+        <div className="relative max-w-4xl mx-auto text-center space-y-4 stagger">
           <span className="inline-flex items-center gap-1.5 bg-white/10 text-slate-200 text-xs sm:text-sm px-3 py-1 rounded-full border border-white/15">
             <Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" />
             Objetivo solidario: Pro Terreno Familiar
@@ -308,24 +308,24 @@ export default function PublicPortal() {
           </p>
 
           {/* Tarjetas de Métricas Clave */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-3xl mx-auto">
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-3xl mx-auto stagger">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10 lift hover:border-white/25 hover:bg-white/10">
               <span className="block text-xs text-slate-300 font-medium">Valor por número</span>
               <span className="text-xl sm:text-2xl font-bold text-amber-300">
                 {formatCurrency(unitPrice)}
               </span>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10 lift hover:border-white/25 hover:bg-white/10">
               <span className="block text-xs text-slate-300 font-medium">Total de números</span>
               <span className="text-xl sm:text-2xl font-bold text-white">80.000</span>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10 lift hover:border-white/25 hover:bg-white/10">
               <span className="block text-xs text-slate-300 font-medium">Disponibles</span>
               <span className="text-xl sm:text-2xl font-bold text-blue-200">
                 {stats?.available?.toLocaleString('es-AR') ?? '...'}
               </span>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10 lift hover:border-white/25 hover:bg-white/10">
               <span className="block text-xs text-slate-300 font-medium">Vendidos</span>
               <span className="text-xl sm:text-2xl font-bold text-slate-100">
                 {stats?.sold?.toLocaleString('es-AR') ?? '...'}
@@ -336,7 +336,7 @@ export default function PublicPortal() {
       </section>
 
       {/* Sección Información del Sorteo (Premios y Fechas) */}
-      <section className="max-w-5xl mx-auto px-4 -mt-4 relative z-10 w-full">
+      <section className="max-w-5xl mx-auto px-4 -mt-4 relative z-10 w-full animate-slide-up">
         <div className="bg-surface rounded-2xl shadow-xl border border-slate-200/80 p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-start space-x-3.5">
             <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-200">
@@ -598,7 +598,7 @@ export default function PublicPortal() {
                       }`}
                     >
                       <span>{formatTicketNumber(item.number)}</span>
-                      <span className="text-[10px] font-sans font-normal mt-0.5">
+                      <span className="text-[11px] font-sans font-normal mt-0.5">
                         {isSelected ? '✓ Elegido' : isAvailable ? 'Disponible' : item.status === 'reserved' ? 'Reservado' : 'Vendido'}
                       </span>
                     </button>
@@ -671,9 +671,9 @@ export default function PublicPortal() {
                     disabled={!isAvailable && !isSelected}
                     onClick={() => toggleSelectNumber(item.number, item.status)}
                     title={isAvailable ? 'Disponible' : item.status === 'reserved' ? 'Reservado' : 'Vendido'}
-                    className={`min-h-12 py-2 px-1 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition flex flex-col items-center justify-center ${
+                    className={`min-h-12 py-2 px-1 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition flex flex-col items-center justify-center animate-cell ${
                       isSelected
-                        ? 'bg-brand-600 text-white border-brand-700 ring-2 ring-brand-300 shadow-md'
+                        ? 'bg-brand-600 text-white border-brand-700 ring-2 ring-brand-300 shadow-md animate-pop'
                         : isAvailable
                         ? 'bg-surface hover:bg-brand-50 text-slate-800 border-slate-200 hover:border-brand-400'
                         : item.status === 'reserved'
@@ -683,10 +683,10 @@ export default function PublicPortal() {
                   >
                     <span>{formatTicketNumber(item.number)}</span>
                     {isSelected && (
-                      <span className="text-[9px] font-sans font-semibold leading-none mt-0.5">✓ Elegido</span>
+                      <span className="text-[10px] font-sans font-semibold leading-none mt-0.5">✓ Elegido</span>
                     )}
                     {!isAvailable && !isSelected && (
-                      <span className="text-[9px] font-sans font-semibold no-underline">
+                      <span className="text-[10px] font-sans font-semibold no-underline">
                         {item.status === 'reserved' ? 'Reservado' : 'Vendido'}
                       </span>
                     )}
@@ -845,7 +845,7 @@ export default function PublicPortal() {
                     className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono"
                   />
                 </div>
-                <span className="text-[11px] text-slate-400 mt-0.5 block">
+                <span className="text-xs text-slate-400 mt-0.5 block">
                   Ingresá directamente tu número sin el 54 (ej: 3884123456).
                 </span>
               </div>

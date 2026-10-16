@@ -221,7 +221,7 @@ export default function AdminConfiguracionPage() {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-brand-link focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">
+              <span className="text-[11px] text-slate-400 mt-0.5 block">
                 Las órdenes ya emitidas conservan su precio histórico.
               </span>
             </div>
@@ -290,7 +290,7 @@ export default function AdminConfiguracionPage() {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">
+              <span className="text-[11px] text-slate-400 mt-0.5 block">
                 Tiempo que el comprador tiene para enviar comprobante antes de liberar el número.
               </span>
             </div>
@@ -429,7 +429,7 @@ export default function AdminConfiguracionPage() {
               </div>
             </div>
           </div>
-          <span className="text-[10px] text-slate-400 block">
+          <span className="text-[11px] text-slate-400 block">
             Ambos contactos (Alan y Yilda) se muestran en el portal público y en los comprobantes digitales.
           </span>
         </div>

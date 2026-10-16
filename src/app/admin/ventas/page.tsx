@@ -203,7 +203,7 @@ export default function AdminVentasPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono"
               />
             </div>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">
+            <span className="text-[11px] text-slate-400 mt-0.5 block">
               Escribí directamente el número sin el 54 (ej: 3884123456).
             </span>
           </div>

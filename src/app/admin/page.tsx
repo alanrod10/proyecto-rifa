@@ -205,7 +205,7 @@ export default function AdminDashboardPage() {
           <div className="text-2xl font-black text-emerald-700">
             {formatCurrency(metrics?.money_collected_total || 0)}
           </div>
-          <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100">
+          <div className="text-xs text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100">
             <span className="flex items-center gap-1">
               <Banknote className="w-3 h-3 text-emerald-600" />
               Efec: {formatCurrency(metrics?.money_collected_cash || 0)}
@@ -228,7 +228,7 @@ export default function AdminDashboardPage() {
           <div className="text-2xl font-black text-amber-700">
             {formatCurrency(metrics?.money_pending || 0)}
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs text-slate-400">
             Correspondiente a {metrics?.pending_orders || 0} pedido(s) en espera de pago.
           </p>
         </div>
@@ -244,7 +244,7 @@ export default function AdminDashboardPage() {
           <div className="text-2xl font-black text-blue-700">
             {formatCurrency(metrics?.remaining_potential || 0)}
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs text-slate-400">
             {metrics?.available_numbers?.toLocaleString('es-AR')} nros × {formatCurrency(metrics?.current_ticket_price || 100)}
           </p>
         </div>
@@ -260,7 +260,7 @@ export default function AdminDashboardPage() {
           <div className="text-2xl font-black text-purple-700">
             {metrics?.total_orders || 0}
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs text-slate-400">
             {metrics?.paid_orders || 0} pagados • {metrics?.cancelled_orders || 0} cancelados
           </p>
         </div>
@@ -302,7 +302,7 @@ export default function AdminDashboardPage() {
                 <span className="text-lg font-black text-emerald-700">
                   {metrics.sold_numbers.toLocaleString('es-AR')}
                 </span>
-                <span className="text-[10px] text-emerald-600 block">
+                <span className="text-[11px] text-emerald-600 block">
                   {((metrics.sold_numbers / metrics.total_numbers) * 100).toFixed(1)}%
                 </span>
               </div>
@@ -312,7 +312,7 @@ export default function AdminDashboardPage() {
                 <span className="text-lg font-black text-amber-700">
                   {metrics.reserved_numbers.toLocaleString('es-AR')}
                 </span>
-                <span className="text-[10px] text-amber-600 block">
+                <span className="text-[11px] text-amber-600 block">
                   {((metrics.reserved_numbers / metrics.total_numbers) * 100).toFixed(1)}%
                 </span>
               </div>
@@ -322,7 +322,7 @@ export default function AdminDashboardPage() {
                 <span className="text-lg font-black text-slate-800">
                   {metrics.available_numbers.toLocaleString('es-AR')}
                 </span>
-                <span className="text-[10px] text-slate-500 block">
+                <span className="text-[11px] text-slate-500 block">
                   {((metrics.available_numbers / metrics.total_numbers) * 100).toFixed(1)}%
                 </span>
               </div>
@@ -383,13 +383,13 @@ export default function AdminDashboardPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Enviar comprobante por WhatsApp"
-                          className="inline-flex items-center gap-1 text-[11px] text-brand-link hover:underline font-mono"
+                          className="inline-flex items-center gap-1 text-xs text-brand-link hover:underline font-mono"
                         >
                           <Phone className="w-3 h-3" />
                           <span>{ord.buyer_phone}</span>
                         </a>
                       ) : (
-                        <span className="block text-[11px] text-slate-400 font-mono">{ord.buyer_phone}</span>
+                        <span className="block text-xs text-slate-400 font-mono">{ord.buyer_phone}</span>
                       )}
                     </td>
                     <td className="py-3 px-3 font-semibold text-slate-700">
@@ -402,7 +402,7 @@ export default function AdminDashboardPage() {
                       {ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}
                     </td>
                     <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                         ord.payment_status === 'paid' 
                           ? 'bg-emerald-100 text-emerald-800' 
                           : ord.payment_status === 'pending'
@@ -415,20 +415,20 @@ export default function AdminDashboardPage() {
                       </span>
                     </td>
                     <td className="py-3 px-3">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${
                         ord.is_direct_sale ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
                       }`}>
                         {ord.is_direct_sale ? 'Directa' : 'Web'}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-slate-400 text-[11px]">
+                    <td className="py-3 px-3 text-slate-400 text-xs">
                       {formatDate(ord.created_at)}
                     </td>
                     <td className="py-3 px-3 text-right">
                       <button
                         onClick={() => handleDeleteOrder(ord)}
                         disabled={deletingId === ord.id}
-                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white border border-red-200 hover:border-red-600 px-2 py-1 rounded-lg text-[11px] font-semibold transition"
+                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white border border-red-200 hover:border-red-600 px-2 py-1 rounded-lg text-xs font-semibold transition"
                         title="Eliminar pedido definitivamente y liberar números"
                       >
                         <Trash2 className="w-3 h-3" />

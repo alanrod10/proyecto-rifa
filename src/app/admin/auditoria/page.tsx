@@ -91,7 +91,7 @@ export default function AdminAuditoriaPage() {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                         log.action === 'CONFIRM_PAYMENT'
                           ? 'bg-emerald-100 text-emerald-800'
                           : log.action === 'CANCEL_ORDER' || log.action === 'DELETE_ORDER' || log.action === 'DELETE_BUYER'
@@ -108,11 +108,11 @@ export default function AdminAuditoriaPage() {
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 max-w-md font-mono text-[11px] text-slate-600 break-words">
+                    <td className="py-3.5 px-4 max-w-md font-mono text-xs text-slate-600 break-words">
                       {typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}
                     </td>
 
-                    <td className="py-3.5 px-4 text-slate-400 font-mono text-[10px]">
+                    <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
                       {log.ip_address || '—'}
                     </td>
                   </tr>

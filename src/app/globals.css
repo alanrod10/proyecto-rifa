@@ -45,12 +45,39 @@
   --color-brand-link: #1d4ed8;
   --color-page: #f1f5f9;
 
-  --animate-fade-in: fade-in 0.25s ease-out both;
-  --animate-slide-up: slide-up 0.25s ease-out both;
+  /* Tipografía (Inter / JetBrains Mono cargadas con next/font en layout.tsx) */
+  --font-sans: var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Escala de radios unificada: controles 10-14px, tarjetas 18-22px */
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.375rem;
+
+  /* Sombras suaves y en capas (el color se adapta al tema) */
+  --shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 0.07);
+  --shadow-md: 0 4px 12px -2px rgb(var(--shadow-rgb) / 0.12), 0 1px 3px rgb(var(--shadow-rgb) / 0.06);
+  --shadow-lg: 0 10px 24px -8px rgb(var(--shadow-rgb) / 0.18), 0 2px 6px rgb(var(--shadow-rgb) / 0.06);
+  --shadow-xl: 0 18px 40px -14px rgb(var(--shadow-rgb) / 0.22), 0 3px 8px rgb(var(--shadow-rgb) / 0.07);
+  --shadow-2xl: 0 28px 60px -18px rgb(var(--shadow-rgb) / 0.35), 0 4px 12px rgb(var(--shadow-rgb) / 0.1);
+
+  --animate-fade-in: fade-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-up: slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pop: pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-cell: cell-in 0.3s ease-out both;
 
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+  @keyframes cell-in {
+    from { opacity: 0; transform: scale(0.94); }
+    to { opacity: 1; transform: scale(1); }
   }
   @keyframes slide-up {
     from { opacity: 0; transform: translateY(12px); }
@@ -78,6 +105,7 @@
   --accent-cool: #0891b2;
   --accent-cool-soft: #cffafe;
   --focus: #1d4ed8;
+  --shadow-rgb: 15 23 42;
 
   --color-surface: #ffffff;
   --color-surface-elevated: #ffffff;
@@ -89,10 +117,10 @@
   --color-slate-100: #f1f5f9;
   --color-slate-200: #e2e8f0;
   --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
+  --color-slate-400: #66768e;
+  --color-slate-500: #526178;
+  --color-slate-600: #3f4d63;
+  --color-slate-700: #2c3a50;
   --color-slate-800: #1e293b;
   --color-slate-900: #0f172a;
   --color-slate-950: #020617;
@@ -173,6 +201,7 @@ html[data-theme='dark'] {
   --accent-cool: #0891b2;
   --accent-cool-soft: #0b2a35;
   --focus: #60a5fa;
+  --shadow-rgb: 0 0 0;
 
   --color-surface: #191e28;
   --color-surface-elevated: #202632;
@@ -246,6 +275,10 @@ html[data-theme='dark'] {
    claros sobre fondo oscuro también en modo claro. */
 .theme-night {
   color: #f1f5f9;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
 }
 
 /* ============================== BASE ================================ */
@@ -256,16 +289,48 @@ html {
 body {
   background-color: var(--background);
   color: var(--text-primary);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.font-mono {
-  font-variant-numeric: tabular-nums;
-}
-
 @layer base {
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Cifras alineadas en importes y números de rifa */
+  .font-mono,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Transiciones suaves y consistentes en controles */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+    transition-duration: 0.18s;
+    transition-timing-function: ease;
+  }
+
+  /* Respuesta táctil al presionar */
+  button:not(:disabled):active,
+  a[class*='rounded']:active {
+    transform: scale(0.97);
+  }
+
   /* Foco de teclado visible y consistente */
   :focus-visible {
     outline: 2px solid var(--focus);
@@ -296,6 +361,35 @@ body {
   button:disabled {
     cursor: not-allowed;
   }
+}
+
+/* Entrada escalonada de bloques hijos (hero, tarjetas) */
+.stagger > * {
+  animation: fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger > *:nth-child(5) { animation-delay: 0.26s; }
+.stagger > *:nth-child(6) { animation-delay: 0.32s; }
+
+/* Elevación sutil al pasar el cursor (solo punteros con hover real) */
+@media (hover: hover) {
+  .lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .lift:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Durante el cambio de tema, todos los colores se funden suavemente */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease !important;
 }
 
 /* Barras de desplazamiento */
