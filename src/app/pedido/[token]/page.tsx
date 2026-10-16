@@ -7,7 +7,7 @@ import {
   Ticket, CheckCircle, Clock, AlertCircle, XCircle, Copy, Share2, 
   Phone, Landmark, Banknote, RefreshCw, ArrowLeft, ShieldCheck
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
 interface OrderData {
   code: string;
@@ -133,6 +133,17 @@ export default function BuyerPrivateOrderPage() {
     ? `https://wa.me/${formatWhatsAppPhone(raffle.contact_phone)}?text=${encodeURIComponent(whatsappMsg)}`
     : null;
 
+  // Enlace para enviar el comprobante al WhatsApp del comprador
+  const buyerWaVoucherUrl = buildBuyerWhatsAppUrl({
+    buyerName: order.buyer_name,
+    buyerPhone: order.buyer_phone,
+    orderCode: order.code,
+    numbers: order.numbers,
+    totalAmount: order.total_amount,
+    paymentStatus: order.payment_status,
+    privateToken: token,
+  });
+
   return (
     <div className="min-h-screen bg-slate-100 py-6 px-4 flex flex-col items-center">
       {/* Botón Volver */}
@@ -168,7 +179,16 @@ export default function BuyerPrivateOrderPage() {
           </div>
           <h2 className="text-2xl font-black mt-2">{raffle.name}</h2>
           <p className="text-xs text-emerald-100 mt-1">
-            Titular: <strong className="text-white">{order.buyer_name}</strong> • {order.buyer_phone}
+            Titular: <strong className="text-white">{order.buyer_name}</strong> •{' '}
+            <a
+              href={buyerWaVoucherUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white font-mono"
+              title="Enviar este comprobante al WhatsApp del comprador"
+            >
+              {order.buyer_phone}
+            </a>
           </p>
 
           {/* Insignia de Estado */}
@@ -301,8 +321,18 @@ export default function BuyerPrivateOrderPage() {
             <p><strong>Premios:</strong> {raffle.prizes}</p>
           </div>
 
-          {/* Botón Compartir / Copiar Enlace */}
+          {/* Botones Compartir / Enviar a Comprador / Copiar Enlace */}
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            <a
+              href={buyerWaVoucherUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+            >
+              <Share2 className="w-4 h-4" />
+              Enviar comprobante al WhatsApp de {order.buyer_name}
+            </a>
+
             <button
               onClick={copyUrl}
               className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl text-xs transition"

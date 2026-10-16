@@ -6,7 +6,7 @@ import {
   Users, Search, Phone, Ticket, Copy, ExternalLink, RefreshCw, 
   ChevronDown, ChevronUp, CheckCircle, Clock
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
 interface BuyerOrder {
   id: number;
@@ -126,6 +126,18 @@ export default function AdminCompradoresPage() {
           <div className="divide-y divide-slate-100">
             {buyers.map((buyer) => {
               const isExpanded = expandedBuyerId === buyer.id;
+              const latestOrder = buyer.orders && buyer.orders.length > 0 ? buyer.orders[0] : null;
+              const mainBuyerWaUrl = latestOrder
+                ? buildBuyerWhatsAppUrl({
+                    buyerName: buyer.name,
+                    buyerPhone: buyer.phone,
+                    orderCode: latestOrder.code,
+                    numbers: latestOrder.numbers,
+                    totalAmount: latestOrder.total_amount,
+                    paymentStatus: latestOrder.payment_status,
+                    privateToken: latestOrder.private_token,
+                  })
+                : `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(`Hola ${buyer.name}! Te escribimos desde la administración de la Gran Rifa Familiar.`)}`;
 
               return (
                 <div key={buyer.id} className="p-4 sm:p-5 hover:bg-slate-50/60 transition">
@@ -138,12 +150,14 @@ export default function AdminCompradoresPage() {
                         <h4 className="font-bold text-slate-900 text-sm">{buyer.name}</h4>
                         <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                           <a 
-                            href={`https://wa.me/${formatWhatsAppPhone(buyer.phone)}`} 
+                            href={mainBuyerWaUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-emerald-700 hover:underline font-mono"
+                            title="Enviar comprobante por WhatsApp"
+                            className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-mono"
                           >
-                            {buyer.phone}
+                            <Phone className="w-3 h-3" />
+                            <span>{buyer.phone}</span>
                           </a>
                           <span>•</span>
                           <span>{buyer.total_orders} pedido(s)</span>
@@ -160,6 +174,19 @@ export default function AdminCompradoresPage() {
                           {formatCurrency(buyer.total_paid_amount)}
                         </span>
                       </div>
+
+                      {latestOrder && (
+                        <a
+                          href={mainBuyerWaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
+                          title="Enviar comprobante de su último pedido por WhatsApp"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Reenviar Comprobante</span>
+                        </a>
+                      )}
 
                       <button
                         onClick={() => setExpandedBuyerId(isExpanded ? null : buyer.id)}
@@ -183,10 +210,15 @@ export default function AdminCompradoresPage() {
                       ) : (
                         <div className="space-y-2">
                           {buyer.orders.map((ord) => {
-                            const origin = typeof window !== 'undefined' ? window.location.origin : '';
-                            const recoveryUrl = `${origin}/pedido/${ord.private_token}`;
-                            const waRecoveryMsg = `Hola ${buyer.name}! Te reenviamos el enlace privado de tu reserva ${ord.code} de la rifa: ${recoveryUrl}`;
-                            const waLink = `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(waRecoveryMsg)}`;
+                            const waLink = buildBuyerWhatsAppUrl({
+                              buyerName: buyer.name,
+                              buyerPhone: buyer.phone,
+                              orderCode: ord.code,
+                              numbers: ord.numbers,
+                              totalAmount: ord.total_amount,
+                              paymentStatus: ord.payment_status,
+                              privateToken: ord.private_token,
+                            });
 
                             return (
                               <div key={ord.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">

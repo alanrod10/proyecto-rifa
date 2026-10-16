@@ -97,6 +97,47 @@ export function formatWhatsAppPhone(phone: string): string {
 }
 
 /**
+ * Construye el enlace de WhatsApp hacia el comprador con el mensaje completo del comprobante digital pre-escrito
+ */
+export function buildBuyerWhatsAppUrl(params: {
+  buyerName: string;
+  buyerPhone: string;
+  orderCode: string;
+  numbers: number[];
+  totalAmount: number;
+  paymentStatus: string;
+  privateToken: string;
+  origin?: string;
+}): string {
+  const waPhone = formatWhatsAppPhone(params.buyerPhone);
+  const baseOrigin =
+    params.origin ||
+    (typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'https://proyecto-rifa.vercel.app');
+  const voucherUrl = `${baseOrigin}/pedido/${params.privateToken}`;
+  const formattedNums = (params.numbers || []).map(formatTicketNumber).join(', ');
+  const statusLabel =
+    params.paymentStatus === 'paid'
+      ? 'PAGO CONFIRMADO ✅ (Participando)'
+      : params.paymentStatus === 'pending'
+      ? 'RESERVA PENDIENTE DE PAGO ⏳'
+      : params.paymentStatus === 'expired'
+      ? 'RESERVA VENCIDA'
+      : 'RESERVA CANCELADA';
+
+  const message =
+    `Hola ${params.buyerName}! Te enviamos tu comprobante digital de la Gran Rifa Familiar:\n\n` +
+    `• Operación: ${params.orderCode}\n` +
+    `• Estado: ${statusLabel}\n` +
+    `• Números (${params.numbers.length}): ${formattedNums}\n` +
+    `• Total: ${formatCurrency(params.totalAmount)}\n\n` +
+    `Podés ver y guardar tu comprobante oficial en este enlace:\n${voucherUrl}`;
+
+  return `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
+}
+
+/**
  * Sanitiza un campo de texto contra inyección de fórmulas en CSV (Excel / Calc)
  * y escapa comillas dobles internas
  */

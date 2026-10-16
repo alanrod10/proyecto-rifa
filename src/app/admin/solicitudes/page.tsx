@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Inbox, Search, CheckCircle, XCircle, Copy, ExternalLink, 
-  Clock, AlertTriangle, Filter, RefreshCw
+  Clock, AlertTriangle, Filter, RefreshCw, Phone
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, formatDate, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
 interface OrderItem {
   id: number;
@@ -220,7 +220,18 @@ export default function AdminSolicitudesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {orders.map((ord) => (
+                {orders.map((ord) => {
+                  const waVoucherUrl = buildBuyerWhatsAppUrl({
+                    buyerName: ord.buyer_name,
+                    buyerPhone: ord.buyer_phone,
+                    orderCode: ord.code,
+                    numbers: ord.numbers,
+                    totalAmount: ord.total_amount,
+                    paymentStatus: ord.payment_status,
+                    privateToken: ord.private_token,
+                  });
+
+                  return (
                   <tr key={ord.id} className="hover:bg-slate-50/80 transition">
                     <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
                       {ord.code}
@@ -232,12 +243,14 @@ export default function AdminSolicitudesPage() {
                     <td className="py-3.5 px-4">
                       <span className="font-semibold text-slate-900 block">{ord.buyer_name}</span>
                       <a 
-                        href={`https://wa.me/${formatWhatsAppPhone(ord.buyer_phone)}`} 
+                        href={waVoucherUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-emerald-700 hover:underline font-mono text-[11px]"
+                        title="Enviar comprobante por WhatsApp al comprador"
+                        className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-mono text-[11px]"
                       >
-                        {ord.buyer_phone}
+                        <Phone className="w-3 h-3" />
+                        <span>{ord.buyer_phone}</span>
                       </a>
                     </td>
 
@@ -286,7 +299,7 @@ export default function AdminSolicitudesPage() {
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-right space-x-1">
+                    <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
                       {/* Botón Confirmar Pago */}
                       {ord.payment_status === 'pending' && (
                         <button
@@ -310,6 +323,18 @@ export default function AdminSolicitudesPage() {
                         </button>
                       )}
 
+                      {/* Botón Enviar Comprobante por WhatsApp */}
+                      <a
+                        href={waVoucherUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-medium transition"
+                        title="Enviar comprobante digital por WhatsApp"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>WhatsApp</span>
+                      </a>
+
                       {/* Botón Copiar Enlace del Comprador */}
                       <button
                         onClick={() => copyVoucherUrl(ord.private_token)}
@@ -331,7 +356,8 @@ export default function AdminSolicitudesPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

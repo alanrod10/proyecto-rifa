@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, getSettings, releaseExpiredReservations } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
+import { safeJsonParse } from '@/lib/utils';
 
 export async function GET() {
   try {
@@ -62,7 +63,7 @@ export async function GET() {
     // 5. Últimas 8 órdenes
     const recentOrdersRes = await db.execute(`
       SELECT id, code, buyer_name, buyer_phone, payment_method, payment_status,
-             numbers_count, total_amount, is_direct_sale, created_at
+             numbers_count, numbers_list, total_amount, private_token, is_direct_sale, created_at
       FROM orders 
       ORDER BY id DESC LIMIT 8
     `);
@@ -95,7 +96,9 @@ export async function GET() {
         payment_method: r.payment_method as string,
         payment_status: r.payment_status as string,
         numbers_count: Number(r.numbers_count),
+        numbers: safeJsonParse<number[]>(r.numbers_list as string, []),
         total_amount: Number(r.total_amount),
+        private_token: r.private_token as string,
         is_direct_sale: Number(r.is_direct_sale) === 1,
         created_at: r.created_at as string
       }))

@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   DollarSign, Ticket, Clock, CheckCircle, AlertTriangle, 
-  Download, RefreshCw, ShoppingCart, ArrowRight, Banknote, Landmark, ShieldAlert
+  Download, RefreshCw, ShoppingCart, ArrowRight, Banknote, Landmark, ShieldAlert, Phone
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
 interface DashboardMetrics {
   total_numbers: number;
@@ -35,7 +35,9 @@ interface RecentOrder {
   payment_method: string;
   payment_status: string;
   numbers_count: number;
+  numbers?: number[];
   total_amount: number;
+  private_token?: string;
   is_direct_sale: boolean;
   created_at: string;
 }
@@ -329,8 +331,29 @@ export default function AdminDashboardPage() {
                       {ord.code}
                     </td>
                     <td className="py-3 px-3 font-medium text-slate-900">
-                      {ord.buyer_name}
-                      <span className="block text-[11px] text-slate-400 font-mono">{ord.buyer_phone}</span>
+                      <span className="block">{ord.buyer_name}</span>
+                      {ord.private_token ? (
+                        <a
+                          href={buildBuyerWhatsAppUrl({
+                            buyerName: ord.buyer_name,
+                            buyerPhone: ord.buyer_phone,
+                            orderCode: ord.code,
+                            numbers: ord.numbers || [],
+                            totalAmount: ord.total_amount,
+                            paymentStatus: ord.payment_status,
+                            privateToken: ord.private_token,
+                          })}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Enviar comprobante por WhatsApp"
+                          className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:underline font-mono"
+                        >
+                          <Phone className="w-3 h-3" />
+                          <span>{ord.buyer_phone}</span>
+                        </a>
+                      ) : (
+                        <span className="block text-[11px] text-slate-400 font-mono">{ord.buyer_phone}</span>
+                      )}
                     </td>
                     <td className="py-3 px-3 font-semibold text-slate-700">
                       {ord.numbers_count} nro(s)

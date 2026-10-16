@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Hash, Search, Filter, RefreshCw, CheckCircle, Clock } from 'lucide-react';
-import { formatTicketNumber, formatDate } from '@/lib/utils';
+import { Hash, Search, Filter, RefreshCw, CheckCircle, Clock, MessageCircle } from 'lucide-react';
+import { formatTicketNumber, formatDate, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
 interface NumberRecord {
   number: number;
@@ -13,6 +13,9 @@ interface NumberRecord {
   buyer_name: string | null;
   buyer_phone: string | null;
   payment_status: string | null;
+  order_numbers?: number[];
+  total_amount?: number | null;
+  private_token?: string | null;
   updated_at: string;
 }
 
@@ -167,7 +170,28 @@ export default function AdminNumerosPage() {
                     </td>
 
                     <td className="py-3 px-4 font-mono text-slate-600">
-                      {item.buyer_phone || <span className="text-slate-300 font-normal">—</span>}
+                      {item.buyer_phone ? (
+                        <a
+                          href={buildBuyerWhatsAppUrl({
+                            buyerPhone: item.buyer_phone,
+                            buyerName: item.buyer_name || 'Comprador',
+                            orderCode: item.order_code || 'RIFA',
+                            numbers: item.order_numbers || [item.number],
+                            totalAmount: item.total_amount || 100,
+                            paymentStatus: item.payment_status || 'paid',
+                            privateToken: item.private_token || '',
+                          })}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-emerald-600 hover:underline font-semibold"
+                          title="Enviar comprobante por WhatsApp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>{item.buyer_phone}</span>
+                        </a>
+                      ) : (
+                        <span className="text-slate-300 font-normal">—</span>
+                      )}
                     </td>
 
                     <td className="py-3 px-4 text-slate-400 text-[11px]">

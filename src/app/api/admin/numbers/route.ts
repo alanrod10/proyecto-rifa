@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
     const listRes = await db.execute({
       sql: `SELECT 
               n.number, n.status, n.order_id, n.updated_at,
-              o.code as order_code, o.buyer_name, o.buyer_phone, o.payment_status
+              o.code as order_code, o.buyer_name, o.buyer_phone, o.payment_status,
+              o.numbers_list, o.total_amount, o.private_token
             FROM numbers n
             LEFT JOIN orders o ON n.order_id = o.id
             WHERE ${where}
@@ -60,6 +61,9 @@ export async function GET(request: NextRequest) {
         buyer_name: r.buyer_name as string | null,
         buyer_phone: r.buyer_phone as string | null,
         payment_status: r.payment_status as string | null,
+        order_numbers: r.numbers_list ? JSON.parse(r.numbers_list as string) : [Number(r.number)],
+        total_amount: r.total_amount ? Number(r.total_amount) : null,
+        private_token: r.private_token as string | null,
         updated_at: r.updated_at as string,
       })),
       pagination: {

@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingCart, Shuffle, CheckCircle, AlertTriangle, ArrowRight, 
-  Banknote, Landmark, Ticket, X
+  Banknote, Landmark, Ticket, X, Phone
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
 export default function AdminVentasPage() {
   const [buyerName, setBuyerName] = useState('');
@@ -90,7 +90,11 @@ export default function AdminVentasPage() {
         return;
       }
 
-      setSuccessOrder(data.order);
+      setSuccessOrder({
+        ...data.order,
+        buyer_name: buyerName.trim(),
+        buyer_phone: buyerPhone.trim(),
+      });
       // Limpiar formulario
       setBuyerName('');
       setBuyerPhone('');
@@ -122,11 +126,30 @@ export default function AdminVentasPage() {
             Código de orden: <strong>{successOrder.code}</strong> • Total:{' '}
             <strong>{formatCurrency(successOrder.total_amount)}</strong> ({successOrder.payment_status === 'paid' ? 'PAGADO' : 'PENDIENTE'})
           </p>
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            {successOrder.buyer_phone && (
+              <a
+                href={buildBuyerWhatsAppUrl({
+                  buyerName: successOrder.buyer_name,
+                  buyerPhone: successOrder.buyer_phone,
+                  orderCode: successOrder.code,
+                  numbers: successOrder.numbers || [],
+                  totalAmount: successOrder.total_amount,
+                  paymentStatus: successOrder.payment_status,
+                  privateToken: successOrder.private_token,
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-1.5 rounded-lg transition shadow-sm"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Enviar comprobante por WhatsApp</span>
+              </a>
+            )}
             <Link
               href={`/pedido/${successOrder.private_token}`}
               target="_blank"
-              className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-lg transition"
+              className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1.5 rounded-lg transition"
             >
               Abrir comprobante digital
             </Link>
