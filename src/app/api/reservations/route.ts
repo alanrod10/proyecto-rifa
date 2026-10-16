@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, getSettings, releaseExpiredReservations } from '@/lib/db';
-import { generateOrderCode, generatePrivateToken, cleanPhoneNumber } from '@/lib/utils';
+import { generateUniqueOrderCode, generatePrivateToken, cleanPhoneNumber } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,13 +52,15 @@ export async function POST(request: NextRequest) {
     const totalAmount = uniqueNumbers.length * unitPrice;
 
     const expiresAt = new Date(Date.now() + reserveHours * 60 * 60 * 1000).toISOString();
-    const orderCode = generateOrderCode();
     const privateToken = generatePrivateToken();
 
     const db = getDb();
     const tx = await db.transaction('write');
 
     try {
+      // Generar código de orden único dentro de la transacción (con reintento ante colisión)
+      const orderCode = await generateUniqueOrderCode(tx);
+
       // 3. Verificación atómica de disponibilidad de TODOS los números solicitados
       const placeholders = uniqueNumbers.map(() => '?').join(',');
       const checkRes = await tx.execute({
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
         }, { status: 409 });
       }
 
-      // 4. Crear o reutilizar comprador
+      // 4. Crear o reutilizar comprador (sin sobrescribir el nombre histórico desde el formulario público)
       let buyerId: number;
       const existingBuyer = await tx.execute({
         sql: 'SELECT id FROM buyers WHERE phone = ? LIMIT 1',
@@ -101,11 +103,6 @@ export async function POST(request: NextRequest) {
 
       if (existingBuyer.rows.length > 0) {
         buyerId = Number(existingBuyer.rows[0].id);
-        // Actualizar nombre si cambió
-        await tx.execute({
-          sql: 'UPDATE buyers SET name = ? WHERE id = ?',
-          args: [buyer_name.trim(), buyerId]
-        });
       } else {
         const insertBuyer = await tx.execute({
           sql: 'INSERT INTO buyers (name, phone) VALUES (?, ?)',

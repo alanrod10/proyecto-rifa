@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, getSettings, logAudit } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
-import { generateOrderCode, generatePrivateToken, cleanPhoneNumber } from '@/lib/utils';
+import { generateUniqueOrderCode, generatePrivateToken, cleanPhoneNumber } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,13 +42,14 @@ export async function POST(request: NextRequest) {
     const status = is_paid ? 'paid' : 'pending';
     const numberStatus = is_paid ? 'sold' : 'reserved';
     const expiresAt = new Date(Date.now() + reserveHours * 60 * 60 * 1000).toISOString();
-    const orderCode = generateOrderCode();
     const privateToken = generatePrivateToken();
 
     const db = getDb();
     const tx = await db.transaction('write');
 
     try {
+      const orderCode = await generateUniqueOrderCode(tx);
+
       // 1. Verificar disponibilidad de los números
       const placeholders = uniqueNumbers.map(() => '?').join(',');
       const checkRes = await tx.execute({

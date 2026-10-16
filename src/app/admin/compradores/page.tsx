@@ -6,7 +6,7 @@ import {
   Users, Search, Phone, Ticket, Copy, ExternalLink, RefreshCw, 
   ChevronDown, ChevronUp, CheckCircle, Clock
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency, formatDate } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone } from '@/lib/utils';
 
 interface BuyerOrder {
   id: number;
@@ -138,7 +138,7 @@ export default function AdminCompradoresPage() {
                         <h4 className="font-bold text-slate-900 text-sm">{buyer.name}</h4>
                         <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                           <a 
-                            href={`https://wa.me/${buyer.phone.replace(/\D/g, '')}`} 
+                            href={`https://wa.me/${formatWhatsAppPhone(buyer.phone)}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-emerald-700 hover:underline font-mono"
@@ -186,7 +186,7 @@ export default function AdminCompradoresPage() {
                             const origin = typeof window !== 'undefined' ? window.location.origin : '';
                             const recoveryUrl = `${origin}/pedido/${ord.private_token}`;
                             const waRecoveryMsg = `Hola ${buyer.name}! Te reenviamos el enlace privado de tu reserva ${ord.code} de la rifa: ${recoveryUrl}`;
-                            const waLink = `https://wa.me/${buyer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(waRecoveryMsg)}`;
+                            const waLink = `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(waRecoveryMsg)}`;
 
                             return (
                               <div key={ord.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">

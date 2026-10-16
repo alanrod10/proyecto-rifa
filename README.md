@@ -75,13 +75,9 @@ La aplicación estará disponible inmediatamente en:
 - **Consulta de Reserva:** `http://localhost:3000/consultar`
 - **Panel Administrativo:** `http://localhost:3000/admin`
 
-### Credenciales de Administrador Iniciales (Modificables en `.env.local`):
-- **Administrador 1:**
-  - Usuario: `alan`
-  - Contraseña inicial: `Rifa2026!Admin1`
-- **Administradora 2 (Yilda):**
-  - Usuario: `yilda`
-  - Contraseña inicial: `Rifa2026!Admin2`
+### Cuentas de Administrador:
+- **Administrador 1:** Usuario `alan` *(Contraseña configurable en `.env.local` o directamente desde el panel web en `/admin/configuracion`)*
+- **Administradora 2 (Yilda):** Usuario `yilda` *(Contraseña configurable en `.env.local` o directamente desde el panel web en `/admin/configuracion`)*
 
 ---
 

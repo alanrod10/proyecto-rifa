@@ -3,13 +3,22 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
 const DEFAULT_SECRET_FALLBACK = 'clave_secreta_super_segura_cambiar_en_produccion_minimo_32_caracteres';
-const SECRET_KEY = process.env.ADMIN_SECRET_KEY || DEFAULT_SECRET_FALLBACK;
 
-if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_SECRET_KEY) {
-  console.warn('[ALERTA DE SEGURIDAD] ADMIN_SECRET_KEY no está configurada en las variables de entorno. Configure una clave segura de al menos 32 caracteres en .env.local.');
+function getJwtSecretKey(): Uint8Array {
+  const envSecret = process.env.ADMIN_SECRET_KEY;
+  const isProd = process.env.NODE_ENV === 'production';
+  const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
+  if (isProd && !isBuildPhase) {
+    if (!envSecret || envSecret === DEFAULT_SECRET_FALLBACK || envSecret.length < 32) {
+      throw new Error(
+        '[ERROR CRÍTICO DE SEGURIDAD] En producción es obligatorio configurar una variable de entorno ADMIN_SECRET_KEY única de al menos 32 caracteres.'
+      );
+    }
+  }
+
+  return new TextEncoder().encode(envSecret || DEFAULT_SECRET_FALLBACK);
 }
-
-const key = new TextEncoder().encode(SECRET_KEY);
 
 export const COOKIE_NAME = 'rifa_admin_session';
 
@@ -37,6 +46,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * Genera un token JWT firmado para la sesión del administrador
  */
 export async function signAdminToken(admin: AdminPayload): Promise<string> {
+  const key = getJwtSecretKey();
   return new SignJWT({
     id: admin.id,
     username: admin.username,
@@ -53,6 +63,7 @@ export async function signAdminToken(admin: AdminPayload): Promise<string> {
  */
 export async function verifyAdminToken(token: string): Promise<AdminPayload | null> {
   try {
+    const key = getJwtSecretKey();
     const { payload } = await jwtVerify(token, key, {
       algorithms: ['HS256'],
     });

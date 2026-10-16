@@ -7,11 +7,12 @@ Este manual está diseñado para **Alan** e **Yilda**, administradores del siste
 
 ## 1. Acceso al Panel Administrativo
 
-- **Dirección Web:** `http://tu-dominio/admin/login` (o en local `http://localhost:3000/admin/login`).
+- **Dirección Web:** `https://proyecto-rifa.vercel.app/admin/login` (o en local `http://localhost:3000/admin/login`).
 - **Cuentas Individuales:**
-  - **Administrador 1 (Alan):** Usuario `alan` | Contraseña: `Rifa2026!Admin1`
-  - **Administradora 2 (Yilda):** Usuario `yilda` | Contraseña: `Rifa2026!Admin2`
+  - **Administrador 1 (Alan):** Usuario `alan` | *(Contraseña privada configurable desde `/admin/configuracion`)*
+  - **Administradora 2 (Yilda):** Usuario `yilda` | *(Contraseña privada configurable desde `/admin/configuracion`)*
 - Ambas cuentas tienen permisos completos e independientes. El sistema registra en el historial de auditoría el nombre exacto de quién realizó cada confirmación o cambio.
+- **Cambio de contraseña desde la web:** Cada administrador puede actualizar su propia contraseña en cualquier momento desde **Configuración** (`/admin/configuracion` -> *Seguridad de Mi Cuenta*).
 
 ---
 

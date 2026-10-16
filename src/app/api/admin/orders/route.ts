@@ -96,49 +96,79 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, order_id, reason } = body;
+    const { action, order_id, reason, force_cancel_paid } = body;
 
     if (!order_id) {
       return NextResponse.json({ error: 'ID de orden requerido' }, { status: 400 });
     }
 
-    const db = getDb();
-    const orderRes = await db.execute({
-      sql: 'SELECT id, code, buyer_name, payment_status, numbers_list, total_amount FROM orders WHERE id = ? LIMIT 1',
-      args: [order_id]
-    });
-
-    if (orderRes.rows.length === 0) {
-      return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 });
+    if (action !== 'confirm_payment' && action !== 'cancel') {
+      return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
     }
 
-    const order = orderRes.rows[0];
+    const db = getDb();
+    const tx = await db.transaction('write');
 
-    // ACCIÓN 1: CONFIRMAR PAGO
-    if (action === 'confirm_payment') {
-      if (order.payment_status === 'paid') {
-        return NextResponse.json({ error: 'Esta orden ya fue marcada como pagada previamente.' }, { status: 400 });
+    try {
+      // Leer la orden DENTRO de la transacción de escritura para garantizar aislamiento total
+      const orderRes = await tx.execute({
+        sql: 'SELECT id, code, buyer_name, payment_status, numbers_count, numbers_list, total_amount FROM orders WHERE id = ? LIMIT 1',
+        args: [order_id]
+      });
+
+      if (orderRes.rows.length === 0) {
+        await tx.rollback();
+        return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 });
       }
 
-      const tx = await db.transaction('write');
-      try {
-        // 1. Actualizar orden
-        await tx.execute({
+      const order = orderRes.rows[0];
+      const currentStatus = order.payment_status as string;
+      const expectedCount = Number(order.numbers_count);
+
+      // ACCIÓN 1: CONFIRMAR PAGO (Solo permitido desde estado 'pending')
+      if (action === 'confirm_payment') {
+        if (currentStatus === 'paid') {
+          await tx.rollback();
+          return NextResponse.json({ error: 'Esta orden ya fue marcada como pagada previamente.' }, { status: 400 });
+        }
+
+        if (currentStatus !== 'pending') {
+          await tx.rollback();
+          return NextResponse.json({
+            error: `No se puede confirmar el pago de una orden con estado "${currentStatus}" porque sus números ya fueron liberados.`
+          }, { status: 409 });
+        }
+
+        // 1. Marcar números como 'sold' exigiendo que sigan reservados para esta orden
+        const updateNumbersRes = await tx.execute({
+          sql: `UPDATE numbers 
+                SET status = 'sold', updated_at = CURRENT_TIMESTAMP 
+                WHERE order_id = ? AND status = 'reserved'`,
+          args: [order_id]
+        });
+
+        const affectedNumbers = Number(updateNumbersRes.rowsAffected || 0);
+        if (affectedNumbers !== expectedCount) {
+          await tx.rollback();
+          return NextResponse.json({
+            error: `Error de integridad: se esperaban ${expectedCount} números reservados para esta orden, pero solo se encontraron ${affectedNumbers}. La operación fue revertida.`
+          }, { status: 409 });
+        }
+
+        // 2. Actualizar orden exigiendo que continúe 'pending'
+        const updateOrderRes = await tx.execute({
           sql: `UPDATE orders 
                 SET payment_status = 'paid', 
                     paid_at = CURRENT_TIMESTAMP, 
                     confirmed_by_admin = ? 
-                WHERE id = ?`,
+                WHERE id = ? AND payment_status = 'pending'`,
           args: [admin.username, order_id]
         });
 
-        // 2. Marcar números como 'sold'
-        await tx.execute({
-          sql: `UPDATE numbers 
-                SET status = 'sold', updated_at = CURRENT_TIMESTAMP 
-                WHERE order_id = ?`,
-          args: [order_id]
-        });
+        if (Number(updateOrderRes.rowsAffected || 0) !== 1) {
+          await tx.rollback();
+          return NextResponse.json({ error: 'El estado de la orden cambió durante la operación.' }, { status: 409 });
+        }
 
         await tx.commit();
 
@@ -149,27 +179,30 @@ export async function POST(request: NextRequest) {
             order_id,
             code: order.code,
             buyer_name: order.buyer_name,
-            total_amount: order.total_amount
+            total_amount: order.total_amount,
+            numbers_count: expectedCount
           },
           request.headers.get('x-forwarded-for') || 'localhost'
         );
 
         return NextResponse.json({ success: true, message: 'Pago confirmado exitosamente.' });
-      } catch (err) {
-        await tx.rollback();
-        throw err;
-      }
-    }
-
-    // ACCIÓN 2: CANCELAR ORDEN Y LIBERAR NÚMEROS
-    if (action === 'cancel') {
-      if (order.payment_status === 'cancelled') {
-        return NextResponse.json({ error: 'Esta orden ya se encuentra cancelada.' }, { status: 400 });
       }
 
-      const tx = await db.transaction('write');
-      try {
-        // 1. Liberar los números
+      // ACCIÓN 2: CANCELAR ORDEN Y LIBERAR NÚMEROS
+      if (action === 'cancel') {
+        if (currentStatus === 'cancelled') {
+          await tx.rollback();
+          return NextResponse.json({ error: 'Esta orden ya se encuentra cancelada.' }, { status: 400 });
+        }
+
+        if (currentStatus === 'paid' && !force_cancel_paid) {
+          await tx.rollback();
+          return NextResponse.json({
+            error: 'No se puede cancelar una orden que ya figura como PAGADA sin confirmación explícita de anulación.'
+          }, { status: 409 });
+        }
+
+        // 1. Liberar los números asociados a la orden
         await tx.execute({
           sql: `UPDATE numbers 
                 SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
@@ -177,14 +210,23 @@ export async function POST(request: NextRequest) {
           args: [order_id]
         });
 
-        // 2. Marcar orden como cancelada
-        await tx.execute({
+        // 2. Marcar orden como cancelada verificando su estado previo
+        const updateCancelRes = await tx.execute({
           sql: `UPDATE orders 
                 SET payment_status = 'cancelled', 
                     notes = COALESCE(notes || ' | ', '') || ? 
-                WHERE id = ?`,
-          args: [reason ? `Cancelado por ${admin.username}: ${reason}` : `Cancelado por ${admin.username}`, order_id]
+                WHERE id = ? AND payment_status = ?`,
+          args: [
+            reason ? `Cancelado por ${admin.username}: ${reason}` : `Cancelado por ${admin.username}`,
+            order_id,
+            currentStatus
+          ]
         });
+
+        if (Number(updateCancelRes.rowsAffected || 0) !== 1) {
+          await tx.rollback();
+          return NextResponse.json({ error: 'El estado de la orden cambió durante la cancelación.' }, { status: 409 });
+        }
 
         await tx.commit();
 
@@ -194,19 +236,21 @@ export async function POST(request: NextRequest) {
           {
             order_id,
             code: order.code,
+            previous_status: currentStatus,
             reason: reason || 'Sin motivo especificado'
           },
           request.headers.get('x-forwarded-for') || 'localhost'
         );
 
         return NextResponse.json({ success: true, message: 'Orden cancelada y números liberados correctamente.' });
-      } catch (err) {
-        await tx.rollback();
-        throw err;
       }
-    }
 
-    return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
+      await tx.rollback();
+      return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
+    } catch (err) {
+      await tx.rollback().catch(() => {});
+      throw err;
+    }
   } catch (error) {
     console.error('Error al procesar acción en orden:', error);
     return NextResponse.json({ error: 'Error al procesar la solicitud' }, { status: 500 });

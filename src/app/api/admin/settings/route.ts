@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, getSettings, logAudit } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
+import { cleanPhoneNumber } from '@/lib/utils';
 
 export async function GET() {
   try {
@@ -47,7 +48,8 @@ export async function PUT(request: NextRequest) {
 
     for (const key of allowedKeys) {
       if (body[key] !== undefined) {
-        const val = String(body[key]);
+        const rawVal = String(body[key]);
+        const val = key === 'contact_phone' ? cleanPhoneNumber(rawVal) : rawVal;
         await db.execute({
           sql: `INSERT INTO settings (key, value, updated_at) 
                 VALUES (?, ?, CURRENT_TIMESTAMP)

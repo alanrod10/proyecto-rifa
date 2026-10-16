@@ -6,7 +6,7 @@ import {
   Inbox, Search, CheckCircle, XCircle, Copy, ExternalLink, 
   Clock, AlertTriangle, Filter, RefreshCw
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency, formatDate } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone } from '@/lib/utils';
 
 interface OrderItem {
   id: number;
@@ -232,7 +232,7 @@ export default function AdminSolicitudesPage() {
                     <td className="py-3.5 px-4">
                       <span className="font-semibold text-slate-900 block">{ord.buyer_name}</span>
                       <a 
-                        href={`https://wa.me/${ord.buyer_phone.replace(/\D/g, '')}`} 
+                        href={`https://wa.me/${formatWhatsAppPhone(ord.buyer_phone)}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-emerald-700 hover:underline font-mono text-[11px]"

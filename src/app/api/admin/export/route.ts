@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
+import { sanitizeCsvCell } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,29 +21,30 @@ export async function GET(request: NextRequest) {
       const ordersRes = await db.execute(`
         SELECT id, code, buyer_name, buyer_phone, payment_method, payment_status,
                unit_price, numbers_count, total_amount, numbers_list, is_direct_sale,
-               created_by_admin, paid_at, confirmed_by_admin, created_at
+               created_by_admin, paid_at, confirmed_by_admin, notes, created_at
         FROM orders ORDER BY id ASC
       `);
 
-      csvContent += 'ID;Codigo;Comprador;Celular;Metodo_Pago;Estado;Precio_Unitario;Cantidad_Numeros;Total_ARS;Lista_Numeros;Venta_Directa;Creado_Por;Fecha_Pago;Confirmado_Por;Fecha_Creacion\n';
+      csvContent += 'ID;Codigo;Comprador;Celular;Metodo_Pago;Estado;Precio_Unitario;Cantidad_Numeros;Total_ARS;Lista_Numeros;Venta_Directa;Creado_Por;Fecha_Pago;Confirmado_Por;Notas;Fecha_Creacion\n';
 
       for (const row of ordersRes.rows) {
         const line = [
           row.id,
-          `"${row.code}"`,
-          `"${(row.buyer_name as string).replace(/"/g, '""')}"`,
-          `"${row.buyer_phone}"`,
+          sanitizeCsvCell(row.code),
+          sanitizeCsvCell(row.buyer_name),
+          sanitizeCsvCell(row.buyer_phone),
           row.payment_method,
           row.payment_status,
           row.unit_price,
           row.numbers_count,
           row.total_amount,
-          `"${(row.numbers_list as string).replace(/"/g, '""')}"`,
+          sanitizeCsvCell(row.numbers_list),
           Number(row.is_direct_sale) === 1 ? 'SI' : 'NO',
-          `"${row.created_by_admin || ''}"`,
-          `"${row.paid_at || ''}"`,
-          `"${row.confirmed_by_admin || ''}"`,
-          `"${row.created_at}"`
+          sanitizeCsvCell(row.created_by_admin || ''),
+          sanitizeCsvCell(row.paid_at || ''),
+          sanitizeCsvCell(row.confirmed_by_admin || ''),
+          sanitizeCsvCell(row.notes || ''),
+          sanitizeCsvCell(row.created_at)
         ].join(';');
         csvContent += line + '\n';
       }
@@ -63,12 +65,12 @@ export async function GET(request: NextRequest) {
       for (const row of buyersRes.rows) {
         const line = [
           row.id,
-          `"${(row.name as string).replace(/"/g, '""')}"`,
-          `"${row.phone}"`,
+          sanitizeCsvCell(row.name),
+          sanitizeCsvCell(row.phone),
           row.orders_count,
           row.numbers_count,
           row.paid_amount,
-          `"${row.created_at}"`
+          sanitizeCsvCell(row.created_at)
         ].join(';');
         csvContent += line + '\n';
       }
@@ -87,10 +89,10 @@ export async function GET(request: NextRequest) {
         const line = [
           row.number,
           row.status,
-          `"${row.order_code || ''}"`,
-          `"${(row.buyer_name as string || '').replace(/"/g, '""')}"`,
-          `"${row.buyer_phone || ''}"`,
-          `"${row.payment_status || ''}"`
+          sanitizeCsvCell(row.order_code || ''),
+          sanitizeCsvCell(row.buyer_name || ''),
+          sanitizeCsvCell(row.buyer_phone || ''),
+          sanitizeCsvCell(row.payment_status || '')
         ].join(';');
         csvContent += line + '\n';
       }

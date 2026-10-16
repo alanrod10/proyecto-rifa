@@ -7,7 +7,7 @@ import {
   Copy, Phone, ArrowRight, ShieldCheck, HelpCircle, X, ChevronLeft, ChevronRight,
   Landmark, Banknote, Sparkles
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, formatWhatsAppPhone } from '@/lib/utils';
 
 interface RaffleSettings {
   raffle_name: string;
@@ -45,6 +45,7 @@ export default function PublicPortal() {
   // Selector y Carrito
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [page, setPage] = useState(1);
+  const [gridFilter, setGridFilter] = useState<'all' | 'available'>('all');
   const [availableNumbers, setAvailableNumbers] = useState<NumberItem[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingNumbers, setLoadingNumbers] = useState(false);
@@ -95,15 +96,15 @@ export default function PublicPortal() {
     }
   };
 
-  // Cargar números disponibles por página
+  // Cargar números por página y filtro
   useEffect(() => {
-    loadPageNumbers(page);
-  }, [page]);
+    loadPageNumbers(page, gridFilter);
+  }, [page, gridFilter]);
 
-  const loadPageNumbers = async (pageNum: number) => {
+  const loadPageNumbers = async (pageNum: number, filterMode: 'all' | 'available' = gridFilter) => {
     try {
       setLoadingNumbers(true);
-      const res = await fetch(`/api/numbers?page=${pageNum}&limit=60`);
+      const res = await fetch(`/api/numbers?page=${pageNum}&limit=60&filter=${filterMode}`);
       if (res.ok) {
         const data = await res.json();
         setAvailableNumbers(data.numbers || []);
@@ -548,11 +549,33 @@ export default function PublicPortal() {
           </div>
         )}
 
-        {/* Grilla Paginada de Números Disponibles */}
+        {/* Grilla Paginada de Números */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Explorando números disponibles (Página {page} de {totalPages}):</span>
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span>Explorando números (Página {page} de {totalPages}):</span>
+              <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+                <button
+                  type="button"
+                  onClick={() => { setGridFilter('all'); setPage(1); }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
+                    gridFilter === 'all' ? 'bg-emerald-700 text-white' : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Todos (ver estados)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setGridFilter('available'); setPage(1); }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
+                    gridFilter === 'available' ? 'bg-emerald-700 text-white' : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Solo disponibles
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 self-end sm:self-auto">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page <= 1 || loadingNumbers}
@@ -573,25 +596,37 @@ export default function PublicPortal() {
 
           {loadingNumbers ? (
             <div className="py-16 text-center text-slate-400 text-sm">
-              Cargando números disponibles...
+              Cargando números...
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-10 gap-2">
               {availableNumbers.map(item => {
                 const isSelected = selectedNumbers.includes(item.number);
+                const isAvailable = item.status === 'available';
 
                 return (
                   <button
                     key={item.number}
                     type="button"
+                    disabled={!isAvailable && !isSelected}
                     onClick={() => toggleSelectNumber(item.number, item.status)}
-                    className={`py-2 px-1 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition shadow-sm ${
+                    title={isAvailable ? 'Disponible' : item.status === 'reserved' ? 'Reservado' : 'Vendido'}
+                    className={`py-2 px-1 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition shadow-sm flex flex-col items-center justify-center ${
                       isSelected
                         ? 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-300'
-                        : 'bg-white hover:bg-emerald-50 text-slate-800 border-slate-200 hover:border-emerald-400'
+                        : isAvailable
+                        ? 'bg-white hover:bg-emerald-50 text-slate-800 border-slate-200 hover:border-emerald-400'
+                        : item.status === 'reserved'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-not-allowed opacity-75'
+                        : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60 line-through'
                     }`}
                   >
-                    {formatTicketNumber(item.number)}
+                    <span>{formatTicketNumber(item.number)}</span>
+                    {!isAvailable && !isSelected && (
+                      <span className="text-[9px] font-sans font-semibold no-underline">
+                        {item.status === 'reserved' ? 'Reservado' : 'Vendido'}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -732,18 +767,23 @@ export default function PublicPortal() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Número de Celular (con código de área) *
+                  Número de Celular (sin 54, directo con característica local) *
                 </label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="Ej: 3884123456"
-                  value={buyerPhone}
-                  onChange={(e) => setBuyerPhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                />
+                <div className="flex items-center">
+                  <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-xs font-mono font-bold text-slate-600 select-none">
+                    +54
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="Ej: 3884123456"
+                    value={buyerPhone}
+                    onChange={(e) => setBuyerPhone(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
+                  />
+                </div>
                 <span className="text-[11px] text-slate-400 mt-0.5 block">
-                  Usaremos este celular únicamente para coordinar el pago y validar tu participación.
+                  Ingresá directamente tu número sin el 54 (ej: 3884123456).
                 </span>
               </div>
 
@@ -828,7 +868,7 @@ export default function PublicPortal() {
           </div>
           {settings?.contact_phone && (
             <a
-              href={`https://wa.me/${settings.contact_phone}?text=${encodeURIComponent('Hola! Quisiera hacer una consulta sobre la rifa.')}`}
+              href={`https://wa.me/${formatWhatsAppPhone(settings.contact_phone)}?text=${encodeURIComponent('Hola! Quisiera hacer una consulta sobre la rifa.')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition"

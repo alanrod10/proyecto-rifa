@@ -95,69 +95,84 @@ export async function logAudit(
 }
 
 /**
- * Libera de forma atómica y segura las reservas vencidas sin requerir un cron externo pago
+ * Libera de forma atómica y segura las reservas vencidas sin requerir un cron externo pago.
+ * Realiza tanto la lectura como la liberación dentro de la misma transacción de escritura,
+ * verificando que la orden siga 'pending' y los números sigan 'reserved'.
  */
 export async function releaseExpiredReservations(): Promise<{ releasedOrdersCount: number; releasedNumbersCount: number }> {
   const db = getDb();
-  
-  // Buscar órdenes vencidas pendientes
-  const expiredOrdersRes = await db.execute({
-    sql: `SELECT id, numbers_list FROM orders 
-          WHERE payment_status = 'pending' 
-          AND datetime(expires_at) < datetime('now')`,
+
+  // Verificación rápida de lectura para evitar abrir transacciones innecesarias cuando no hay vencidos
+  const quickCheck = await db.execute({
+    sql: `SELECT 1 FROM orders WHERE payment_status = 'pending' AND datetime(expires_at) < datetime('now') LIMIT 1`,
     args: []
   });
 
-  if (expiredOrdersRes.rows.length === 0) {
+  if (quickCheck.rows.length === 0) {
     return { releasedOrdersCount: 0, releasedNumbersCount: 0 };
   }
 
-  const orderIds = expiredOrdersRes.rows.map(r => r.id as number);
-  let totalNumbers = 0;
-
-  for (const row of expiredOrdersRes.rows) {
-    try {
-      const nums = JSON.parse(row.numbers_list as string);
-      totalNumbers += Array.isArray(nums) ? nums.length : 0;
-    } catch {
-      // Ignorar parseo si estuviera dañado
-    }
-  }
-
   const tx = await db.transaction('write');
+  let orderIds: number[] = [];
+  let releasedNumbersCount = 0;
+
   try {
-    // 1. Liberar los números asociados a esas órdenes vencidas
-    const placeholders = orderIds.map(() => '?').join(',');
-    await tx.execute({
-      sql: `UPDATE numbers 
-            SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
-            WHERE order_id IN (${placeholders})`,
-      args: orderIds
+    // 1. Buscar órdenes vencidas pendientes DENTRO de la transacción de escritura
+    const expiredOrdersRes = await tx.execute({
+      sql: `SELECT id, numbers_list FROM orders 
+            WHERE payment_status = 'pending' 
+            AND datetime(expires_at) < datetime('now')`,
+      args: []
     });
 
-    // 2. Marcar las órdenes como vencidas (expired)
-    await tx.execute({
+    if (expiredOrdersRes.rows.length === 0) {
+      await tx.rollback();
+      return { releasedOrdersCount: 0, releasedNumbersCount: 0 };
+    }
+
+    orderIds = expiredOrdersRes.rows.map(r => Number(r.id));
+    const placeholders = orderIds.map(() => '?').join(',');
+
+    // 2. Marcar como vencidas ÚNICAMENTE las órdenes que continúen en estado 'pending'
+    const updateOrdersRes = await tx.execute({
       sql: `UPDATE orders 
             SET payment_status = 'expired' 
-            WHERE id IN (${placeholders})`,
+            WHERE id IN (${placeholders}) 
+            AND payment_status = 'pending' 
+            AND datetime(expires_at) < datetime('now')`,
       args: orderIds
     });
+
+    // 3. Liberar ÚNICAMENTE los números en estado 'reserved' pertenecientes a órdenes que ahora están 'expired'
+    const updateNumbersRes = await tx.execute({
+      sql: `UPDATE numbers 
+            SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
+            WHERE order_id IN (${placeholders}) 
+            AND status = 'reserved'
+            AND order_id IN (SELECT id FROM orders WHERE id IN (${placeholders}) AND payment_status = 'expired')`,
+      args: [...orderIds, ...orderIds]
+    });
+
+    releasedNumbersCount = Number(updateNumbersRes.rowsAffected || 0);
+    const releasedOrdersCount = Number(updateOrdersRes.rowsAffected || 0);
 
     await tx.commit();
 
-    // Registrar en auditoría
-    await logAudit('SYSTEM_AUTO_CLEAN', 'EXPIRE_RESERVATIONS', {
-      orderIds,
-      releasedNumbersCount: totalNumbers,
-      timestamp: new Date().toISOString()
-    });
+    if (releasedOrdersCount > 0) {
+      await logAudit('SYSTEM_AUTO_CLEAN', 'EXPIRE_RESERVATIONS', {
+        orderIds,
+        releasedOrdersCount,
+        releasedNumbersCount,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     return {
-      releasedOrdersCount: orderIds.length,
-      releasedNumbersCount: totalNumbers
+      releasedOrdersCount,
+      releasedNumbersCount
     };
   } catch (err) {
-    await tx.rollback();
+    await tx.rollback().catch(() => {});
     console.error('Error liberando reservas vencidas:', err);
     throw err;
   }

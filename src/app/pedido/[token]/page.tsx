@@ -7,7 +7,7 @@ import {
   Ticket, CheckCircle, Clock, AlertCircle, XCircle, Copy, Share2, 
   Phone, Landmark, Banknote, RefreshCw, ArrowLeft, ShieldCheck
 } from 'lucide-react';
-import { formatTicketNumber, formatCurrency, formatDate } from '@/lib/utils';
+import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone } from '@/lib/utils';
 
 interface OrderData {
   code: string;
@@ -130,7 +130,7 @@ export default function BuyerPrivateOrderPage() {
   const formattedNumbers = order.numbers.map(formatTicketNumber).join(', ');
   const whatsappMsg = `Hola! Soy ${order.buyer_name}. Tengo la reserva ${order.code} de la rifa por ${order.numbers_count} número(s) (${formattedNumbers}) por un total de ${formatCurrency(order.total_amount)}. Te envío el comprobante de pago.`;
   const whatsappUrl = raffle.contact_phone 
-    ? `https://wa.me/${raffle.contact_phone}?text=${encodeURIComponent(whatsappMsg)}`
+    ? `https://wa.me/${formatWhatsAppPhone(raffle.contact_phone)}?text=${encodeURIComponent(whatsappMsg)}`
     : null;
 
   return (

@@ -1,16 +1,27 @@
 import { createClient } from '@libsql/client';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
 console.log('================================================================');
 console.log('    PROYECTO RIFA — SUITE COMPLETA DE PRUEBAS OBLIGATORIAS');
-console.log('                 (20 Puntos de Verificación)');
+console.log('           (25 Puntos de Verificación + Auditoría)');
 console.log('================================================================\n');
 
 const REAL_DB_PATH = path.join(process.cwd(), 'rifa.db');
 const TEST_DB_PATH = path.join(process.cwd(), 'backups/test_isolated.db');
+
+// Si se ejecuta en un clon limpio sin rifa.db local, inicializar automáticamente
+if (!fs.existsSync(REAL_DB_PATH)) {
+  console.log('Inicializando base de datos local para pruebas (npm run seed)...');
+  execFileSync(process.execPath, [path.join(process.cwd(), 'scripts/init-db.mjs')], { stdio: 'inherit' });
+}
+
+if (!fs.existsSync(path.dirname(TEST_DB_PATH))) {
+  fs.mkdirSync(path.dirname(TEST_DB_PATH), { recursive: true });
+}
 
 // Crear copia de base de datos aislada para pruebas
 if (fs.existsSync(TEST_DB_PATH)) {
@@ -393,6 +404,42 @@ async function runAllTests() {
     const exposesPrivate = schemaCheck.includes('buyer_name') || schemaCheck.includes('buyer_phone');
     assert(!exposesPrivate, '20. Verificar que no se expongan datos personales', `La API pública de números devuelve exclusivamente { number, status }, protegiendo a los compradores.`);
 
+    // -------------------------------------------------------------
+    // PRUEBA 21: Prevención de "Pago Fantasma" en órdenes vencidas/canceladas
+    // -------------------------------------------------------------
+    const ordersRouteContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/orders/route.ts'), 'utf-8');
+    const checksPendingInTx = ordersRouteContent.includes("currentStatus !== 'pending'") && ordersRouteContent.includes("WHERE order_id = ? AND status = 'reserved'");
+    assert(checksPendingInTx, '21. Prevención de Pago Fantasma y Máquina de Estados', `Confirmación de pago exige estado "pending" y coincidencia exacta de números reservados dentro de la transacción.`);
+
+    // -------------------------------------------------------------
+    // PRUEBA 22: Protección contra Fuerza Bruta (Rate Limiting) en Login
+    // -------------------------------------------------------------
+    const loginRouteContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/auth/login/route.ts'), 'utf-8');
+    const hasRateLimit = loginRouteContent.includes('ADMIN_LOGIN_FAILED') && loginRouteContent.includes('status: 429');
+    assert(hasRateLimit, '22. Protección contra Fuerza Bruta en Login Admin', `Intentos fallidos registrados en audit_logs con bloqueo HTTP 429 tras múltiples fallos.`);
+
+    // -------------------------------------------------------------
+    // PRUEBA 23: Normalización de celular sin requerir prefijo 54 y formateo WhatsApp
+    // -------------------------------------------------------------
+    const utilsContent = fs.readFileSync(path.join(process.cwd(), 'src/lib/utils.ts'), 'utf-8');
+    const hasPhoneHelpers = utilsContent.includes('formatWhatsAppPhone') && utilsContent.includes("return `549${clean}`");
+    assert(hasPhoneHelpers, '23. Carga de celular directo sin prefijo 54', `Normalización automática de números locales (ej: 3884123456) y conversión automática a 549 para enlaces de WhatsApp.`);
+
+    // -------------------------------------------------------------
+    // PRUEBA 24: Sanitización contra Inyección de Fórmulas CSV y Códigos RF-XXXXXX con reintento
+    // -------------------------------------------------------------
+    const exportContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/export/route.ts'), 'utf-8');
+    const hasCsvSanitizer = exportContent.includes('sanitizeCsvCell') && utilsContent.includes('generateUniqueOrderCode');
+    assert(hasCsvSanitizer, '24. Protección CSV Injection y Códigos Únicos con Reintento', `Celdas CSV neutralizadas ante prefijos (=, +, -, @) y códigos de 6 caracteres con verificación de colisión.`);
+
+    // -------------------------------------------------------------
+    // PRUEBA 25: Optimización de lecturas en Turso y Zona Horaria Jujuy
+    // -------------------------------------------------------------
+    const numbersRouteContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/numbers/route.ts'), 'utf-8');
+    const usesIndexedRandom = !numbersRouteContent.includes('ORDER BY RANDOM()') && numbersRouteContent.includes('pickRandomUniqueInts');
+    const usesJujuyTz = utilsContent.includes('America/Argentina/Jujuy');
+    assert(usesIndexedRandom && usesJujuyTz, '25. Optimización Turso (sin ORDER BY RANDOM) y TZ Jujuy', `Muestreo por clave primaria indexada y zona horaria America/Argentina/Jujuy activa.`);
+
     newClient.close();
   } catch (err) {
     console.error('Error fatal durante las pruebas:', err);
@@ -404,7 +451,7 @@ async function runAllTests() {
   }
 
   console.log('\n================================================================');
-  console.log(`RESUMEN DE PRUEBAS: ${passedCount} PASADAS, ${failedCount} FALLADAS DE 20`);
+  console.log(`RESUMEN DE PRUEBAS: ${passedCount} PASADAS, ${failedCount} FALLADAS DE 25`);
   console.log('================================================================');
 
   if (failedCount > 0) {
