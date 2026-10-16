@@ -163,11 +163,20 @@ export function pickRandomUniqueInts(count: number, min = 1, max = 80000): numbe
 }
 
 /**
- * Formatea una fecha en hora de Argentina (Jujuy)
+ * Formatea una fecha en hora de Argentina (Jujuy).
+ * Normaliza marcas de tiempo UTC de SQLite ("YYYY-MM-DD HH:MM:SS") agregando "T" y "Z"
+ * para evitar desfases de huso horario en el navegador.
  */
 export function formatDate(dateStr: string | Date | null | undefined): string {
   if (!dateStr) return 'No definida';
-  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  let normalized: string | Date = dateStr;
+  if (typeof dateStr === 'string') {
+    const trimmed = dateStr.trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(trimmed)) {
+      normalized = `${trimmed.replace(' ', 'T')}Z`;
+    }
+  }
+  const date = typeof normalized === 'string' ? new Date(normalized) : normalized;
   if (isNaN(date.getTime())) return 'Fecha inválida';
   
   return new Intl.DateTimeFormat('es-AR', {

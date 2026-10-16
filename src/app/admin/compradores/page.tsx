@@ -226,9 +226,21 @@ export default function AdminCompradoresPage() {
                                   <div className="flex items-center gap-2">
                                     <span className="font-mono font-bold text-slate-800">{ord.code}</span>
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                      ord.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                      ord.payment_status === 'paid'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : ord.payment_status === 'pending'
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : ord.payment_status === 'expired'
+                                        ? 'bg-slate-200 text-slate-700'
+                                        : 'bg-red-100 text-red-800'
                                     }`}>
-                                      {ord.payment_status === 'paid' ? 'PAGADO' : 'PENDIENTE'}
+                                      {ord.payment_status === 'paid'
+                                        ? 'PAGADO'
+                                        : ord.payment_status === 'pending'
+                                        ? 'PENDIENTE'
+                                        : ord.payment_status === 'expired'
+                                        ? 'VENCIDO'
+                                        : 'CANCELADO'}
                                     </span>
                                     <span className="text-slate-400 text-[11px]">{formatDate(ord.created_at)}</span>
                                   </div>

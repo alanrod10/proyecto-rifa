@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       sql: `SELECT 
               b.id, b.name, b.phone, b.created_at,
               COUNT(o.id) as total_orders,
-              COALESCE(SUM(o.numbers_count), 0) as total_numbers,
+              COALESCE(SUM(CASE WHEN o.payment_status IN ('paid', 'pending') THEN o.numbers_count ELSE 0 END), 0) as total_numbers,
               COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN o.total_amount ELSE 0 END), 0) as total_paid_amount
             FROM buyers b
             LEFT JOIN orders o ON b.id = o.buyer_id

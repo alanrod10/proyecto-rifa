@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, releaseExpiredReservations } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
+import { safeJsonParse } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,6 +9,8 @@ export async function GET(request: NextRequest) {
     if (!admin) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
+
+    await releaseExpiredReservations().catch(() => {});
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
         buyer_name: r.buyer_name as string | null,
         buyer_phone: r.buyer_phone as string | null,
         payment_status: r.payment_status as string | null,
-        order_numbers: r.numbers_list ? JSON.parse(r.numbers_list as string) : [Number(r.number)],
+        order_numbers: r.numbers_list ? safeJsonParse<number[]>(r.numbers_list as string, [Number(r.number)]) : [Number(r.number)],
         total_amount: r.total_amount ? Number(r.total_amount) : null,
         private_token: r.private_token as string | null,
         updated_at: r.updated_at as string,

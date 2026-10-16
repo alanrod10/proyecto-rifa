@@ -50,8 +50,8 @@ async function restoreJsonSnapshot(jsonPath) {
       if (Array.isArray(raw.data.buyers)) {
         for (const b of raw.data.buyers) {
           await tx.execute({
-            sql: `INSERT OR REPLACE INTO buyers (id, name, phone, notes, created_at) VALUES (?, ?, ?, ?, ?)`,
-            args: [b.id, b.name, b.phone, b.notes || null, b.created_at]
+            sql: `INSERT OR REPLACE INTO buyers (id, name, phone, created_at) VALUES (?, ?, ?, ?)`,
+            args: [b.id, b.name, b.phone, b.created_at]
           });
         }
       }

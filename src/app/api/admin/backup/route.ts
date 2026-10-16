@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const [settingsRes, buyersRes, ordersRes, nonAvailNumbersRes, statsRes, auditRes] = await Promise.all([
       db.execute('SELECT key, value, updated_at FROM settings ORDER BY key ASC'),
-      db.execute('SELECT id, name, phone, notes, created_at FROM buyers ORDER BY id ASC'),
+      db.execute('SELECT id, name, phone, created_at FROM buyers ORDER BY id ASC'),
       db.execute('SELECT * FROM orders ORDER BY id ASC'),
       db.execute("SELECT number, status, order_id, updated_at FROM numbers WHERE status != 'available' ORDER BY number ASC"),
       db.execute(`
