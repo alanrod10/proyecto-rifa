@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, logAudit } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 import { safeJsonParse } from '@/lib/utils';
 
@@ -92,5 +92,97 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error al consultar compradores:', error);
     return NextResponse.json({ error: 'Error al consultar compradores' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const admin = await getCurrentAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { buyer_id } = body;
+
+    if (!buyer_id) {
+      return NextResponse.json({ error: 'ID de comprador requerido' }, { status: 400 });
+    }
+
+    const db = getDb();
+    const tx = await db.transaction('write');
+
+    try {
+      const buyerRes = await tx.execute({
+        sql: 'SELECT id, name, phone FROM buyers WHERE id = ? LIMIT 1',
+        args: [buyer_id]
+      });
+
+      if (buyerRes.rows.length === 0) {
+        await tx.rollback();
+        return NextResponse.json({ error: 'Comprador no encontrado' }, { status: 404 });
+      }
+
+      const buyer = buyerRes.rows[0];
+
+      // 1. Obtener todas las órdenes del comprador
+      const ordersRes = await tx.execute({
+        sql: 'SELECT id, code FROM orders WHERE buyer_id = ?',
+        args: [buyer_id]
+      });
+
+      const orderIds = ordersRes.rows.map(r => Number(r.id));
+      const orderCodes = ordersRes.rows.map(r => r.code as string);
+      let releasedNumbersCount = 0;
+
+      // 2. Si tiene órdenes, liberar sus números y eliminar las órdenes
+      if (orderIds.length > 0) {
+        const placeholders = orderIds.map(() => '?').join(',');
+        const releaseRes = await tx.execute({
+          sql: `UPDATE numbers 
+                SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
+                WHERE order_id IN (${placeholders})`,
+          args: orderIds
+        });
+        releasedNumbersCount = Number(releaseRes.rowsAffected || 0);
+
+        await tx.execute({
+          sql: 'DELETE FROM orders WHERE buyer_id = ?',
+          args: [buyer_id]
+        });
+      }
+
+      // 3. Eliminar al comprador
+      await tx.execute({
+        sql: 'DELETE FROM buyers WHERE id = ?',
+        args: [buyer_id]
+      });
+
+      await tx.commit();
+
+      await logAudit(
+        admin.username,
+        'DELETE_BUYER',
+        {
+          buyer_id,
+          buyer_name: buyer.name,
+          buyer_phone: buyer.phone,
+          deleted_orders: orderCodes,
+          released_numbers: releasedNumbersCount
+        },
+        request.headers.get('x-forwarded-for') || 'localhost'
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Comprador "${buyer.name}" eliminado junto con ${orderIds.length} pedido(s) (${releasedNumbersCount} número(s) liberados).`
+      });
+    } catch (err) {
+      await tx.rollback().catch(() => {});
+      throw err;
+    }
+  } catch (error) {
+    console.error('Error al eliminar comprador:', error);
+    return NextResponse.json({ error: 'Error al eliminar comprador' }, { status: 500 });
   }
 }

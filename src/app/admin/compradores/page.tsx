@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Users, Search, Phone, Ticket, Copy, ExternalLink, RefreshCw, 
-  ChevronDown, ChevronUp, CheckCircle, Clock
+  ChevronDown, ChevronUp, CheckCircle, Clock, Trash2, ArrowLeftRight
 } from 'lucide-react';
 import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
@@ -41,6 +41,8 @@ export default function AdminCompradoresPage() {
 
   const [expandedBuyerId, setExpandedBuyerId] = useState<number | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
 
   const fetchBuyers = async () => {
     try {
@@ -80,13 +82,110 @@ export default function AdminCompradoresPage() {
     setTimeout(() => setCopiedToken(null), 2500);
   };
 
+  const handleDeleteBuyer = async (buyer: BuyerItem) => {
+    if (
+      !confirm(
+        `¿Estás seguro de ELIMINAR al comprador "${buyer.name}" (${buyer.phone})?\n\n• Se borrarán sus ${buyer.total_orders} pedido(s).\n• Todos sus números volverán a estar disponibles.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setFeedback(null);
+      const res = await fetch('/api/admin/buyers', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ buyer_id: buyer.id })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback(data.message || 'Comprador eliminado correctamente.');
+        fetchBuyers();
+      } else {
+        alert(data.error || 'Error al eliminar comprador.');
+      }
+    } catch {
+      alert('Error de red al eliminar comprador.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteOrder = async (ord: BuyerOrder, buyerName: string) => {
+    if (
+      !confirm(
+        `¿Estás seguro de ELIMINAR definitivamente el pedido ${ord.code} de "${buyerName}"?\n\n• Sus ${ord.numbers_count} número(s) volverán a estar disponibles.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setFeedback(null);
+      const res = await fetch('/api/admin/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          order_id: ord.id,
+          reason: 'Eliminación manual desde Compradores'
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback(data.message || 'Pedido eliminado correctamente.');
+        fetchBuyers();
+      } else {
+        alert(data.error || 'Error al eliminar pedido.');
+      }
+    } catch {
+      alert('Error de red al eliminar pedido.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleTogglePaymentMethod = async (ord: BuyerOrder, buyerName: string) => {
+    const nextMethod = ord.payment_method === 'cash' ? 'transfer' : 'cash';
+    const nextLabel = nextMethod === 'cash' ? 'Efectivo' : 'Transferencia';
+    if (!confirm(`¿Cambiar el medio de pago del pedido ${ord.code} (${buyerName}) a ${nextLabel}?`)) return;
+
+    try {
+      setActionLoading(true);
+      setFeedback(null);
+      const res = await fetch('/api/admin/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'change_payment_method',
+          order_id: ord.id,
+          payment_method: nextMethod
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback(data.message || `Medio de pago actualizado a ${nextLabel}.`);
+        fetchBuyers();
+      } else {
+        alert(data.error || 'Error al cambiar medio de pago.');
+      }
+    } catch {
+      alert('Error de red al cambiar medio de pago.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Directorio de Compradores</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Consultá participantes, pedidos históricos y recuperá enlaces privados de consulta.
+            Consultá participantes, pedidos históricos, cambiá medio de pago o eliminá registros de prueba.
           </p>
         </div>
 
@@ -98,6 +197,13 @@ export default function AdminCompradoresPage() {
           <span>Actualizar</span>
         </button>
       </div>
+
+      {feedback && (
+        <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs rounded-xl flex items-center justify-between">
+          <span>{feedback}</span>
+          <button onClick={() => setFeedback(null)} className="text-emerald-900 font-bold ml-2">×</button>
+        </div>
+      )}
 
       {/* Buscador */}
       <form onSubmit={handleSearch} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
@@ -167,8 +273,8 @@ export default function AdminCompradoresPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-                      <div className="text-right">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                      <div className="text-right mr-1">
                         <span className="block text-[10px] text-slate-400 uppercase font-semibold">Total Pagado</span>
                         <span className="text-sm font-bold text-emerald-700">
                           {formatCurrency(buyer.total_paid_amount)}
@@ -187,6 +293,16 @@ export default function AdminCompradoresPage() {
                           <span className="hidden sm:inline">Reenviar Comprobante</span>
                         </a>
                       )}
+
+                      <button
+                        onClick={() => handleDeleteBuyer(buyer)}
+                        disabled={actionLoading}
+                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+                        title="Eliminar comprador y liberar todos sus números"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Eliminar</span>
+                      </button>
 
                       <button
                         onClick={() => setExpandedBuyerId(isExpanded ? null : buyer.id)}
@@ -223,7 +339,7 @@ export default function AdminCompradoresPage() {
                             return (
                               <div key={ord.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
                                 <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center flex-wrap gap-2">
                                     <span className="font-mono font-bold text-slate-800">{ord.code}</span>
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                       ord.payment_status === 'paid'
@@ -242,6 +358,16 @@ export default function AdminCompradoresPage() {
                                         ? 'VENCIDO'
                                         : 'CANCELADO'}
                                     </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTogglePaymentMethod(ord, buyer.name)}
+                                      disabled={actionLoading}
+                                      title="Cambiar entre Efectivo y Transferencia"
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-emerald-400 text-[11px] text-slate-700 font-medium transition"
+                                    >
+                                      <span>{ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}</span>
+                                      <ArrowLeftRight className="w-3 h-3 text-slate-400" />
+                                    </button>
                                     <span className="text-slate-400 text-[11px]">{formatDate(ord.created_at)}</span>
                                   </div>
                                   <div className="flex flex-wrap gap-1 font-mono text-[11px] text-slate-700">
@@ -254,8 +380,8 @@ export default function AdminCompradoresPage() {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 self-end md:self-center">
-                                  <span className="font-bold text-slate-900 mr-2">{formatCurrency(ord.total_amount)}</span>
+                                <div className="flex items-center flex-wrap gap-2 self-end md:self-center">
+                                  <span className="font-bold text-slate-900 mr-1">{formatCurrency(ord.total_amount)}</span>
 
                                   {/* Botón Reenviar por WhatsApp */}
                                   <a
@@ -287,6 +413,17 @@ export default function AdminCompradoresPage() {
                                   >
                                     <ExternalLink className="w-3.5 h-3.5" />
                                   </Link>
+
+                                  {/* Botón Eliminar este pedido */}
+                                  <button
+                                    onClick={() => handleDeleteOrder(ord, buyer.name)}
+                                    disabled={actionLoading}
+                                    className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+                                    title="Eliminar este pedido y liberar sus números"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Eliminar</span>
+                                  </button>
                                 </div>
                               </div>
                             );

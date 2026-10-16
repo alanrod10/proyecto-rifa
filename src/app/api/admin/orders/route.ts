@@ -96,13 +96,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, order_id, reason, force_cancel_paid } = body;
+    const { action, order_id, reason, force_cancel_paid, payment_method } = body;
 
     if (!order_id) {
       return NextResponse.json({ error: 'ID de orden requerido' }, { status: 400 });
     }
 
-    if (action !== 'confirm_payment' && action !== 'cancel') {
+    if (
+      action !== 'confirm_payment' &&
+      action !== 'cancel' &&
+      action !== 'delete' &&
+      action !== 'change_payment_method'
+    ) {
       return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
     }
 
@@ -112,7 +117,7 @@ export async function POST(request: NextRequest) {
     try {
       // Leer la orden DENTRO de la transacción de escritura para garantizar aislamiento total
       const orderRes = await tx.execute({
-        sql: 'SELECT id, code, buyer_name, payment_status, numbers_count, numbers_list, total_amount FROM orders WHERE id = ? LIMIT 1',
+        sql: 'SELECT id, code, buyer_id, buyer_name, buyer_phone, payment_method, payment_status, numbers_count, numbers_list, total_amount FROM orders WHERE id = ? LIMIT 1',
         args: [order_id]
       });
 
@@ -123,7 +128,9 @@ export async function POST(request: NextRequest) {
 
       const order = orderRes.rows[0];
       const currentStatus = order.payment_status as string;
+      const currentPaymentMethod = order.payment_method as string;
       const expectedCount = Number(order.numbers_count);
+      const buyerId = Number(order.buyer_id);
 
       // ACCIÓN 1: CONFIRMAR PAGO (Solo permitido desde estado 'pending')
       if (action === 'confirm_payment') {
@@ -243,6 +250,108 @@ export async function POST(request: NextRequest) {
         );
 
         return NextResponse.json({ success: true, message: 'Orden cancelada y números liberados correctamente.' });
+      }
+
+      // ACCIÓN 3: CAMBIAR MEDIO DE PAGO (Efectivo <-> Transferencia)
+      if (action === 'change_payment_method') {
+        const targetMethod =
+          payment_method === 'cash' || payment_method === 'transfer'
+            ? payment_method
+            : currentPaymentMethod === 'cash'
+            ? 'transfer'
+            : 'cash';
+
+        await tx.execute({
+          sql: `UPDATE orders 
+                SET payment_method = ?, 
+                    notes = COALESCE(notes || ' | ', '') || ? 
+                WHERE id = ?`,
+          args: [
+            targetMethod,
+            `Medio de pago cambiado a ${targetMethod === 'cash' ? 'Efectivo' : 'Transferencia'} por ${admin.username}`,
+            order_id
+          ]
+        });
+
+        await tx.commit();
+
+        await logAudit(
+          admin.username,
+          'CHANGE_PAYMENT_METHOD',
+          {
+            order_id,
+            code: order.code,
+            buyer_name: order.buyer_name,
+            previous_method: currentPaymentMethod,
+            new_method: targetMethod
+          },
+          request.headers.get('x-forwarded-for') || 'localhost'
+        );
+
+        return NextResponse.json({
+          success: true,
+          payment_method: targetMethod,
+          message: `Medio de pago actualizado a ${targetMethod === 'cash' ? 'Efectivo' : 'Transferencia'}.`
+        });
+      }
+
+      // ACCIÓN 4: ELIMINAR REGISTRO DEFINITIVAMENTE Y LIBERAR NÚMEROS
+      if (action === 'delete') {
+        // 1. Liberar cualquier número que estuviera vinculado a esta orden
+        const releaseRes = await tx.execute({
+          sql: `UPDATE numbers 
+                SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
+                WHERE order_id = ?`,
+          args: [order_id]
+        });
+        const releasedCount = Number(releaseRes.rowsAffected || 0);
+
+        // 2. Eliminar la orden de la base de datos
+        await tx.execute({
+          sql: 'DELETE FROM orders WHERE id = ?',
+          args: [order_id]
+        });
+
+        // 3. Si el comprador ya no tiene ninguna otra orden registrada, eliminar también el registro huérfano del comprador
+        let buyerDeleted = false;
+        if (buyerId) {
+          const remainingOrdersRes = await tx.execute({
+            sql: 'SELECT COUNT(*) as count FROM orders WHERE buyer_id = ?',
+            args: [buyerId]
+          });
+          const remainingCount = Number(remainingOrdersRes.rows[0]?.count || 0);
+          if (remainingCount === 0) {
+            await tx.execute({
+              sql: 'DELETE FROM buyers WHERE id = ?',
+              args: [buyerId]
+            });
+            buyerDeleted = true;
+          }
+        }
+
+        await tx.commit();
+
+        await logAudit(
+          admin.username,
+          'DELETE_ORDER',
+          {
+            order_id,
+            code: order.code,
+            buyer_name: order.buyer_name,
+            buyer_phone: order.buyer_phone,
+            previous_status: currentStatus,
+            numbers_count: expectedCount,
+            released_numbers: releasedCount,
+            buyer_deleted: buyerDeleted,
+            reason: reason || 'Eliminación manual por administrador'
+          },
+          request.headers.get('x-forwarded-for') || 'localhost'
+        );
+
+        return NextResponse.json({
+          success: true,
+          message: `Registro ${order.code} eliminado definitivamente y sus números quedaron disponibles.`
+        });
       }
 
       await tx.rollback();

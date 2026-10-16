@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   DollarSign, Ticket, Clock, CheckCircle, AlertTriangle, 
-  Download, RefreshCw, ShoppingCart, ArrowRight, Banknote, Landmark, ShieldAlert, Phone
+  Download, RefreshCw, ShoppingCart, ArrowRight, Banknote, Landmark, ShieldAlert, Phone, Trash2
 } from 'lucide-react';
 import { formatCurrency, formatDate, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
@@ -48,6 +48,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [cleaning, setCleaning] = useState(false);
   const [cleanMessage, setCleanMessage] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchDashboard = async () => {
     try {
@@ -85,6 +86,41 @@ export default function AdminDashboardPage() {
       setCleanMessage('Error de red al intentar liberar vencidos');
     } finally {
       setCleaning(false);
+    }
+  };
+
+  const handleDeleteOrder = async (ord: RecentOrder) => {
+    if (
+      !confirm(
+        `¿Estás seguro de ELIMINAR definitivamente el registro ${ord.code} de "${ord.buyer_name}"?\n\n• Sus ${ord.numbers_count} número(s) volverán a estar disponibles.\n• El pedido se borrará por completo.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingId(ord.id);
+      setCleanMessage(null);
+      const res = await fetch('/api/admin/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          order_id: ord.id,
+          reason: 'Eliminación manual desde Resumen General'
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCleanMessage(data.message || 'Registro eliminado correctamente.');
+        fetchDashboard();
+      } else {
+        alert(data.error || 'Error al eliminar el registro.');
+      }
+    } catch {
+      alert('Error de red al eliminar el registro.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -322,6 +358,7 @@ export default function AdminDashboardPage() {
                   <th className="py-2.5 px-3">Estado</th>
                   <th className="py-2.5 px-3">Tipo</th>
                   <th className="py-2.5 px-3">Fecha</th>
+                  <th className="py-2.5 px-3 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -386,6 +423,17 @@ export default function AdminDashboardPage() {
                     </td>
                     <td className="py-3 px-3 text-slate-400 text-[11px]">
                       {formatDate(ord.created_at)}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        onClick={() => handleDeleteOrder(ord)}
+                        disabled={deletingId === ord.id}
+                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2 py-1 rounded-lg text-[11px] font-semibold transition"
+                        title="Eliminar pedido definitivamente y liberar números"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Eliminar</span>
+                      </button>
                     </td>
                   </tr>
                 ))}

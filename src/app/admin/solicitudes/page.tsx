@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Inbox, Search, CheckCircle, XCircle, Copy, ExternalLink, 
-  Clock, AlertTriangle, Filter, RefreshCw, Phone
+  Clock, AlertTriangle, Filter, RefreshCw, Phone, Trash2, ArrowLeftRight
 } from 'lucide-react';
 import { formatTicketNumber, formatCurrency, formatDate, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
@@ -96,17 +96,26 @@ export default function AdminSolicitudesPage() {
     }
   };
 
-  const handleCancelOrder = async (orderId: number) => {
-    const reason = prompt('Ingresá el motivo de la cancelación (los números serán liberados nuevamente):');
+  const handleCancelOrder = async (ord: OrderItem) => {
+    const isPaid = ord.payment_status === 'paid';
+    const promptMsg = isPaid
+      ? `Esta orden (${ord.code}) ya figura como PAGADA. Ingresá el motivo de la anulación para liberar sus números:`
+      : `Ingresá el motivo de la cancelación de ${ord.code} (los números serán liberados nuevamente):`;
+    const reason = prompt(promptMsg);
     if (reason === null) return; // canceló el prompt
 
     try {
-      setActionLoading(orderId);
+      setActionLoading(ord.id);
       setFeedback(null);
       const res = await fetch('/api/admin/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel', order_id: orderId, reason })
+        body: JSON.stringify({
+          action: 'cancel',
+          order_id: ord.id,
+          reason,
+          force_cancel_paid: isPaid
+        })
       });
       const data = await res.json();
       if (res.ok) {
@@ -117,6 +126,72 @@ export default function AdminSolicitudesPage() {
       }
     } catch {
       alert('Error de red al cancelar orden.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleTogglePaymentMethod = async (ord: OrderItem) => {
+    const nextMethod = ord.payment_method === 'cash' ? 'transfer' : 'cash';
+    const nextLabel = nextMethod === 'cash' ? 'Efectivo' : 'Transferencia';
+    if (!confirm(`¿Cambiar el medio de pago del pedido ${ord.code} (${ord.buyer_name}) a ${nextLabel}?`)) return;
+
+    try {
+      setActionLoading(ord.id);
+      setFeedback(null);
+      const res = await fetch('/api/admin/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'change_payment_method',
+          order_id: ord.id,
+          payment_method: nextMethod
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback(data.message || `Medio de pago cambiado a ${nextLabel}.`);
+        fetchOrders();
+      } else {
+        alert(data.error || 'Error al cambiar medio de pago.');
+      }
+    } catch {
+      alert('Error de red al cambiar medio de pago.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteOrder = async (ord: OrderItem) => {
+    if (
+      !confirm(
+        `¿Estás seguro de ELIMINAR definitivamente el registro ${ord.code} de "${ord.buyer_name}"?\n\n• Sus ${ord.numbers_count} número(s) volverán a estar disponibles.\n• El pedido se borrará por completo de la base de datos.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setActionLoading(ord.id);
+      setFeedback(null);
+      const res = await fetch('/api/admin/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          order_id: ord.id,
+          reason: 'Eliminación manual desde Solicitudes'
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback(data.message || 'Registro eliminado correctamente.');
+        fetchOrders();
+      } else {
+        alert(data.error || 'Error al eliminar el registro.');
+      }
+    } catch {
+      alert('Error de red al eliminar el registro.');
     } finally {
       setActionLoading(null);
     }
@@ -277,7 +352,16 @@ export default function AdminSolicitudesPage() {
                     </td>
 
                     <td className="py-3.5 px-4 capitalize text-slate-600">
-                      {ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePaymentMethod(ord)}
+                        disabled={actionLoading === ord.id}
+                        title="Hacé clic para cambiar entre Efectivo y Transferencia"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 text-xs font-medium transition"
+                      >
+                        <span>{ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}</span>
+                        <ArrowLeftRight className="w-3 h-3 text-slate-400" />
+                      </button>
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -311,13 +395,13 @@ export default function AdminSolicitudesPage() {
                         </button>
                       )}
 
-                      {/* Botón Cancelar */}
-                      {ord.payment_status === 'pending' && (
+                      {/* Botón Cancelar / Anular */}
+                      {(ord.payment_status === 'pending' || ord.payment_status === 'paid') && (
                         <button
-                          onClick={() => handleCancelOrder(ord.id)}
+                          onClick={() => handleCancelOrder(ord)}
                           disabled={actionLoading === ord.id}
-                          className="bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-700 px-2 py-1 rounded-lg text-xs transition"
-                          title="Cancelar y liberar números"
+                          className="bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 px-2 py-1 rounded-lg text-xs transition"
+                          title="Anular pedido y liberar números"
                         >
                           Cancelar
                         </button>
@@ -354,6 +438,17 @@ export default function AdminSolicitudesPage() {
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>
+
+                      {/* Botón Eliminar Registro Definitivamente */}
+                      <button
+                        onClick={() => handleDeleteOrder(ord)}
+                        disabled={actionLoading === ord.id}
+                        className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 px-2 py-1 rounded-lg text-xs font-semibold transition"
+                        title="Eliminar registro definitivamente y liberar sus números"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Eliminar</span>
+                      </button>
                     </td>
                   </tr>
                   );

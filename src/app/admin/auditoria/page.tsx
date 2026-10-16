@@ -94,11 +94,11 @@ export default function AdminAuditoriaPage() {
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         log.action === 'CONFIRM_PAYMENT'
                           ? 'bg-emerald-100 text-emerald-800'
-                          : log.action === 'CANCEL_ORDER'
+                          : log.action === 'CANCEL_ORDER' || log.action === 'DELETE_ORDER' || log.action === 'DELETE_BUYER'
                           ? 'bg-red-100 text-red-800'
                           : log.action === 'DIRECT_SALE'
                           ? 'bg-purple-100 text-purple-800'
-                          : log.action === 'UPDATE_SETTINGS'
+                          : log.action === 'UPDATE_SETTINGS' || log.action === 'CHANGE_PAYMENT_METHOD'
                           ? 'bg-blue-100 text-blue-800'
                           : log.action === 'EXPIRE_RESERVATIONS'
                           ? 'bg-amber-100 text-amber-800'
