@@ -34,6 +34,7 @@ interface RaffleData {
   bank_name: string;
   bank_holder: string;
   contact_phone: string;
+  contact_phone_secondary: string;
   rules_terms: string;
 }
 
@@ -126,15 +127,17 @@ export default function BuyerPrivateOrderPage() {
     );
   }
 
-  // Pre-cargar mensaje para WhatsApp diferenciando Transferencia vs Efectivo
+  // Pre-cargar mensaje para WhatsApp diferenciando Transferencia vs Efectivo para ambos contactos (Alan y Yilda)
   const formattedNumbers = order.numbers.map(formatTicketNumber).join(', ');
   const whatsappMsg =
     order.payment_method === 'cash'
       ? `Hola! Soy ${order.buyer_name}. Tengo la reserva ${order.code} de la rifa por ${order.numbers_count} número(s) (${formattedNumbers}) por un total de ${formatCurrency(order.total_amount)} para abonar en efectivo. Quiero coordinar la entrega del dinero.`
       : `Hola! Soy ${order.buyer_name}. Tengo la reserva ${order.code} de la rifa por ${order.numbers_count} número(s) (${formattedNumbers}) por un total de ${formatCurrency(order.total_amount)}. Te envío el comprobante de pago.`;
-  const whatsappUrl = raffle.contact_phone 
-    ? `https://wa.me/${formatWhatsAppPhone(raffle.contact_phone)}?text=${encodeURIComponent(whatsappMsg)}`
-    : null;
+
+  const phoneAlan = raffle.contact_phone || '3884152040';
+  const phoneYilda = raffle.contact_phone_secondary || '3884141514';
+  const whatsappUrlAlan = `https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(whatsappMsg)}`;
+  const whatsappUrlYilda = `https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(whatsappMsg)}`;
 
   // Enlace para enviar el comprobante al WhatsApp del comprador
   const buyerWaVoucherUrl = buildBuyerWhatsAppUrl({
@@ -298,13 +301,13 @@ export default function BuyerPrivateOrderPage() {
                     {raffle.bank_holder && <p><span className="font-sans font-semibold text-slate-500">Titular:</span> {raffle.bank_holder}</p>}
                   </div>
                   <p className="text-[11px] text-amber-900 pt-1">
-                    Una vez realizada la transferencia, envianos el comprobante por WhatsApp para validar tu pago.
+                    Una vez realizada la transferencia, envianos el comprobante por WhatsApp a cualquiera de los dos contactos para validar tu pago:
                   </p>
                 </div>
               ) : (
                 <div className="space-y-1.5 text-slate-700">
                   <p>
-                    Elegiste abonar en <strong>Efectivo</strong>. Por favor comunicate con los administradores para coordinar la entrega de los <strong>{formatCurrency(order.total_amount)}</strong>.
+                    Elegiste abonar en <strong>Efectivo</strong>. Por favor comunicate con cualquiera de los administradores para coordinar la entrega de los <strong>{formatCurrency(order.total_amount)}</strong>:
                   </p>
                   <p className="text-[11px] text-amber-900">
                     Una vez que entregues el efectivo, los administradores marcarán tu reserva como <strong>PAGADA</strong> y este comprobante se actualizará automáticamente.
@@ -312,20 +315,36 @@ export default function BuyerPrivateOrderPage() {
                 </div>
               )}
 
-              {/* Botón WhatsApp */}
-              {whatsappUrl && (
+              {/* Botones WhatsApp para Alan y Yilda */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                 <a
-                  href={whatsappUrl}
+                  href={whatsappUrlAlan}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow"
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow"
                 >
-                  <Phone className="w-4 h-4" />
-                  {order.payment_method === 'transfer'
-                    ? 'Enviar comprobante por WhatsApp'
-                    : 'Coordinar pago en efectivo por WhatsApp'}
+                  <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>
+                    {order.payment_method === 'transfer'
+                      ? `Enviar comprobante a Alan (${phoneAlan})`
+                      : `Coordinar efectivo con Alan (${phoneAlan})`}
+                  </span>
                 </a>
-              )}
+
+                <a
+                  href={whatsappUrlYilda}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow"
+                >
+                  <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>
+                    {order.payment_method === 'transfer'
+                      ? `Enviar comprobante a Yilda (${phoneYilda})`
+                      : `Coordinar efectivo con Yilda (${phoneYilda})`}
+                  </span>
+                </a>
+              </div>
 
               <p className="text-[11px] text-slate-500 text-center">
                 Vencimiento de la reserva: {formatDate(order.expires_at)}
@@ -333,10 +352,30 @@ export default function BuyerPrivateOrderPage() {
             </div>
           )}
 
-          {/* Información del Sorteo */}
+          {/* Información del Sorteo y Contactos Oficiales */}
           <div className="border-t border-slate-100 pt-4 space-y-2 text-xs text-slate-600">
             <p><strong>Fecha del sorteo:</strong> {raffle.draw_date}</p>
             <p><strong>Premios:</strong> {raffle.prizes}</p>
+            <p>
+              <strong>Contacto Organización:</strong>{' '}
+              <a
+                href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(`Hola Alan! Te escribo por mi reserva ${order.code}.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-700 font-semibold hover:underline"
+              >
+                Alan ({phoneAlan})
+              </a>
+              {' • '}
+              <a
+                href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(`Hola Yilda! Te escribo por mi reserva ${order.code}.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-700 font-semibold hover:underline"
+              >
+                Yilda ({phoneYilda})
+              </a>
+            </p>
           </div>
 
           {/* Botones Compartir / Enviar a Comprador / Copiar Enlace */}

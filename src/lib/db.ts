@@ -39,6 +39,7 @@ export interface SettingsMap {
   bank_name: string;
   bank_holder: string;
   contact_phone: string;
+  contact_phone_secondary: string;
   reserve_hours: string;
   public_reservations_enabled: string;
   rules_terms: string;
@@ -61,14 +62,20 @@ export async function getSettings(): Promise<SettingsMap> {
     bank_cbu: '',
     bank_name: '',
     bank_holder: '',
-    contact_phone: '',
+    contact_phone: '3884152040',
+    contact_phone_secondary: '3884141514',
     reserve_hours: '48',
     public_reservations_enabled: 'true',
     rules_terms: '1. El valor de cada número es de ARS 100.\n2. Los pagos se reciben por transferencia bancaria o en efectivo coordinando con los administradores.\n3. Una vez realizada la reserva, contás con el plazo establecido para enviar el comprobante de pago antes de que el número sea liberado.\n4. El sorteo se realizará en la fecha a confirmar.',
   };
 
   for (const row of res.rows) {
-    defaults[row.key as string] = row.value as string;
+    const key = row.key as string;
+    const val = row.value as string;
+    if ((key === 'contact_phone' || key === 'contact_phone_secondary') && (!val || !val.trim())) {
+      continue;
+    }
+    defaults[key] = val;
   }
   return defaults;
 }

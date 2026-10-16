@@ -48,7 +48,8 @@ async function main() {
         ['bank_cbu', ''],
         ['bank_name', ''],
         ['bank_holder', ''],
-        ['contact_phone', ''],
+        ['contact_phone', '3884152040'],
+        ['contact_phone_secondary', '3884141514'],
         ['reserve_hours', '48'],
         ['public_reservations_enabled', 'true'],
         ['rules_terms', '1. Cada número tiene un valor de ARS 100.\n2. Los pagos se reciben por transferencia bancaria o en efectivo coordinando con los administradores.\n3. Una vez solicitada la reserva, contás con 48 hs para enviar el comprobante de pago.\n4. El sorteo se realizará ante escribano o transmisión pública en la fecha a confirmar.']

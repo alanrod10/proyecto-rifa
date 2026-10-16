@@ -39,6 +39,7 @@ export async function PUT(request: NextRequest) {
       'bank_name',
       'bank_holder',
       'contact_phone',
+      'contact_phone_secondary',
       'reserve_hours',
       'public_reservations_enabled',
       'rules_terms'
@@ -49,7 +50,7 @@ export async function PUT(request: NextRequest) {
     for (const key of allowedKeys) {
       if (body[key] !== undefined) {
         const rawVal = String(body[key]);
-        const val = key === 'contact_phone' ? cleanPhoneNumber(rawVal) : rawVal;
+        const val = (key === 'contact_phone' || key === 'contact_phone_secondary') ? cleanPhoneNumber(rawVal) : rawVal;
         await db.execute({
           sql: `INSERT INTO settings (key, value, updated_at) 
                 VALUES (?, ?, CURRENT_TIMESTAMP)

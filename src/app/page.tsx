@@ -20,6 +20,7 @@ interface RaffleSettings {
   bank_name: string;
   bank_holder: string;
   contact_phone: string;
+  contact_phone_secondary: string;
   reserve_hours: number;
   public_reservations_enabled: boolean;
   rules_terms: string;
@@ -424,27 +425,46 @@ export default function PublicPortal() {
               </p>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              {settings?.contact_phone && (
-                <a
-                  href={`https://wa.me/${formatWhatsAppPhone(settings.contact_phone)}?text=${encodeURIComponent(
-                    orderSuccess.payment_method === 'cash'
-                      ? `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)} para abonar en efectivo. Quiero coordinar la entrega del dinero.`
-                      : `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)}. Te envío el comprobante de pago.`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow"
-                >
-                  <Phone className="w-4 h-4" />
-                  {orderSuccess.payment_method === 'cash'
-                    ? 'Coordinar pago en efectivo por WhatsApp'
-                    : 'Enviar comprobante por WhatsApp'}
-                </a>
-              )}
+            <div className="mt-5 flex flex-wrap gap-2.5">
+              {(() => {
+                const phoneAlan = settings?.contact_phone || '3884152040';
+                const phoneYilda = settings?.contact_phone_secondary || '3884141514';
+                const msg =
+                  orderSuccess.payment_method === 'cash'
+                    ? `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)} para abonar en efectivo. Quiero coordinar la entrega del dinero.`
+                    : `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)}. Te envío el comprobante de pago.`;
+
+                return (
+                  <>
+                    <a
+                      href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(msg)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {orderSuccess.payment_method === 'cash'
+                        ? `Coordinar efectivo con Alan (${phoneAlan})`
+                        : `Enviar comprobante a Alan (${phoneAlan})`}
+                    </a>
+
+                    <a
+                      href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(msg)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {orderSuccess.payment_method === 'cash'
+                        ? `Coordinar efectivo con Yilda (${phoneYilda})`
+                        : `Enviar comprobante a Yilda (${phoneYilda})`}
+                    </a>
+                  </>
+                );
+              })()}
               <Link
                 href={`/pedido/${orderSuccess.private_token}`}
-                className="inline-flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow"
+                className="inline-flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition shadow"
               >
                 Ver Mi Comprobante Digital
                 <ArrowRight className="w-4 h-4" />
@@ -900,17 +920,34 @@ export default function PublicPortal() {
               Rifa solidaria familiar para la adquisición del lote.
             </p>
           </div>
-          {settings?.contact_phone && (
-            <a
-              href={`https://wa.me/${formatWhatsAppPhone(settings.contact_phone)}?text=${encodeURIComponent('Hola! Quisiera hacer una consulta sobre la rifa.')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition"
-            >
-              <Phone className="w-4 h-4" />
-              Contacto por WhatsApp
-            </a>
-          )}
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5">
+            {(() => {
+              const phoneAlan = settings?.contact_phone || '3884152040';
+              const phoneYilda = settings?.contact_phone_secondary || '3884141514';
+              return (
+                <>
+                  <a
+                    href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent('Hola Alan! Quisiera hacer una consulta sobre la rifa.')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>WhatsApp Alan ({phoneAlan})</span>
+                  </a>
+                  <a
+                    href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent('Hola Yilda! Quisiera hacer una consulta sobre la rifa.')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>WhatsApp Yilda ({phoneYilda})</span>
+                  </a>
+                </>
+              );
+            })()}
+          </div>
         </div>
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-slate-400 gap-2">
           <p>© {new Date().getFullYear()} Gran Rifa Familiar. Todos los derechos reservados.</p>

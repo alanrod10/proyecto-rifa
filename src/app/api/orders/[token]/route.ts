@@ -60,7 +60,8 @@ export async function GET(
         bank_cbu: settings.bank_cbu,
         bank_name: settings.bank_name,
         bank_holder: settings.bank_holder,
-        contact_phone: settings.contact_phone,
+        contact_phone: settings.contact_phone || '3884152040',
+        contact_phone_secondary: settings.contact_phone_secondary || '3884141514',
         rules_terms: settings.rules_terms,
       }
     });
