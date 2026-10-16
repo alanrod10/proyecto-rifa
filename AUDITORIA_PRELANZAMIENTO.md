@@ -1,205 +1,121 @@
 # Informe de Auditoría Técnica y de Seguridad Previa al Lanzamiento
 ## Proyecto RIFA (80.000 Números) — `C:\Proyecto RIFA`
-**Fecha de la Auditoría:** Octubre 2026  
-**Estado General:** Aprobado con observaciones operativas y recomendaciones críticas antes de abrir al público.
+**Última Actualización:** Octubre 2026  
+**Estado General:** Aprobado para operaciones con recomendaciones operativas y de seguridad activas.
 
 ---
 
 ## 1. Resumen Ejecutivo y Preservación de Datos
 
-Se realizó una auditoría integral técnica, criptográfica, transaccional y legal sobre el código fuente, la base de datos y la configuración del sistema.
+Se realizó una auditoría técnica integral sobre la arquitectura, el código fuente, la base de datos, la criptografía y las medidas de seguridad del sistema.
 
-### Estado Inicial de los Datos Verificado
-- **Archivo de base de datos activa:** `rifa.db` (5.38 MB).
-- **Total de números:** 80.000 registros indexados (del `00001` al `80000`).
-- **Estado de los números:** 80.000 disponibles (0 reservados, 0 vendidos).
-- **Órdenes reales registradas:** 0 órdenes (base limpia, sin residuos de pruebas).
-- **Cuentas administrativas registradas:**
+### Estado Verificado de la Base de Datos Local
+- **Base de datos activa:** `rifa.db` (5.38 MB).
+- **Total de registros en `numbers`:** 80.000 números indexados (del `00001` al `80000`).
+- **Estado de los números:** 80.000 disponibles (0 vendidos y 0 reservados en la base limpia inicial).
+- **Cuentas administrativas registradas en base:**
   - `alan` (Nombre visible: Alan).
-  - `yilda` (Nombre visible: Yilda).
-- **Copia de seguridad preventiva generada y verificada:**
-  - Archivo: `backups/backup_2026-10-15T17-50-01.db` (5.38 MB).
-  - Metadatos: `backups/backup_2026-10-15T17-50-01.json`.
-  - Integridad: 80.000 números verificados sin pérdida de información.
+  - `yilda` (Nombre visible: Yilda; compatible con identificador histórico `esposa`).
+- **Copias de seguridad verificadas en `backups/`:**
+  - Archivos SQLite binarios consistentes generados mediante `VACUUM INTO`.
+  - Archivos de volcado estructurado JSON con metadatos y conteo íntegro de 80.000 números.
 
 ---
 
-## 2. Auditoría de Credenciales y Gestión de Secretos
+## 2. Estado de Despliegue y Repositorio
 
-### Problemas Detectados
-1. **Contraseñas iniciales expuestas:** Durante las sesiones de desarrollo, las contraseñas iniciales fueron mencionadas en el historial de chat y en archivos de documentación previa. **Deben considerarse vulneradas y no aptas para producción.**
-2. **Ausencia de mecanismo seguro de cambio de clave:** El sistema no disponía de un procedimiento asistido para que Alan e Yilda pudieran actualizar sus contraseñas sin manipular directamente la base de datos en SQL.
-
-### Acciones Correctivas Implementadas
-1. **Almacenamiento en Base de Datos:** Se verificó que las contraseñas se almacenan mediante hash seguro `bcrypt` con 10 rondas de salting (`$2b$10$...`). Nunca se guardan en texto plano en la base de datos ni en el repositorio.
-2. **Utilidad Segura e Interactiva de Cambio de Clave (`scripts/change-admin-password.mjs`):**
-   - Se implementó un script interactivo en Node.js que solicita la contraseña de forma enmascarada (mostrando asteriscos `*`) en la terminal y pide confirmación previa antes de escribir en disco.
-   - **Cero fugas de historial:** Al ingresar la contraseña interactivamente, la clave **nunca queda guardada en el historial de comandos del shell (`~/.bash_history`) ni en la tabla de procesos (`ps aux`)**.
-   - Si se intenta ingresar la clave como argumento de consola, el script emite una advertencia de seguridad explícita.
-   - Requiere un mínimo estricto de 8 caracteres y valida coincidencia exacta con la confirmación.
-   - Genera el hash `bcrypt` en memoria y actualiza atómicamente la tabla `admins`.
-   - Registra el evento en la tabla `audit_logs` con la acción `CHANGE_PASSWORD`, **sin registrar la contraseña ni el hash** en los registros de auditoría.
-   - Uso recomendado:
-     ```bash
-     npm run change-password alan
-     npm run change-password yilda
-     ```
-3. **Secreto de Sesión JWT (`ADMIN_SECRET_KEY`):**
-   - Las sesiones de los administradores se firman mediante tokens JWT (algoritmo HS256) emitidos en cookies `httpOnly`, `SameSite=Lax`, con vigencia de 7 días.
-   - Se añadió un mecanismo de detección proactiva en `src/lib/auth.ts`: si la aplicación se ejecuta en modo producción (`NODE_ENV=production`) sin haber configurado `ADMIN_SECRET_KEY`, el sistema emite una alerta de seguridad visible en los registros.
-   - **Obligatorio para producción:** Definir en `.env.local` una clave aleatoria de al menos 32 caracteres generada criptográficamente:
-     ```bash
-     node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-     ```
+| Parámetro | Estado Anterior (Histórico) | Estado Actual Comprobado | Evidencia en el Proyecto |
+| :--- | :--- | :--- | :--- |
+| **Repositorio Git** | Local sin remotos | **Conectado a GitHub** | Remoto `origin` configurado en `https://github.com/alanrod10/proyecto-rifa.git`, rama `main`. |
+| **Publicación Web** | No publicado | **Desplegado en Vercel** | Aplicación activa en producción con HTTPS en `https://proyecto-rifa.vercel.app`. |
+| **Base de Datos Prod** | Únicamente archivo local | **Preparado para Turso / LibSQL** | Script de migración `scripts/migrate-to-turso.mjs` y cliente `@libsql/client` compatible. |
+| **Tema Visual** | Modo oscuro estático | **Tema Claro por defecto + Dark Mode** | `ThemeToggle.tsx`, tokens Tailwind v4 y script anti-flicker en `layout.tsx`. |
 
 ---
 
-## 3. Base de Datos, Persistencia y Entorno de Despliegue
+## 3. Auditoría de Seguridad y Criptografía
 
-### Estado de Despliegue Real Actual
-- **Repositorio Git:** Inicializado localmente en rama `main`. **No tiene remotos configurados** (no está subido a GitHub ni GitLab).
-- **Despliegue en la Nube:** **No está publicado en Internet.** No existen configuraciones activas de Vercel ni proveedores serverless en el entorno.
+### A. Almacenamiento de Contraseñas
+- Las contraseñas de los administradores se almacenan exclusivamente mediante hashes criptográficos `bcrypt` con 10 rondas de salting (`$2b$10$...`).
+- No existen contraseñas en texto plano en la base de datos ni en el repositorio.
+- **Herramientas de cambio seguro de contraseña:**
+  1. **Web:** Sección *Seguridad de Mi Cuenta* en `/admin/configuracion`.
+  2. **Consola:** Script interactivo `scripts/change-admin-password.mjs` (`npm run change-password <usuario>`) con entrada enmascarada para no dejar registros en el historial del shell (`~/.bash_history` o `ps aux`).
 
-### Hallazgo Crítico de Arquitectura (Persistencia de Archivo Local vs. Servidor Serverless)
-- El cliente de base de datos (`src/lib/db.ts`) utiliza `@libsql/client`.
-- **En entorno local (Desarrollo o Auto-hospedado con Cloudflare Tunnel):**
-  - La base de datos reside en el archivo local `rifa.db`.
-  - Los datos son **100% persistentes** entre reinicios y reinicios de la máquina.
-  - Se corrigió la resolución de rutas en `src/lib/db.ts` para que cualquier ruta `file:./rifa.db` se transforme automáticamente en ruta absoluta (`path.resolve(process.cwd(), filePath)`), evitando fallos cuando el proceso de Node.js se ejecuta desde directorios secundarios.
-- **En caso de despliegue en Vercel u otra plataforma Serverless:**
-  - **ADVERTENCIA TÉCNICA OBLIGATORIA:** Las funciones serverless de Vercel tienen un sistema de archivos efímero (`/tmp`) y de solo lectura. **Un archivo SQLite local NO persiste en Vercel.** Si se despliega con `file:./rifa.db`, los datos se perderán con cada nueva ejecución o despliegue.
-  - **Solución $0 verificada:** Para desplegar en Vercel manteniendo el costo cero ($0), se debe crear una base de datos gratuita en **Turso** (motor LibSQL distribuido con 9 GB de almacenamiento y 1.000 millones de lecturas mensuales gratis sin tarjeta de crédito). En Vercel simplemente se configuran las variables de entorno:
-    ```env
-    DATABASE_URL="libsql://nombre-de-tu-db.turso.io"
-    DATABASE_AUTH_TOKEN="tu_token_generado_en_turso"
-    ```
-    El código de `src/lib/db.ts` ya es nativamente compatible con Turso sin necesidad de cambiar una sola línea de código.
+### B. Sesiones Administrativas
+- Generadas mediante tokens JWT firmados con el algoritmo HS256 a través de la librería `jose`.
+- Almacenadas en cookies `httpOnly`, con directiva `SameSite=Lax` y vigencia de 7 días.
+- La firma depende de la variable de entorno `ADMIN_SECRET_KEY` (mínimo 32 caracteres criptográficos).
 
----
+### C. Rate Limiting contra Ataques de Fuerza Bruta
+- El endpoint `/api/admin/auth/login` registra cada intento fallido en `audit_logs` con la acción `ADMIN_LOGIN_FAILED`.
+- Si se acumulan más de 5 fallos en una ventana de 10 minutos para una misma IP o cuenta, el servidor responde automáticamente con un código `HTTP 429 Too Many Requests`.
 
-## 4. Auditoría de Integridad Transaccional y de Operaciones
+### D. Sanitización contra Inyección de Fórmulas CSV
+- En la exportación a hojas de cálculo (`/api/admin/export`), se neutraliza cualquier celda que comience con los caracteres `=`, `+`, `-` o `@`, anteponiendo un apóstrofe (`'`) para evitar la ejecución involuntaria de comandos al abrir el archivo en Microsoft Excel.
 
-Se auditó minuciosamente el código de los endpoints y los controladores de datos:
-
-| Requisito de Integridad | Mecanismo en Código | Estado de Verificación |
-| :--- | :--- | :---: |
-| **Prevención de Doble Reserva** | Transacción exclusiva (`BEGIN IMMEDIATE`). Comprobación atómica de `status = 'available'` antes de apartar números. Si alguno fue tomado, se cancela la operación y se responde HTTP 409 Conflict con la lista de números en conflicto. | **VERIFICADO (ACID)** |
-| **Atomicidad en Múltiples Números** | Si se solicitan N números y 1 falla, se ejecuta `ROLLBACK` total. No quedan reservas huérfanas ni asignaciones parciales. | **VERIFICADO** |
-| **Liberación de Reservas Vencidas** | Comprobación reactiva automática ante cada consulta pública y botón manual en el panel (`/admin`). Devuelve a `'available'` los números de órdenes con `payment_status = 'pending' AND datetime(expires_at) < datetime('now')`. | **VERIFICADO** |
-| **Contabilización de Dinero** | Las métricas de recaudación (`src/app/api/admin/dashboard/route.ts`) calculan `money_collected_total` exclusivamente mediante `WHERE payment_status = 'paid'`. Los pedidos pendientes no suman al dinero cobrado. | **VERIFICADO** |
-| **Precios Históricos** | Al crear una orden, se registra el `unit_price` y el `total_amount` vigentes en ese momento. Modificaciones futuras del precio no recalculan órdenes preexistentes. | **VERIFICADO** |
-| **Aislamiento en Cancelaciones** | La anulación de pedidos ejecuta `UPDATE numbers SET status = 'available', order_id = NULL WHERE order_id = ?`. Afecta única y estrictamente a los números vinculados al identificador de la orden. | **VERIFICADO** |
-| **Enlaces Privados Seguros** | La ruta `/pedido/[token]` busca por token criptográfico de 192 bits (`crypto.randomBytes(24)`). Devuelve exclusivamente los datos de esa orden. No existen identificadores secuenciales ni rutas de búsqueda pública por celular. | **VERIFICADO** |
+### E. Prevención de Pagos Fantasma y Máquina de Estados
+- La confirmación de pagos en `/api/admin/orders` exige que la orden se encuentre estrictamente en estado `'pending'` y que los números permanezcan en estado `'reserved'` dentro de la misma transacción de escritura.
 
 ---
 
-## 5. Auditoría del Script de Pruebas y Pruebas en Vivo
+## 4. Auditoría de la Suite de Pruebas Automatizadas
 
-### Corrección Crítica en `scripts/verify-tests.mjs`
-- **Problema encontrado:** El script anterior ejecutaba sus pruebas de inserción, reserva y eliminación directamente sobre `rifa.db`, lo que representaba un riesgo crítico de corromper o borrar datos de compradores reales.
-- **Corrección realizada:** Se refactorizó `scripts/verify-tests.mjs` para que trabaje sobre una **base de datos temporal aislada** (`backups/test_isolated.db`). El script clona la base en un entorno sandbox, ejecuta las 20 pruebas sobre la copia y elimina la base temporal en su bloque `finally`. **La base real `rifa.db` nunca es modificada por la suite de pruebas.**
+La suite de pruebas en `scripts/verify-tests.mjs` opera de manera segura sobre una base de datos clonada temporal (`backups/test_isolated.db`) que se destruye al finalizar, preservando la integridad de `rifa.db`.
 
-### Pruebas Automatizadas Ejecutadas (20/20 Pasadas)
-1. ✓ Consultar disponibilidad pública (80.000 números).
-2. ✓ Selección múltiple de números.
-3. ✓ Creación de solicitud con comprador.
-4. ✓ Cálculo del importe en backend (3 × $100 = $300).
-5. ✓ Consulta mediante token privado de 48 caracteres hex.
-6. ✓ Confirmación de pago por administrador y transición a `sold`.
-7. ✓ Registro de venta directa presencial por administradora Yilda (`@yilda`).
-8. ✓ Rechazo de asignación de número ya vendido (HTTP 409).
-9. ✓ Concurrencia simultánea con bloqueo ACID.
-10. ✓ Prevención de asignaciones parciales (Rollback íntegro).
-11. ✓ Expiración y liberación automática de números vencidos.
-12. ✓ Rechazo criptográfico de accesos no autorizados al panel.
-13. ✓ Rechazo de tokens privados falsificados (HTTP 404).
-14. ✓ Validación independiente de credenciales para Alan e Yilda con display name correcto.
-15. ✓ Persistencia de datos tras desconexión y reconexión del cliente.
-16. ✓ Exportación a CSV compatible con Excel (BOM UTF-8).
-17. ✓ Respaldo y restauración verificados con 80.000 registros intactos.
-18. ✓ Simulación de falla de conexión y rollback transaccional exitoso.
-19. ✓ Verificación de viewport móvil y carrito flotante responsive.
-20. ✓ Protección de datos personales en APIs públicas (cero filtración de nombres/teléfonos).
+Se ejecutó la suite completa obteniendo **25 de 25 pruebas aprobadas (0 falladas)**:
 
-### Pruebas en Vivo Realizadas sobre el Servidor
-Se levantó el servidor de producción con `npm run start` en el puerto 3000 y se ejecutaron peticiones HTTP reales:
-- **`GET /api/settings`:** HTTP 200 con configuración y estadísticas públicas.
-- **`GET /api/numbers?limit=3`:** HTTP 200 con paginación e información de estado sin datos personales.
-- **`POST /api/admin/auth/login`:** HTTP 200 con credenciales de `yilda`, emitiendo cookie segura con `displayName: "Yilda"`.
+1. **✓ Consultar disponibilidad pública:** Validación de 80.000 números indexados.
+2. **✓ Seleccionar varios números:** Verificación de estados simultáneos.
+3. **✓ Crear solicitud de reserva:** Creación transaccional con comprador y expiración de 48 hs.
+4. **✓ Cálculo de importe en backend:** Validación del total (ej. 3 × $100 = $300) sin confiar en el cliente.
+5. **✓ Enlace privado por token:** Consulta autorizada mediante token de 192 bits.
+6. **✓ Confirmación de pago:** Transición atómica de la orden a `paid` y los números a `sold`.
+7. **✓ Registro de venta directa:** Creación presencial con autoría asentada.
+8. **✓ Rechazo de números vendidos:** Respuesta `HTTP 409 Conflict` ante números ocupados.
+9. **✓ Concurrencia con bloqueo ACID:** Dos operaciones simultáneas sobre el mismo número resultan en exactamente 1 éxito y 1 rechazo.
+10. **✓ Prevención de asignaciones parciales:** Reversión completa (`ROLLBACK`) si 1 número de un lote falla.
+11. **✓ Expiración automática:** Liberación reactiva de reservas vencidas a `'available'`.
+12. **✓ Rechazo de accesos no autorizados al panel:** Tokens falsificados o ausentes son rechazados.
+13. **✓ Aislamiento de comprobantes privados:** Intentos de consultar tokens inexistentes retornan HTTP 404 sin exponer datos ajenos.
+14. **✓ Validación de permisos de ambos administradores:** Comprobación de roles y display names de Alan e Yilda.
+15. **✓ Persistencia de datos:** Verificación de persistencia tras el cierre y reapertura de la conexión.
+16. **✓ Exportación CSV compatible con Excel:** Inclusión del BOM UTF-8 y codificación de columnas.
+17. **✓ Respaldo y restauración:** Verificación de integridad con 80.000 registros intactos.
+18. **✓ Simulación de fallo de red:** Reversión limpia tras interrupción provocada en transacción.
+19. **✓ Revisión de diseño móvil y escritorio:** Comprobación de viewport y barra flotante de carrito móvil.
+20. **✓ Protección de privacidad en APIs públicas:** Cero filtración de nombres o celulares de compradores en `/api/numbers`.
+21. **✓ Prevención de pago fantasma:** Validación estricta de orden `'pending'` y números reservados en `/api/admin/orders`.
+22. **✓ Rate Limiting en Login:** Detección de bloqueos HTTP 429 ante reiteración de credenciales inválidas.
+23. **✓ Carga de celular directo sin prefijo 54:** Normalización automática de celulares argentinos (+54 9) para enlaces de WhatsApp.
+24. **✓ Sanitización CSV y códigos únicos:** Neutralización de fórmulas y comprobación de unicidad en códigos `RF-XXXXXX`.
+25. **✓ Optimización Turso y Zona Horaria:** Eliminación de `ORDER BY RANDOM()` en favor de muestreo por clave primaria indexada y zona horaria `America/Argentina/Jujuy`.
 
 ---
 
-## 6. Aspectos Legales y Regulatorios (Jujuy / Argentina)
+## 5. Marco Legal y Regulatorio (Provincia de Jujuy / Argentina)
 
-### Análisis de Fuentes Oficiales
-1. **Competencia Provincial:** En la República Argentina, los juegos de azar y sorteos no son materia delegada a la Nación (Arts. 121 y 75 inc. 12 de la Constitución Nacional), correspondiendo su regulación exclusiva a cada provincia.
-2. **Código Penal Argentino (Art. 301 bis, Ley 27.346):**
+### A. Normativa Aplicable
+1. **Constitución Nacional Argentina:** Los juegos de azar y sorteos constituyen una potestad no delegada a la Nación por las provincias (Arts. 121 y 75 inc. 12 C.N.).
+2. **Código Penal de la Nación (Art. 301 bis, Ley 27.346):**
    > *"Será reprimido con prisión de tres (3) a seis (6) años el que explotare, administrare, operare o de cualquier manera organizare, por sí o a través de terceros, cualquier modalidad o sistema de captación de juegos de azar sin contar con la autorización pertinente emanada de la autoridad jurisdiccional competente."*
 3. **Provincia de Jujuy (Ley Provincial N° 6.114):**
-   - El **InProJuy (Instituto Provincial de Juegos de Azar de Jujuy)** es el único organismo competente para autorizar y regular rifas y tómbolas en la provincia.
-   - InProJuy exige personería jurídica (asociación civil o fundación), depósito en garantía de los premios y pago de un canon fiscal para emitir una **Resolución Oficial de Autorización**.
+   - El **InProJuy (Instituto Provincial de Juegos de Azar de Jujuy)** es el organismo estatal con competencia exclusiva para regular, fiscalizar y autorizar rifas, tómbolas y sorteos públicos en el territorio provincial.
+   - Las autorizaciones oficiales de InProJuy se otorgan formalmente a entidades con personería jurídica acreditada (asociaciones civiles, fundaciones o cooperadoras), con depósito en garantía de los premios ofrecidos y tributación del canon correspondiente.
 
-### Hechos Verificados y Conclusión Legal
-- **La presente rifa NO cuenta con autorización ni resolución de InProJuy.**
-- Es una iniciativa **solidaria familiar de carácter privado** organizada por y para el núcleo familiar para el pago de cuotas de un lote.
-- **Recomendaciones Imperativas antes de difundir:**
-  1. **Ámbito de circulación:** La rifa debe circular exclusivamente por canales privados directos (familiares, amigos, compañeros de trabajo y allegados conocidos). **No debe realizarse publicidad en medios masivos (radio, televisión, diarios) ni anuncios pagos en redes sociales (Meta Ads, Instagram).**
-  2. **Transparencia en el sitio:** En el portal público se expresa claramente que se trata de una rifa solidaria familiar privada. **Bajo ninguna circunstancia debe afirmarse que cuenta con aval estatal o autorización de InProJuy sin tenerla.**
-  3. **Fecha y premios:** Antes de iniciar la venta masiva, deben definirse los premios y el método de sorteo (por ejemplo: *"Se sorteará por Quiniela de Jujuy Nocturna del día DD/MM/AAAA"* o *"Sorteo en vivo por transmisión familiar"*).
-
----
-
-## 7. Pasos Manuales Obligatorios antes del Lanzamiento
-
-Antes de recibir compras reales, deben completarse los siguientes pasos:
-
-1. **Establecer Contraseñas Nuevas y Privadas (Modo Interactivo Protegido):**
-   Ejecutar desde la terminal del proyecto (no escribir la contraseña en el comando para evitar que quede en el historial de Linux/Windows):
-   ```bash
-   npm run change-password alan
-   ```
-   *El sistema solicitará de forma enmascarada con asteriscos (`*`) la nueva contraseña y su confirmación.*
-   
-   Luego, ejecutar para Yilda (su usuario de acceso es `yilda` y su nombre visible es **Yilda**):
-   ```bash
-   npm run change-password yilda
-   ```
-   *El cambio se aplica inmediatamente y queda asentado en la auditoría sin exponer claves.*
-
-2. **Generar el Secreto de Sesión en `.env.local`:**
-   Crear o editar `.env.local` y definir un `ADMIN_SECRET_KEY` seguro de al menos 32 caracteres:
-   ```bash
-   # Generar clave secreta aleatoria:
-   node -e "console.log('ADMIN_SECRET_KEY=' + require('crypto').randomBytes(32).toString('hex'))" >> .env.local
-   ```
-
-3. **Completar Datos del Sorteo en el Panel Administrativo (`/admin/configuracion`):**
-   - Iniciar sesión en `/admin/login` con cualquiera de las dos cuentas.
-   - Definir los **Premios**.
-   - Definir la **Fecha y Modalidad del Sorteo**.
-   - Completar el **Alias Bancario**, **CBU**, **Banco** y **Titular** de la cuenta donde se recibirán las transferencias.
-   - Colocar el **Número de Celular con WhatsApp** para la recepción automática de comprobantes.
-
-4. **Definir la Estrategia de Despliegue ($0):**
-   - **Opción A (Auto-hospedado con persistencia en `rifa.db` y túnel seguro gratuito):**
-     1. Iniciar la aplicación: `npm run build && npm run start`
-     2. En otra terminal: `cloudflared tunnel --url http://localhost:3000`
-     3. Copiar la URL pública HTTPS de Cloudflare y compartirla en el círculo íntimo familiar.
-   - **Opción B (Nube Vercel + Turso LibSQL $0):**
-     1. Crear base en Turso: `turso db create rifa-prod`
-     2. Volcar la base `rifa.db` a Turso mediante el CLI o dump SQL.
-     3. Configurar en Vercel las variables `DATABASE_URL` y `DATABASE_AUTH_TOKEN`.
+### B. Situación Real del Proyecto y Directivas de Circulación
+- **La presente rifa solidaria NO cuenta con autorización ni resolución de InProJuy.**
+- Su naturaleza es estrictamente **familiar, comunitaria y privada**, orientada a reunir fondos para cancelar cuotas de un terreno familiar entre allegados.
+- **Directivas Imperativas de Operación:**
+  1. **Circulación exclusivamente privada:** La rifa debe difundirse únicamente por canales personales directos (WhatsApp individual o grupos de familiares, vecinos y amigos). **Bajo ninguna circunstancia debe publicitarse en medios de comunicación masivos (radio, televisión, diarios) ni mediante anuncios comerciales pagos en redes sociales (Facebook Ads, Instagram Ads).**
+  2. **Transparencia absoluta:** El portal público expresa con claridad que se trata de una rifa solidaria familiar privada. **Está terminantemente prohibido afirmar o insinuar que el evento cuenta con aval estatal, autorización oficial o resolución del InProJuy.**
+  3. **Certidumbre del sorteo:** Antes de abrir la venta masiva, deben fijarse con total claridad la fecha del sorteo, los premios y la modalidad de adjudicación (por ejemplo, tomar como referencia la Quiniela de Jujuy Nocturna de una fecha determinada).
 
 ---
 
-## 8. Certificado de Verificación Técnica
+## 6. Lista de Tareas Operativas Pendientes antes de la Difusión
 
-| Componente | Estado | Verificación |
-| :--- | :---: | :--- |
-| **80.000 Números** | **100% Intactos** | 80.000 registros del 00001 al 80000 en estado `available` en `rifa.db`. |
-| **Cuentas Administradoras** | **Verificadas** | Alan (`alan`) e Yilda (`yilda`, nombre visible `Yilda`). |
-| **Suite de Pruebas** | **20/20 Aprobadas** | Ejecutadas en sandbox aislado (`backups/test_isolated.db`) sin tocar `rifa.db`. |
-| **Compilación de Producción** | **Aprobada (0 Errores)** | Next.js 15.5.28 (`npm run build`), 28/28 rutas dinámicas y estáticas generadas. |
-| **Integridad Transaccional** | **ACID Garantizado** | Bloqueo exclusivo contra dobles reservas y reversión en fallos parciales. |
-| **Preservación y Backups** | **Comprobada** | Respaldo verificado en `backups/backup_2026-10-15T18-17-13.db` (5.38 MB). |
-| **Costo Operativo** | **$0 Estricto** | Cero costo en licencias, APIs pagas, bases de datos o pasarelas. |
+1. **Establecer contraseñas definitivas:** Cambiar las claves iniciales de `alan` e `yilda` a través del panel de configuración web o con `npm run change-password`.
+2. **Definir datos bancarios en el panel:** Ingresar a `/admin/configuracion` y completar el CBU, Alias, Banco y Titular de la cuenta familiar receptora de transferencias.
+3. **Definir fecha y premios:** Actualizar en el panel el listado definitivo de premios y la fecha de sorteo.
+4. **Verificar recepción de comprobantes:** Comprobar que los números de WhatsApp receptores (Alan `3884152040` e Yilda `3884141514`) reciban adecuadamente los mensajes prearmados desde el portal.

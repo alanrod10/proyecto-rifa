@@ -1,138 +1,204 @@
 # Arquitectura del Sistema — Proyecto RIFA (80.000 Números)
 
-## 1. Resumen Ejecutivo y Decisión Tecnológica
+## 1. Resumen Ejecutivo y Especificaciones Técnicas
 
-El sistema **Proyecto RIFA** ha sido diseñado para gestionar una rifa familiar masiva de **80.000 números** (del `00001` al `80000`) a un valor inicial de **ARS 100 por número**, con un presupuesto de operación obligatorio de **ARS 0 (Cero)**, garantizando concurrencia, alta disponibilidad en celulares y computadoras, persistencia transaccional y protección absoluta de datos personales.
+El sistema **Proyecto RIFA** gestiona una rifa solidaria familiar de **80.000 números** (desde el `00001` hasta el `80000`), a un valor de **ARS 100 por número**, diseñado bajo la premisa de **costo operativo obligatorio de ARS $0 (Cero)**.
 
-### Stack Tecnológico Seleccionado
-- **Frontend y Backend unificados:** **Next.js (React + TypeScript + Tailwind CSS)** en arquitectura App Router / Route Handlers.
-- **Motor de Base de Datos:** **LibSQL / SQLite**.
-  - *Entorno local:* Archivo local de base de datos (`file:./rifa.db`) con soporte ACID y modo WAL.
-  - *Entorno en la nube:* Compatible al 100% con **Turso Database** (motor LibSQL/SQLite distribuido en el Edge con capa gratuita permanente de 9 GB y 1.000 millones de lecturas/mes sin tarjeta de crédito).
-- **Seguridad y Criptografía:** `bcryptjs` para hash de contraseñas de administradores; tokens criptográficos de 192 bits (`crypto.randomBytes`) para enlaces privados de pedidos; tokens JWT firmados con `jose` en cookies `httpOnly`, `SameSite=Lax`.
+La arquitectura garantiza:
+- **Consistencia ACID:** Prevención estricta de asignaciones dobles o parciales.
+- **Alta disponibilidad móvil:** Cero colapsos de memoria en navegadores de celulares económicos mediante paginación indexada y consultas acotadas.
+- **Privacidad absoluta:** Aislamiento criptográfico de pedidos sin exposición de datos de compradores en APIs públicas.
+- **Persistencia dual flexible:** Ejecución local con SQLite/WAL o despliegue en la nube serverless con Turso LibSQL.
 
----
+### Pila Tecnológica Implementada
 
-## 2. Justificación Técnica y Comparativa de Alternativas
-
-### ¿Por qué NO Streamlit?
-- **Modelo de ejecución:** Streamlit reejecuta todo el script ante cada interacción del usuario. Con 80.000 números y decenas de usuarios concurrentes navegando desde celulares, el consumo de memoria se dispara y el navegador experimenta latencias inaceptables.
-- **Conexiones WebSocket frágiles:** En navegadores móviles (Safari/Chrome en iOS y Android), las conexiones WebSocket de Streamlit se cortan frecuentemente al minimizar la pantalla o cambiar de red 4G/WiFi.
-- **Concurrencia de administradores:** Streamlit no ofrece un modelo nativo de ruteo multi-página desacoplado ni gestión de sesiones HTTP seguras aisladas por administrador.
-
-### ¿Por qué NO MySQL Server tradicional autohospedado?
-- La presencia de *MySQL Workbench 8.0 CE* en el equipo del usuario es solo un cliente gráfico, no garantiza un servidor MySQL Server activo ni configurado.
-- En despliegues gratuitos en la nube, los servicios gestionados de MySQL (PlanetScale, AWS RDS, etc.) han eliminado o severamente restringido sus niveles gratuitos.
-- Exponer un MySQL Server local a Internet a través de un router doméstico introduce riesgos graves de seguridad de red y requiere configuración compleja de IP dinámica y puertos.
-
-### Ventajas de Next.js + LibSQL / SQLite
-1. **Rendimiento extremo:** Una base de 80.000 números indexada en SQLite ocupa únicamente ~4 MB. Consultas de disponibilidad, búsqueda puntual e inserciones tardan **menos de 0.2 milisegundos**.
-2. **ACID y Prevención de Doble Reserva:** Mediante transacciones atómicas (`BEGIN IMMEDIATE`), el motor bloquea a nivel de transacción durante la reserva. Si dos compradores intentan apartar el mismo número simultáneamente, solo uno tiene éxito y el segundo recibe un mensaje claro de conflicto sin corromper el estado.
-3. **Cero dependencias externas complejas:** En local se ejecuta con un único comando (`npm run dev`) sin necesidad de levantar contenedores pesados ni demonios de bases de datos.
-4. **Cero costos obligatorios ($0):** Permite ejecutarse tanto localmente con túnel seguro gratuito (Cloudflare Tunnel) como en plataformas serverless gratuitas (Vercel + Turso).
-
----
-
-## 3. Las Tres Interfaces del Sistema
-
-El sistema implementa tres espacios desacoplados conectados a la misma fuente de verdad:
-
-```
-                              ┌────────────────────────────────────────┐
-                              │         BASE DE DATOS CENTRAL          │
-                              │            (LibSQL / SQLite)           │
-                              │  - 80.000 números indexados            │
-                              │  - Pedidos, Solicitudes y Pagos        │
-                              │  - Cuentas de 2 Administradores        │
-                              │  - Configuración dinámica del sorteo   │
-                              │  - Registro de auditoría (Audit Logs)  │
-                              └────────────────────────────────────────┘
-                                    ▲               ▲               ▲
-                                    │               │               │
-            ┌───────────────────────┴─┐   ┌─────────┴─────────────┐ │
-            │                         │   │                       │ │
-┌───────────────────────┐ ┌───────────────────────┐ ┌───────────────────────┐
-│     PORTAL PÚBLICO    │ │    CONSULTA PRIVADA   │ │  PANEL ADMINISTRATIVO │
-│   (Venta y Reserva)   │ │  (/pedido/[token])    │ │       (/admin)        │
-│                       │ │                       │ │                       │
-│ - Búsqueda de números │ │ - Recibo digital      │ │ - Dashboard métricas  │
-│ - Selección múltiple  │ │ - Números asignados   │ │ - Validación de pagos │
-│ - Azar (1, 5, 10 nros)│ │ - Estado en tiempo    │ │ - Ventas directas     │
-│ - Carrito interactivo │ │   real (Pendiente/    │ │ - Liberar vencidos    │
-│ - Datos del comprador │ │   Pagado/Vencido)     │ │ - Configuración       │
-│ - Instrucciones pago  │ │ - Botón copiar enlace │ │ - Exportar CSV        │
-│ - Cero datos ajenos   │ │ - Contacto WhatsApp   │ │ - Copias de seguridad │
-└───────────────────────┘ └───────────────────────┘ └───────────────────────┘
-```
-
-### A. Portal Público (`/`)
-- Diseñado Mobile-First con Tailwind CSS, optimizado para celulares de cualquier gama.
-- Muestra métricas públicas (números disponibles, precio por número, premios confirmados o a confirmar, fecha del sorteo a confirmar).
-- **Selector de números optimizado:** No descarga los 80.000 números al cliente. La interfaz consulta mediante paginación inteligente, búsqueda directa y función de "Selección al azar" (1, 3, 5, 10 o 20 números disponibles).
-- **Proceso de reserva:**
-  1. El comprador elige sus números y completa Nombre, Apellido y Celular.
-  2. Selecciona método de pago: *Efectivo* o *Transferencia bancaria*.
-  3. El servidor valida la disponibilidad real en una transacción atómica, calcula el importe en backend (nunca confía en valores del cliente), genera la orden con código legible (ej. `RF-A83B`) y un token privado criptográfico de alta entropía.
-  4. Redirige a la pantalla de éxito con el enlace privado único.
-
-### B. Consulta Privada del Comprador (`/pedido/[token]`)
-- Acceso exclusivo mediante token criptográfico no predecible (192 bits).
-- Muestra el comprobante virtual de la reserva: números asignados, total a pagar, estado del pago (*Pendiente*, *Pagado*, *Vencido*, *Cancelado*), alias/CBU de transferencia, y enlace directo a WhatsApp para enviar el comprobante.
-- No expone enlaces a pedidos de otros usuarios ni requiere crear contraseñas.
-
-### C. Panel Administrativo Privado (`/admin`)
-- Protegido por autenticación individual para los dos administradores (Alan e Yilda).
-- Acceso con usuario y contraseña únicos (hash bcrypt).
-- **Secciones:**
-  - **Dashboard:** Resumen en tiempo real: disponibles, reservados, vendidos, cobrado en efectivo vs transferencia, recaudación potencial restante.
-  - **Ventas Directas:** Permite a los administradores registrar ventas presenciales (mano a mano) marcándolas inmediatamente como pagadas o reservadas.
-  - **Solicitudes Web:** Listado de pedidos recibidos por la web, con filtros por estado, verificación de comprobantes y botón de confirmación de pago con 1 clic.
-  - **Gestión de Números:** Buscador global de los 80.000 números para conocer al instante el estado o comprador de un número específico.
-  - **Gestión de Compradores:** Listado de compradores con búsqueda por nombre o teléfono, permitiendo recuperar el enlace privado de un comprador si este lo extravió.
-  - **Configuración del Sistema:** Modificación en vivo (sin tocar código) del precio de la rifa, premios, fecha del sorteo, CBU/Alias bancario, teléfono de contacto y tiempo de expiración de reservas.
-  - **Auditoría e Historial:** Registro inmutable de cada acción sensible (quién confirmó un pago, quién canceló una reserva, quién modificó la configuración).
-  - **Respaldos y Exportación:** Exportación de datos a formato CSV y descarga/restauración de copias de seguridad de la base de datos.
-
----
-
-## 4. Manejo de Concurrencia y 80.000 Números
-
-### Integridad Referencial y Concurrencia
-- La tabla `numbers` contiene 80.000 filas con el número (`1` a `80000`) como clave primaria y un índice sobre `status` (`'available'`, `'reserved'`, `'sold'`).
-- La reserva se efectúa dentro de una transacción exclusiva:
-  ```sql
-  -- Pseudocódigo del flujo transaccional
-  BEGIN IMMEDIATE;
-  -- 1. Verificar que TODOS los números solicitados sigan en estado 'available'
-  -- 2. Si alguno ya no está disponible -> ROLLBACK y retornar error de conflicto
-  -- 3. Crear el registro en 'orders' con el importe histórico
-  -- 4. Actualizar los números solicitados a 'reserved' con el id de orden
-  COMMIT;
-  ```
-- Este diseño garantiza que **nunca se produzca una doble asignación** y que **no existan asignaciones parciales** (si se piden 5 números y 1 fue tomado por otra persona un milisegundo antes, la operación se cancela limpiamente sin reservar los otros 4).
-
-### Expiración de Reservas sin Costo ($0)
-Para no depender de un servicio de tareas programadas pago (Cron externo):
-1. **Liberación reactiva (Lazy Cleanup):** Antes de cualquier consulta de números disponibles o creación de reserva, el backend ejecuta una consulta ultra-rápida (menos de 1 ms) que pasa a `'available'` los números de pedidos con `payment_status = 'pending'` cuya fecha `expires_at` sea menor al momento actual, marcando el pedido como `'expired'`.
-2. **Liberación manual desde el Panel:** Los administradores cuentan con un botón "Liberar reservas vencidas" en el panel que ejecuta la limpieza y reporta cuántos números fueron devueltos al público.
-
----
-
-## 5. Matriz de Costos y Presupuesto ($0 Obligatorio)
-
-| Componente | Servicio Elegido | Límite del Plan Gratuito | Costo Obligatorio |
+| Capa | Tecnología | Versión | Rol Arquitectónico |
 | :--- | :--- | :--- | :--- |
-| **Alojamiento Web** | Vercel Hobby o Servidor Local | 100 GB ancho de banda/mes, funciones serverless gratuitas ilimitadas para uso personal | **$0** |
-| **Túnel Público (si es local)** | Cloudflare Tunnel (`cloudflared`) | Tráfico ilimitado, certificado SSL gratis, sin abrir puertos | **$0** |
-| **Base de Datos** | SQLite local / Turso LibSQL Edge | 9 GB de almacenamiento (la base completa pesa ~4 MB), 1.000M lecturas/mes | **$0** |
-| **Autenticación** | JWT interno con cookies `httpOnly` | Sin límites, implementado con criptografía nativa | **$0** |
-| **Mensajería / Pagos** | Enlace `wa.me` directo + Transferencia bancaria | Verificación manual sin comisiones de pasarelas | **$0** |
-| **Dominio** | Subdominio gratuito (`.vercel.app` o `.trycloudflare.com`) | Certificado HTTPS automático incluido | **$0** |
+| **Frontend & Backend** | [Next.js](https://nextjs.org/) (React + TypeScript) | `15.2.4` / `19.0.0` | Arquitectura unificada App Router con Server Components y Route Handlers. |
+| **Estilos & Diseño** | [Tailwind CSS](https://tailwindcss.com/) | `4.0.12` | Motor de estilos con tokens semánticos nativos `@theme`, temas Claro y Oscuro. |
+| **Iconos** | [Lucide React](https://lucide.dev/) | `1.16.0` | Iconografía SVG reactiva optimizada. |
+| **Base de Datos** | [LibSQL](https://github.com/tursodatabase/libsql-client-ts) / SQLite | `0.14.0` | Motor relacional ligero, transacciones ACID, modo WAL y compatibilidad con Turso Edge. |
+| **Autenticación** | [Jose](https://github.com/panva/jose) & [Bcryptjs](https://github.com/dcodeIO/bcrypt.js) | `6.0.8` / `3.0.2` | Hasheo criptográfico de claves y firma de JWT (HS256) en cookies `httpOnly`. |
 
 ---
 
-## 6. Procedimiento de Respaldo y Recuperación
+## 2. Diagrama de Topología del Sistema
 
-1. **Exportación de Datos (CSV):** Desde el panel de administración, se generan archivos CSV tabulados con todas las órdenes, compradores y asignaciones de números.
-2. **Copia de Seguridad Física (Dump / Snapshot):** El script `scripts/backup.mjs` genera una copia completa e íntegra del archivo de base de datos con marca de tiempo en la carpeta `backups/`.
-3. **Restauración Verificada:** El script `scripts/restore.mjs` permite restablecer la base de datos a partir de cualquier copia de seguridad generada previamente, validando la integridad referencial de los 80.000 números.
+```
+                                  ┌───────────────────────────────────────────────┐
+                                  │             BASE DE DATOS CENTRAL             │
+                                  │        (LibSQL / SQLite - WAL Mode)           │
+                                  │                                               │
+                                  │  - 80.000 números indexados (numbers)         │
+                                  │  - Pedidos y comprobantes (orders)            │
+                                  │  - Directorio de compradores (buyers)         │
+                                  │  - Administradores individuales (admins)      │
+                                  │  - Configuraciones dinámicas (settings)       │
+                                  │  - Historial de auditoría inmutable (audit)   │
+                                  └───────────────────────────────────────────────┘
+                                         ▲                ▲                ▲
+                                         │                │                │
+                    ┌────────────────────┴───┐   ┌────────┴─────────────┐  │
+                    │                        │   │                      │  │
+        ┌───────────────────────┐ ┌───────────────────────┐ ┌───────────────────────┐
+        │     PORTAL PÚBLICO    │ │    CONSULTA PRIVADA   │ │  PANEL ADMINISTRATIVO │
+        │        ( / )          │ │  ( /pedido/[token] )  │ │       ( /admin )      │
+        │                       │ │                       │ │                       │
+        │ - Visualizador 80.000 │ │ - Token 192 bits      │ │ - Sesión JWT 7 días   │
+        │ - Carrito flotante    │ │ - Comprobante digital │ │ - Dashboard métricas  │
+        │ - Selector al azar    │ │ - Estado en vivo      │ │ - Solicitudes web     │
+        │ - Reserva atómica     │ │ - Datos de transfer.  │ │ - Ventas directas     │
+        │ - Cero datos ajenos   │ │ - Contacto WhatsApp   │ │ - Direct. Compradores │
+        │ - Modo Claro / Oscuro │ │ - Sin contraseña      │ │ - Gestor de 80.000 n° │
+        │                       │ │                       │ │ - Configuración       │
+        │                       │ │                       │ │ - Descarga Backups    │
+        └───────────────────────┘ └───────────────────────┘ └───────────────────────┘
+```
+
+---
+
+## 3. Modelo de Datos y Esquema Relacional
+
+El esquema está definido en [`src/lib/schema.sql`](src/lib/schema.sql) y optimizado con índices específicos para consultas de alta velocidad (< 1 ms):
+
+```sql
+-- 1. Tabla de Números (80.000 registros indexados)
+CREATE TABLE IF NOT EXISTS numbers (
+  number INTEGER PRIMARY KEY,                      -- 1 al 80000
+  status TEXT NOT NULL DEFAULT 'available',        -- 'available' | 'reserved' | 'sold'
+  order_id INTEGER,                                -- FK a orders(id)
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_numbers_status ON numbers(status);
+CREATE INDEX IF NOT EXISTS idx_numbers_order_id ON numbers(order_id);
+
+-- 2. Tabla de Compradores
+CREATE TABLE IF NOT EXISTS buyers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_buyers_phone ON buyers(phone);
+
+-- 3. Tabla de Pedidos / Órdenes
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT UNIQUE NOT NULL,                       -- Código legible: RF-XXXXXX
+  buyer_id INTEGER NOT NULL,                       -- FK a buyers(id)
+  buyer_name TEXT NOT NULL,
+  buyer_phone TEXT NOT NULL,
+  payment_method TEXT NOT NULL,                    -- 'cash' | 'transfer'
+  payment_status TEXT NOT NULL DEFAULT 'pending',  -- 'pending' | 'paid' | 'expired' | 'cancelled'
+  unit_price REAL NOT NULL DEFAULT 100,            -- Precio histórico congelado al reservar
+  numbers_count INTEGER NOT NULL,
+  total_amount REAL NOT NULL,                      -- Monto histórico calculado en backend
+  numbers_list TEXT NOT NULL,                      -- Array JSON con los números: "[101, 102]"
+  private_token TEXT UNIQUE NOT NULL,              -- Token de 192 bits para /pedido/[token]
+  expires_at DATETIME NOT NULL,                    -- Plazo límite de pago (48 hs por defecto)
+  paid_at DATETIME,
+  confirmed_by_admin TEXT,                         -- Nombre del admin que validó el pago
+  is_direct_sale BOOLEAN DEFAULT 0,
+  created_by_admin TEXT,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_orders_code ON orders(code);
+CREATE INDEX IF NOT EXISTS idx_orders_token ON orders(private_token);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(payment_status);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_phone ON orders(buyer_phone);
+
+-- 4. Tabla de Cuentas Administrativas
+CREATE TABLE IF NOT EXISTS admins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,                   -- 'alan' | 'yilda' (o 'esposa')
+  password_hash TEXT NOT NULL,                     -- Hash bcrypt con 10 rondas de salt
+  display_name TEXT NOT NULL,                      -- 'Alan' | 'Yilda'
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. Tabla de Configuración Dinámica
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. Tabla de Auditoría Inmutable
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  admin_username TEXT NOT NULL,
+  action TEXT NOT NULL,
+  details TEXT,
+  ip_address TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+## 4. Control de Concurrencia y Atomicidad (ACID)
+
+### A. Prevención de Doble Asignación y Asignaciones Parciales
+Al solicitar una reserva en `/api/reservations`:
+1. El backend abre una transacción de escritura exclusiva (`client.transaction('write')` o `BEGIN IMMEDIATE`).
+2. Verifica en una sola consulta indexada que **todos** los números solicitados posean `status = 'available'`.
+3. Si tan solo uno de los números solicitados ya no está disponible (fue tomado por otro comprador milisegundos antes):
+   - Se ejecuta un **`ROLLBACK` íntegro e inmediato**.
+   - No se crea la orden ni se bloquean los números restantes.
+   - Se responde un código `HTTP 409 Conflict` detallando los números en colisión.
+4. Si todos están disponibles:
+   - Se crea el registro del comprador (`buyers`).
+   - Se crea el pedido (`orders`) con el monto histórico congelado.
+   - Se actualizan los números a `'reserved'`, asociándolos al `order_id`.
+   - Se ejecuta el `COMMIT`.
+
+### B. Prevención de "Pagos Fantasma"
+Para evitar que un administrador confirme accidentalmente un pago sobre una orden que ya expiró o fue cancelada:
+- La consulta de confirmación en `/api/admin/orders` verifica dentro de la transacción que la orden mantenga `payment_status = 'pending'` y que los números vinculados continúen en estado `'reserved'`. Si los números ya fueron reasignados o devueltos al público, la confirmación se rechaza de forma segura.
+
+---
+
+## 5. Expiración Reactiva y Gestión del Ciclo de Vida ($0)
+
+Para evitar la contratación de servicios de tareas programadas externos (Cron jobs de pago):
+1. **Limpieza Perezosa (Lazy Cleanup):** Antes de resolver cualquier consulta pública de números (`/api/numbers`) o creación de reserva (`/api/reservations`), el backend ejecuta una consulta optimizada que busca pedidos con `payment_status = 'pending'` y `datetime(expires_at) < datetime('now')`.
+   - Devuelve los números asociados al estado `'available'`.
+   - Marca la orden como `'expired'`.
+2. **Liberación Forzada desde el Panel:** El panel administrativo dispone de la acción `/api/admin/release-expired`, que permite a los administradores liberar manualmente números vencidos en cualquier momento y recibir un resumen de cuántos números se reintegraron.
+
+---
+
+## 6. Autenticación, Sesiones y Seguridad Perimetral
+
+1. **Hasheo de Contraseñas:** Algoritmo `bcrypt` con 10 rondas de salting (`$2b$10$...`).
+2. **Sesiones Criptográficas:** Tokens JWT emitidos con la librería `jose`, firmados mediante el algoritmo HS256 utilizando la variable de entorno `ADMIN_SECRET_KEY` (mínimo 32 caracteres).
+3. **Transporte de Sesión:** Cookie protegida `rifa_admin_session` con flags `httpOnly: true`, `SameSite: 'Lax'` y `path: '/'`, con vigencia de 7 días.
+4. **Protección contra Fuerza Bruta (Rate Limiting):**
+   - El endpoint `/api/admin/auth/login` audita cada intento fallido en `audit_logs` con la acción `ADMIN_LOGIN_FAILED`.
+   - Si se detectan más de 5 intentos fallidos desde una misma IP o hacia un mismo usuario en una ventana de 10 minutos, el sistema bloquea temporalmente las peticiones respondiendo `HTTP 429 Too Many Requests`.
+5. **Sanitización contra Inyección de Fórmulas CSV:** En el endpoint `/api/admin/export`, todas las celdas se procesan con `sanitizeCsvCell()`: si un campo de texto comienza con `=`, `+`, `-` o `@`, se prefija con una comilla simple (`'`) para evitar la ejecución arbitraria de fórmulas en Microsoft Excel.
+
+---
+
+## 7. Persistencia Dual: Local y Cloud ($0)
+
+El cliente unificado en [`src/lib/db.ts`](src/lib/db.ts) utiliza `@libsql/client` y detecta automáticamente el destino según la variable `DATABASE_URL`:
+
+- **Entorno Local (Desarrollo y Self-Hosted):**
+  - Configuración: `DATABASE_URL="file:./rifa.db"`
+  - El motor opera sobre el archivo SQLite local en modo WAL (*Write-Ahead Logging*).
+  - Admite publicación por Internet a costo $0 combinándolo con **Cloudflare Tunnel** (`cloudflared tunnel --url http://localhost:3000`).
+- **Entorno en la Nube (Vercel Serverless):**
+  - Configuración: `DATABASE_URL="libsql://tu-base.turso.io"`, `DATABASE_AUTH_TOKEN="token"`
+  - Conexión sobre protocolo LibSQL HTTP/WebSocket hacia la red distribuida de Turso.
+  - Almacena los 80.000 números y transacciones con persistencia real (resolviendo la limitación del sistema de archivos efímero de Vercel).
+
+---
+
+## 8. Estrategia de Copias de Seguridad y Recuperación
+
+1. **Snapshot Binario con VACUUM INTO (`scripts/backup.mjs`):** Genera una copia consistente en caliente de `rifa.db` sin bloquear las lecturas ni detener el servidor.
+2. **Snapshot JSON Estructurado:** Genera un archivo `.json` con todas las métricas, configuraciones, compradores, órdenes y números ocupados. Funciona idénticamente tanto en SQLite local como en Turso Cloud.
+3. **Descarga en 1 Clic desde el Panel (`/api/admin/backup`):** Permite a los administradores descargar una copia completa en formato JSON desde `/admin/configuracion` en cualquier momento.
+4. **Restauración Verificada (`scripts/restore.mjs`):** Antes de aplicar cualquier reemplazo, verifica que el archivo de respaldo contenga exactamente 80.000 registros y genera una copia de seguridad preventiva (`pre_restore_<timestamp>.db`).

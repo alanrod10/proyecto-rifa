@@ -1,75 +1,125 @@
 # Manual de Operación para Administradores
 ## Proyecto RIFA (80.000 Números)
 
-Este manual está diseñado para **Alan** e **Yilda**, administradores del sistema, para guiar la operativa diaria de la rifa familiar desde cualquier celular o computadora.
+Este manual está diseñado para **Alan** e **Yilda**, administradores del sistema, para guiar la operativa diaria de la rifa familiar desde cualquier teléfono celular o computadora.
 
 ---
 
 ## 1. Acceso al Panel Administrativo
 
-- **Dirección Web:** `https://proyecto-rifa.vercel.app/admin/login` (o en local `http://localhost:3000/admin/login`).
+- **Dirección Web en Producción:** [https://proyecto-rifa.vercel.app/admin/login](https://proyecto-rifa.vercel.app/admin/login)  
+  *(En caso de ejecución local: `http://localhost:3000/admin/login`)*.
 - **Cuentas Individuales:**
-  - **Administrador 1 (Alan):** Usuario `alan` | *(Contraseña privada configurable desde `/admin/configuracion`)*
-  - **Administradora 2 (Yilda):** Usuario `yilda` | *(Contraseña privada configurable desde `/admin/configuracion`)*
-- Ambas cuentas tienen permisos completos e independientes. El sistema registra en el historial de auditoría el nombre exacto de quién realizó cada confirmación o cambio.
-- **Cambio de contraseña desde la web:** Cada administrador puede actualizar su propia contraseña en cualquier momento desde **Configuración** (`/admin/configuracion` -> *Seguridad de Mi Cuenta*).
+  - **Administrador 1:** Usuario `alan` | Nombre visible: **Alan**
+  - **Administradora 2:** Usuario `yilda` *(también identificada históricamente como `esposa`)* | Nombre visible: **Yilda**
+- **Permisos:** Ambas cuentas tienen facultades completas e independientes. El sistema registra en el historial de auditoría el nombre exacto de la persona que realizó cada cobro, anulación o ajuste.
+- **Cómo Cambiar tu Contraseña:**
+  - **Desde la Web (Recomendado):** Ingresá al panel, hacé clic en **Configuración** (`/admin/configuracion`), bajá hasta la sección **Seguridad de Mi Cuenta**, escribí tu contraseña actual, la nueva clave (mínimo 8 caracteres) y confirmá el cambio.
+  - **Desde la Consola:** Ejecutá de forma interactiva:
+    ```bash
+    npm run change-password alan
+    # o para Yilda:
+    npm run change-password yilda
+    ```
+    El script solicitará la contraseña de manera enmascarada con asteriscos (`*`) para que no quede expuesta en el historial.
 
 ---
 
-## 2. Flujo de Trabajo Diario
+## 2. Pantallas y Operaciones Diarias
 
-### A. Confirmar un Pago por Transferencia Bancaria
-1. Un comprador solicita números desde el portal público y elige «Transferencia». El sistema reserva sus números temporalmente (por 48 hs) en estado **Pendiente**.
-2. El comprador te envía el comprobante bancario por WhatsApp.
-3. Verificás en tu aplicación del banco o billetera virtual (Mercado Pago, Cuenta DNI, Banco) que el dinero haya ingresado efectivamente.
-4. Ingresás al panel en **Solicitudes Web** (`/admin/solicitudes`).
-5. Buscás al comprador por su nombre, celular o código de pedido (ej: `RF-A82B`).
-6. Presionás el botón verde **Confirmar Pago**.
-7. ¡Listo! El pedido pasa a **Pagado**, los números quedan registrados como **Vendidos** de forma permanente y se suma el dinero a la recaudación real del panel.
-
-### B. Registrar una Venta Directa en Mano (Efectivo o Transferencia en Vivo)
-Cuando vendés números en persona a un familiar, vecino o amigo cara a cara:
-1. Entrás a **Ventas Directas** (`/admin/ventas`).
-2. Completás:
-   - Nombre y Apellido.
-   - Número de Celular.
-   - Números deseados (podés escribirlos o presionar `+1 al azar`, `+5 al azar` si no tienen preferencia).
-   - Medio de pago: *Efectivo* o *Transferencia*.
-   - Estado: Seleccioná **✓ Pagado ahora** si ya te entregó el dinero, o **⏳ Pendiente** si te lo pagará más tarde.
-3. Hacés clic en **Confirmar y Guardar Venta**.
-4. Podés abrir o copiar el comprobante digital generado y compartírselo por WhatsApp en el momento.
-
-### C. ¿Qué hacer si un comprador perdió su enlace privado?
-Los compradores no pueden buscar por celular en la web pública por protección de datos personales.
-1. Ingresás a **Compradores** (`/admin/compradores`).
-2. Escribís su nombre o celular en el buscador.
-3. Al desplegar su registro, verás todos sus pedidos.
-4. Presionás el botón verde **Reenviar por WhatsApp** o **Copiar enlace**.
-5. Se lo enviás directamente por WhatsApp.
-
-### D. Liberar Reservas Vencidas
-El sistema libera automáticamente los números vencidos ante cada interacción pública. Sin embargo, también podés forzar la liberación manual:
-1. En el **Resumen** (`/admin`), hacé clic en el botón amarillo **Liberar Vencidos**.
-2. El sistema revisará todos los pedidos impagos que hayan superado las 48 hs, devolverá los números al estado *Disponible* y marcará la orden como *Vencida*.
-
-### E. Modificar Premios, Fechas o Alias Bancario
-1. Ingresás a **Configuración** (`/admin/configuracion`).
-2. Podés modificar:
-   - El texto de premios (cuando estén confirmados).
-   - La fecha y hora exacta del sorteo.
-   - El Alias, CBU o titular bancario.
-   - El celular de WhatsApp receptor de consultas.
-   - El precio unitario por número (si en el futuro decidieran modificarlo; los números ya vendidos conservarán su precio histórico).
-3. Presionás **Guardar Configuración**. El cambio impacta inmediatamente en la portada pública.
-
-### F. Descargar Listados a Excel (CSV)
-1. En el **Resumen** o menú de exportación, hacé clic en **Exportar CSV**.
-2. Se descargará un archivo `.csv` compatible con Microsoft Excel conteniendo todas las órdenes, compradores, importes y números asignados.
+### A. Dashboard y Resumen General (`/admin`)
+Al ingresar, verás la situación en tiempo real de la rifa:
+- **Números Vendidos:** Cantidad de boletos confirmados y porcentaje de avance sobre los 80.000.
+- **Números Reservados:** Boletos apartados a la espera de comprobante de pago.
+- **Números Disponibles:** Boletos libres para reserva pública o venta directa.
+- **Recaudación Efectiva:** Total cobrado desglosado entre **Efectivo** y **Transferencia Bancaria**.
+- **Dinero Pendiente:** Importe total de las reservas activas aún no acreditadas.
+- **Botón "Liberar Vencidos":** Permite forzar la liberación manual de aquellas reservas que superaron las 48 horas de vigencia sin comprobante.
 
 ---
 
-## 3. Buenas Prácticas de Seguridad
+### B. Solicitudes Web (`/admin/solicitudes`)
+Aquí llegan las reservas realizadas por los compradores a través del portal público:
+1. El comprador aparta números y se le asigna un plazo de 48 horas.
+2. El comprador envía su comprobante por WhatsApp.
+3. **Verificación bancaria estricta:** Antes de confirmar, abrí la aplicación de tu banco o billetera virtual (Mercado Pago, banco, etc.) y asegurate de que los fondos figuren efectivamente acreditados.
+4. En **Solicitudes Web**, buscá al comprador por su nombre, teléfono o código de orden (ejemplo: `RF-A1B2C3`).
+5. Hacé clic en el botón verde **Confirmar Pago**.
+   - El pedido cambia inmediatamente a **Pagado**.
+   - Los números pasan a estado **Vendido** de forma definitiva.
+   - El monto se suma a la recaudación oficial.
+6. Si el comprador decide no pagar o se venció el plazo, podés hacer clic en **Cancelar Reserva** para devolver los números al público.
 
-- **No compartan contraseñas:** Cada uno debe usar su propio usuario para mantener la trazabilidad de auditoría.
-- **No confirmen pagos sin verificar el banco:** Jamás marquen un pedido como pagado basándose únicamente en una captura de pantalla de WhatsApp; verifiquen siempre en su cuenta bancaria real que los fondos estén acreditados.
-- **Realicen respaldos periódicos:** Al menos una vez por semana o tras jornadas de venta intensa, ejecuten `npm run backup` desde la consola.
+---
+
+### C. Registro de Ventas Directas en Mano (`/admin/ventas`)
+Cuando una persona te compra números personalmente (cara a cara o por llamado telefónico):
+1. Ingresá a **Ventas Directas**.
+2. Completá los campos:
+   - **Nombre y Apellido** del comprador.
+   - **Teléfono Celular** (sin prefijo 54 ni 15; el sistema lo normaliza automáticamente).
+   - **Números deseados:** Podés escribir números específicos separados por coma o usar los botones rápidos `+1 al azar`, `+3 al azar`, `+5 al azar` o `+10 al azar`.
+   - **Medio de Pago:** Seleccioná *Efectivo* o *Transferencia*.
+   - **Estado:**
+     - Marcá **✓ Pagado ahora** si ya te entregó el dinero.
+     - Marcá **⏳ Pendiente** si acordaron el pago para más tarde.
+3. Presioná **Confirmar y Guardar Venta**.
+4. En pantalla aparecerá el comprobante generado con botones directos para **Copiar enlace privado** o **Abrir comprobante**.
+
+---
+
+### D. Directorio de Compradores (`/admin/compradores`)
+Esta sección agrupa todas las compras realizadas por una misma persona según su número de teléfono:
+- **Búsqueda Rápida:** Escribí parte del nombre o teléfono para localizar al comprador.
+- **Resumen Unificado:** Muestra la lista de todos los números que tiene pagados, los que tiene pendientes y el total de dinero abonado.
+- **Recuperar Comprobante Perdido:** Si un comprador extravió su enlace privado, podés desplegar su ficha y pulsar **Copiar Enlace** para reenviárselo.
+- **Enviar Resumen Completo por WhatsApp:** El botón verde **WhatsApp con Resumen Total** abre un chat directo con el comprador conteniendo un mensaje prearmado que lista todos sus números adquiridos.
+
+---
+
+### E. Gestor Global de Números (`/admin/numeros`)
+Permite conocer el estado exacto de cualquiera de los 80.000 números:
+- Ingresá un número puntual (del 1 al 80000) o filtrá por estado (*Disponibles*, *Reservados*, *Vendidos*).
+- Podés ver a qué orden pertenece cada número y el nombre del comprador que lo adquirió.
+
+---
+
+### F. Modificación de Ajustes y Datos Bancarios (`/admin/configuracion`)
+Permite actualizar la información visible en el portal público sin necesidad de asistencia técnica:
+- **Premios:** Texto con los premios que se sortearán (actualizable a medida que se definan).
+- **Fecha y Modalidad del Sorteo:** Explicación de cómo y cuándo se efectuará el sorteo.
+- **Datos de Transferencia Bancaria:** Alias, CBU, Banco y Nombre del Titular de la cuenta receptora.
+- **Teléfonos de Contacto de WhatsApp:**
+  - Teléfono principal: Alan (`3884152040`).
+  - Teléfono secundario: Yilda (`3884141514`).
+- **Plazo de Reserva:** Cantidad de horas antes de que venza una reserva no abonada (por defecto 48 hs).
+- **Habilitar/Pausar Reservas:** Interruptor para abrir o cerrar temporalmente la recepción de pedidos en la web.
+- Hacé clic en **Guardar Configuración** para aplicar los cambios de forma instantánea.
+
+---
+
+### G. Registro de Auditoría (`/admin/auditoria`)
+Registra cada acción sensible realizada en el sistema:
+- Quién inició sesión.
+- Quién confirmó un cobro o canceló un pedido.
+- Quién registró una venta directa.
+- Quién modificó los precios o datos bancarios.
+- Fecha, hora exacta e IP de conexión.
+
+---
+
+### H. Exportar Planillas a Excel y Descargar Respaldos
+1. **Exportación a CSV:**
+   - En el Dashboard o en los listados, hacé clic en **Exportar CSV**.
+   - Se descargará un archivo compatible con Microsoft Excel conteniendo órdenes, números, compradores e importes.
+2. **Descarga de Copia de Seguridad:**
+   - En **Configuración** (`/admin/configuracion`), hacé clic en **Descargar Copia de Seguridad**.
+   - El sistema generará un archivo `.json` completo con todos los datos y compradores de la rifa para resguardar en tu computadora o pendrive.
+
+---
+
+## 3. Protocolo de Seguridad para Administradores
+
+1. **Verificación bancaria real:** Jamás confirmes un pago guiándote únicamente por una captura de pantalla de WhatsApp. Las capturas pueden ser editadas; verificá siempre que el dinero haya ingresado en tu cuenta bancaria.
+2. **Uso individual de cuentas:** No compartan usuarios entre sí. Cada uno debe ingresar con su propio nombre (`alan` e `yilda`) para asegurar que el registro de auditoría sea verídico.
+3. **Respaldo periódico:** Descarguen semanalmente la copia de seguridad desde el panel de Configuración y guárdenla en una carpeta segura.
