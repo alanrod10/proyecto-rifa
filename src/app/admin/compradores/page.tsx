@@ -298,7 +298,7 @@ export default function AdminCompradoresPage() {
                       totalPendingAmount: buyer.total_pending_amount || 0,
                       orders: buyer.orders,
                     })
-                  : `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(`👋 ¡Hola ${buyer.name}! Te escribimos desde la administración de la *Gran Rifa Familiar* 🎟️✨.`)}`;
+                  : `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(`¡Hola ${buyer.name}! Te escribimos desde la administración de la *Gran Rifa Familiar*.`)}`;
 
               return (
                 <div key={buyer.id} className="p-4 sm:p-5 hover:bg-slate-50/60 transition">
