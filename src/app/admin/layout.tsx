@@ -78,7 +78,7 @@ export default function AdminLayout({
     { label: 'Resumen', href: '/admin', icon: LayoutDashboard },
     { label: 'Ventas Directas', href: '/admin/ventas', icon: ShoppingCart },
     { label: 'Solicitudes Web', href: '/admin/solicitudes', icon: Inbox },
-    { label: 'Números (80k)', href: '/admin/numeros', icon: Hash },
+    { label: 'Números (100k)', href: '/admin/numeros', icon: Hash },
     { label: 'Compradores', href: '/admin/compradores', icon: Users },
     { label: 'Configuración', href: '/admin/configuracion', icon: Settings },
     { label: 'Auditoría', href: '/admin/auditoria', icon: FileText },
