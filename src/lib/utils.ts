@@ -119,20 +119,24 @@ export function buildBuyerWhatsAppUrl(params: {
   const formattedNums = (params.numbers || []).map(formatTicketNumber).join(', ');
   const statusLabel =
     params.paymentStatus === 'paid'
-      ? 'PAGO CONFIRMADO ✅ (Participando)'
+      ? '✅ *PAGO CONFIRMADO* (¡Ya estás participando!)'
       : params.paymentStatus === 'pending'
-      ? 'RESERVA PENDIENTE DE PAGO ⏳'
+      ? '⏳ *RESERVA PENDIENTE DE PAGO*'
       : params.paymentStatus === 'expired'
-      ? 'RESERVA VENCIDA'
-      : 'RESERVA CANCELADA';
+      ? '❌ *RESERVA VENCIDA*'
+      : '🚫 *RESERVA CANCELADA*';
 
   const message =
-    `Hola ${params.buyerName}! Te enviamos tu comprobante digital de la Gran Rifa Familiar:\n\n` +
-    `• Operación: ${params.orderCode}\n` +
-    `• Estado: ${statusLabel}\n` +
-    `• Números (${params.numbers.length}): ${formattedNums}\n` +
-    `• Total: ${formatCurrency(params.totalAmount)}\n\n` +
-    `Podés ver y guardar tu comprobante oficial en este enlace:\n${voucherUrl}`;
+    `🎟️ *GRAN RIFA FAMILIAR* 🎟️\n\n` +
+    `¡Hola ${params.buyerName}! 👋\n` +
+    `Te compartimos el comprobante de tu reserva:\n\n` +
+    `📋 *Reserva:* ${params.orderCode}\n` +
+    `📌 *Estado:* ${statusLabel}\n` +
+    `🔢 *Números (${params.numbers.length}):* ${formattedNums}\n` +
+    `💰 *Monto Total:* ${formatCurrency(params.totalAmount)}\n\n` +
+    `🔗 *Ver tu comprobante oficial aquí:* 👇\n` +
+    `${voucherUrl}\n\n` +
+    `¡Muchas gracias por tu apoyo y mucha suerte! 🍀✨`;
 
   return `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
 }
@@ -169,19 +173,29 @@ export function buildBuyerSummaryWhatsAppUrl(params: {
   const pendingList = [...(params.pendingNumbers || [])].sort((a, b) => a - b);
   const allActiveNumbers = Array.from(new Set([...paidList, ...pendingList])).sort((a, b) => a - b);
 
-  let message = `Hola ${params.buyerName}! Te enviamos el resumen total de todos tus números en la Gran Rifa Familiar:\n\n`;
-  message += `• Total acumulado: ${allActiveNumbers.length} número(s)\n`;
+  let message =
+    `🎟️ *GRAN RIFA FAMILIAR* 🎟️\n` +
+    `📑 *RESUMEN TOTAL DE NÚMEROS*\n\n` +
+    `¡Hola ${params.buyerName}! 👋\n` +
+    `Te enviamos el resumen unificado de todas tus reservas registradas:\n\n` +
+    `📊 *Total acumulado:* ${allActiveNumbers.length} número(s)\n`;
 
   if (allActiveNumbers.length > 0) {
-    message += `• Todos tus números: ${allActiveNumbers.map(formatTicketNumber).join(', ')}\n`;
+    message += `🔢 *Tus números:* ${allActiveNumbers.map(formatTicketNumber).join(', ')}\n`;
   }
 
   if (paidList.length > 0) {
-    message += `\n✅ PAGADOS (${paidList.length}): ${paidList.map(formatTicketNumber).join(', ')} (${formatCurrency(params.totalPaidAmount)})`;
+    message +=
+      `\n✅ *Confirmados y Pagados (${paidList.length}):*\n` +
+      `   👉 ${paidList.map(formatTicketNumber).join(', ')}\n` +
+      `   💵 Total pagado: ${formatCurrency(params.totalPaidAmount)}\n`;
   }
 
   if (pendingList.length > 0) {
-    message += `\n⏳ PENDIENTES DE PAGO (${pendingList.length}): ${pendingList.map(formatTicketNumber).join(', ')} (Pendiente: ${formatCurrency(params.totalPendingAmount)})`;
+    message +=
+      `\n⏳ *Pendientes de Pago (${pendingList.length}):*\n` +
+      `   👉 ${pendingList.map(formatTicketNumber).join(', ')}\n` +
+      `   💳 Importe pendiente: ${formatCurrency(params.totalPendingAmount)}\n`;
   }
 
   const activeOrders = (params.orders || []).filter(
@@ -189,13 +203,16 @@ export function buildBuyerSummaryWhatsAppUrl(params: {
   );
 
   if (activeOrders.length > 0) {
-    message += `\n\nDetalle de tus comprobantes (${activeOrders.length}):`;
+    message += `\n🧾 *Tus Comprobantes Digitales (${activeOrders.length}):*\n`;
     for (const ord of activeOrders) {
-      const statusText = ord.payment_status === 'paid' ? 'PAGADO ✅' : 'PENDIENTE ⏳';
-      const methodText = ord.payment_method === 'cash' ? 'Efectivo' : 'Transferencia';
-      message += `\n• ${ord.code} (${methodText} - ${statusText}): ${baseOrigin}/pedido/${ord.private_token}`;
+      const statusIcon = ord.payment_status === 'paid' ? '✅' : '⏳';
+      const statusText = ord.payment_status === 'paid' ? 'Pagado' : 'Pendiente';
+      const methodText = ord.payment_method === 'cash' ? '💵 Efectivo' : '🏦 Transferencia';
+      message += `• *${ord.code}* (${methodText} — ${statusIcon} ${statusText}):\n  🔗 ${baseOrigin}/pedido/${ord.private_token}\n`;
     }
   }
+
+  message += `\n¡Muchísimas gracias por tu apoyo y el mayor de los éxitos! 🍀✨`;
 
   return `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
 }

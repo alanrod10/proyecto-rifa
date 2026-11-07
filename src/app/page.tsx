@@ -524,10 +524,23 @@ export default function PublicPortal() {
               {(() => {
                 const phoneAlan = settings?.contact_phone || '3884152040';
                 const phoneYilda = settings?.contact_phone_secondary || '3884141514';
+                const formattedSuccessNums = orderSuccess.numbers.map(formatTicketNumber).join(', ');
                 const msg =
                   orderSuccess.payment_method === 'cash'
-                    ? `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)} para abonar en efectivo. Quiero coordinar la entrega del dinero.`
-                    : `Hola! Soy ${orderSuccess.buyer_name}. Tengo la reserva ${orderSuccess.code} de la rifa por ${orderSuccess.numbers_count} número(s) (${orderSuccess.numbers.map(formatTicketNumber).join(', ')}) por un total de ${formatCurrency(orderSuccess.total_amount)}. Te envío el comprobante de pago.`;
+                    ? `👋 ¡Hola! Soy *${orderSuccess.buyer_name}*.\n\n` +
+                      `🎟️ Acabo de hacer una reserva en la *Gran Rifa Familiar*:\n` +
+                      `📋 *Código:* ${orderSuccess.code}\n` +
+                      `🔢 *Números (${orderSuccess.numbers_count}):* ${formattedSuccessNums}\n` +
+                      `💵 *Total:* ${formatCurrency(orderSuccess.total_amount)}\n` +
+                      `📍 *Método de pago:* En efectivo\n\n` +
+                      `🤝 Me comunico para coordinar la entrega del dinero. ¡Muchas gracias!`
+                    : `👋 ¡Hola! Soy *${orderSuccess.buyer_name}*.\n\n` +
+                      `🎟️ Acabo de hacer una reserva en la *Gran Rifa Familiar*:\n` +
+                      `📋 *Código:* ${orderSuccess.code}\n` +
+                      `🔢 *Números (${orderSuccess.numbers_count}):* ${formattedSuccessNums}\n` +
+                      `💰 *Total:* ${formatCurrency(orderSuccess.total_amount)}\n` +
+                      `🏦 *Método de pago:* Transferencia bancaria\n\n` +
+                      `📸 Te adjunto aquí el comprobante de la transferencia para que puedan validar mi pago. ¡Muchas gracias! 🙏`;
 
                 return (
                   <>
@@ -1114,7 +1127,7 @@ export default function PublicPortal() {
               return (
                 <>
                   <a
-                    href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent('Hola Alan! Quisiera hacer una consulta sobre la rifa.')}`}
+                    href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent('👋 ¡Hola Alan! Quisiera hacerte una consulta sobre la Gran Rifa Familiar 🎟️✨.')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl font-medium transition"
@@ -1123,7 +1136,7 @@ export default function PublicPortal() {
                     <span>WhatsApp Alan ({phoneAlan})</span>
                   </a>
                   <a
-                    href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent('Hola Yilda! Quisiera hacer una consulta sobre la rifa.')}`}
+                    href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent('👋 ¡Hola Yilda! Quisiera hacerte una consulta sobre la Gran Rifa Familiar 🎟️✨.')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl font-medium transition"
