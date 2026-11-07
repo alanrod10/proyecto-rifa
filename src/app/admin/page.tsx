@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
       const res = await fetch('/api/admin/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'confirm', order_id: orderId })
+        body: JSON.stringify({ action: 'confirm_payment', order_id: orderId })
       });
       const data = await res.json();
       if (res.ok) {

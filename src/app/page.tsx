@@ -1043,7 +1043,7 @@ export default function PublicPortal() {
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2 text-slate-700">
                   <p className="font-semibold text-slate-900">Datos para la transferencia:</p>
 
-                  <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-xs">
+                  <div className="flex items-center justify-between gap-2 p-1.5 bg-surface rounded-lg border border-slate-200 shadow-xs">
                     <div className="min-w-0">
                       <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Alias</span>
                       <span className="font-mono text-brand-link font-bold text-xs truncate block">{settings.bank_alias}</span>
@@ -1063,7 +1063,7 @@ export default function PublicPortal() {
                   </div>
 
                   {settings.bank_cbu && (
-                    <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-xs">
+                    <div className="flex items-center justify-between gap-2 p-1.5 bg-surface rounded-lg border border-slate-200 shadow-xs">
                       <div className="min-w-0">
                         <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">CBU / CVU</span>
                         <span className="font-mono text-slate-800 font-medium text-xs truncate block">{settings.bank_cbu}</span>

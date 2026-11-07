@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Ticket, CheckCircle, Clock, AlertCircle, XCircle, Copy, Share2, 
-  Phone, Landmark, Banknote, RefreshCw, ArrowLeft, ShieldCheck
+  Phone, Landmark, Banknote, RefreshCw, ArrowLeft, ShieldCheck, Printer
 } from 'lucide-react';
 import { formatTicketNumber, formatCurrency, formatDate, formatWhatsAppPhone, buildBuyerWhatsAppUrl } from '@/lib/utils';
 
@@ -180,7 +180,7 @@ export default function BuyerPrivateOrderPage() {
   return (
     <div className="min-h-screen bg-page py-6 px-4 flex flex-col items-center">
       {/* Botón Volver */}
-      <div className="max-w-xl w-full mb-4 flex items-center justify-between">
+      <div className="max-w-xl w-full mb-4 flex items-center justify-between print:hidden">
         <Link 
           href="/" 
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-brand-link transition"
@@ -337,7 +337,7 @@ export default function BuyerPrivateOrderPage() {
                           className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold font-sans transition border shadow-sm ${
                             copiedAlias
                               ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                              : 'bg-surface hover:bg-slate-50 text-slate-800 border-slate-300'
                           }`}
                         >
                           {copiedAlias ? <CheckCircle className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
@@ -357,7 +357,7 @@ export default function BuyerPrivateOrderPage() {
                           className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold font-sans transition border shadow-sm ${
                             copiedCbu
                               ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                              : 'bg-surface hover:bg-slate-50 text-slate-800 border-slate-300'
                           }`}
                         >
                           {copiedCbu ? <CheckCircle className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
@@ -449,7 +449,7 @@ export default function BuyerPrivateOrderPage() {
           </div>
 
           {/* Botones Compartir / Enviar a Comprador / Copiar Enlace */}
-          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2 print:hidden">
             <a
               href={buyerWaVoucherUrl}
               target="_blank"
@@ -460,13 +460,23 @@ export default function BuyerPrivateOrderPage() {
               Enviar comprobante al WhatsApp de {order.buyer_name}
             </a>
 
-            <button
-              onClick={copyUrl}
-              className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl text-xs transition"
-            >
-              <Copy className="w-4 h-4" />
-              {copied ? '¡Enlace copiado al portapapeles!' : 'Copiar enlace privado de este comprobante'}
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                onClick={copyUrl}
+                className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 rounded-xl text-xs transition"
+              >
+                <Copy className="w-4 h-4" />
+                {copied ? '¡Enlace copiado!' : 'Copiar enlace privado'}
+              </button>
+
+              <button
+                onClick={() => window.print()}
+                className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 rounded-xl text-xs transition"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir / PDF
+              </button>
+            </div>
             <p className="text-xs text-slate-400 text-center">
               Guardá este enlace. Te permitirá volver a consultar esta constancia en cualquier momento.
             </p>

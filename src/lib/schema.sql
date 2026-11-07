@@ -57,6 +57,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_token ON orders(private_token);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_orders_expires ON orders(expires_at);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_id ON orders(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_phone ON orders(buyer_phone);
+CREATE INDEX IF NOT EXISTS idx_orders_pending_expires ON orders(payment_status, expires_at);
 
 -- Tabla de 100.000 Números
 CREATE TABLE IF NOT EXISTS numbers (

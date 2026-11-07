@@ -199,6 +199,34 @@ export default function AdminCompradoresPage() {
     }
   };
 
+  const handleConfirmPayment = async (ord: BuyerOrder, buyerName: string) => {
+    if (!confirm(`¿Confirmar el pago del pedido ${ord.code} de "${buyerName}" por ${formatCurrency(ord.total_amount)}?`)) return;
+
+    try {
+      setActionLoading(true);
+      setFeedback(null);
+      const res = await fetch('/api/admin/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'confirm_payment',
+          order_id: ord.id
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback(data.message || 'Pago confirmado exitosamente.');
+        fetchBuyers();
+      } else {
+        alert(data.error || 'Error al confirmar pago.');
+      }
+    } catch {
+      alert('Error de red al confirmar pago.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -485,6 +513,20 @@ export default function AdminCompradoresPage() {
 
                                 <div className="flex items-center flex-wrap gap-2 self-end md:self-center">
                                   <span className="font-bold text-slate-900 mr-1">{formatCurrency(ord.total_amount)}</span>
+
+                                  {/* Botón Confirmar Pago Directo si está pendiente */}
+                                  {ord.payment_status === 'pending' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleConfirmPayment(ord, ord.buyer_name || buyer.name)}
+                                      disabled={actionLoading}
+                                      className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+                                      title="Confirmar el pago de este pedido inmediatamente"
+                                    >
+                                      <CheckCircle className="w-3.5 h-3.5" />
+                                      <span>Confirmar Pago</span>
+                                    </button>
+                                  )}
 
                                   {/* Botón Reenviar este pedido puntual por WhatsApp */}
                                   <a

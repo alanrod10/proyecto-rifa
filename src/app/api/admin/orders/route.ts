@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
 
     if (
       action !== 'confirm_payment' &&
+      action !== 'confirm' &&
       action !== 'cancel' &&
       action !== 'delete' &&
       action !== 'change_payment_method'
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
       const buyerId = Number(order.buyer_id);
 
       // ACCIÓN 1: CONFIRMAR PAGO (Solo permitido desde estado 'pending')
-      if (action === 'confirm_payment') {
+      if (action === 'confirm_payment' || action === 'confirm') {
         if (currentStatus === 'paid') {
           await tx.rollback();
           return NextResponse.json({ error: 'Esta orden ya fue marcada como pagada previamente.' }, { status: 400 });
