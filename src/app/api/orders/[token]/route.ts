@@ -8,27 +8,33 @@ export async function GET(
 ) {
   try {
     const { token } = await context.params;
+    const cleanParam = decodeURIComponent(token || '').trim();
 
-    if (!token || token.length < 16) {
-      return NextResponse.json({ error: 'Token de consulta inválido' }, { status: 400 });
+    if (!cleanParam || cleanParam.length < 3) {
+      return NextResponse.json({ error: 'Código o enlace de consulta inválido' }, { status: 400 });
     }
 
     // Liberación reactiva
     await releaseExpiredReservations().catch(() => {});
 
     const db = getDb();
+
+    // Normalizar código en caso de que se ingrese con o sin prefijo "RF-"
+    const upperParam = cleanParam.toUpperCase();
+    const candidateCode = upperParam.startsWith('RF-') ? upperParam : `RF-${upperParam}`;
+
     const orderRes = await db.execute({
       sql: `SELECT 
               id, code, buyer_name, buyer_phone, payment_method, payment_status,
               unit_price, numbers_count, total_amount, numbers_list,
-              expires_at, paid_at, created_at, notes
+              expires_at, paid_at, created_at, notes, private_token
             FROM orders 
-            WHERE private_token = ? LIMIT 1`,
-      args: [token]
+            WHERE private_token = ? OR code = ? OR code = ? LIMIT 1`,
+      args: [cleanParam, upperParam, candidateCode]
     });
 
     if (orderRes.rows.length === 0) {
-      return NextResponse.json({ error: 'No se encontró ninguna operación asociada a este enlace privado.' }, { status: 404 });
+      return NextResponse.json({ error: 'No se encontró ninguna operación asociada a este código o enlace privado.' }, { status: 404 });
     }
 
     const order = orderRes.rows[0];
@@ -50,6 +56,7 @@ export async function GET(
         expires_at: order.expires_at,
         paid_at: order.paid_at,
         created_at: order.created_at,
+        private_token: order.private_token,
       },
       raffle: {
         name: settings.raffle_name,

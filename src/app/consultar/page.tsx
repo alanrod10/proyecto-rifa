@@ -17,23 +17,24 @@ export default function ConsultarPage() {
 
     const val = tokenInput.trim();
     if (!val) {
-      setError('Por favor ingresá tu token o enlace privado.');
+      setError('Por favor ingresá tu código de pedido o enlace privado.');
       return;
     }
 
-    // Si el usuario pegó la URL completa, extraer el token
+    // Si el usuario pegó la URL completa, extraer el identificador
     let cleanToken = val;
     if (val.includes('/pedido/')) {
       const parts = val.split('/pedido/');
       cleanToken = parts[1].split('?')[0].split('#')[0].trim();
     }
+    cleanToken = cleanToken.replace(/^\/+|\/+$/g, '').trim();
 
-    if (cleanToken.length < 16) {
-      setError('El token ingresado no tiene un formato válido.');
+    if (cleanToken.length < 3) {
+      setError('El código o enlace ingresado es demasiado corto.');
       return;
     }
 
-    router.push(`/pedido/${cleanToken}`);
+    router.push(`/pedido/${encodeURIComponent(cleanToken)}`);
   };
 
   return (
@@ -57,7 +58,7 @@ export default function ConsultarPage() {
             </div>
             <h2 className="text-2xl font-black text-slate-900">Consultar Mi Reserva</h2>
             <p className="text-xs text-slate-500 max-w-xs mx-auto">
-              Ingresá el enlace privado o el código de acceso que recibiste al completar tu solicitud.
+              Ingresá tu código de pedido (ej: RF-7B2K9A) o el enlace privado que recibiste al completar tu solicitud.
             </p>
           </div>
 
@@ -70,12 +71,12 @@ export default function ConsultarPage() {
           <form onSubmit={handleLookup} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Token o Enlace Privado
+                Código de Pedido o Enlace Privado
               </label>
               <input
                 type="text"
                 required
-                placeholder="Pegá tu enlace o token aquí..."
+                placeholder="Ej: RF-7B2K9A o tu enlace privado completo..."
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
                 className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono"

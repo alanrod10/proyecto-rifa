@@ -41,6 +41,10 @@ export default function AdminSolicitudesPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
+  // Modal seguro de confirmación antes de eliminar
+  const [orderToDelete, setOrderToDelete] = useState<OrderItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -162,30 +166,30 @@ export default function AdminSolicitudesPage() {
     }
   };
 
-  const handleDeleteOrder = async (ord: OrderItem) => {
-    if (
-      !confirm(
-        `¿Estás seguro de ELIMINAR definitivamente el registro ${ord.code} de "${ord.buyer_name}"?\n\n• Sus ${ord.numbers_count} número(s) volverán a estar disponibles.\n• El pedido se borrará por completo de la base de datos.`
-      )
-    ) {
-      return;
-    }
+  const handleDeleteOrder = (ord: OrderItem) => {
+    setOrderToDelete(ord);
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
 
     try {
-      setActionLoading(ord.id);
+      setDeleting(true);
+      setActionLoading(orderToDelete.id);
       setFeedback(null);
       const res = await fetch('/api/admin/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'delete',
-          order_id: ord.id,
-          reason: 'Eliminación manual desde Solicitudes'
+          order_id: orderToDelete.id,
+          reason: 'Eliminación manual confirmada desde Solicitudes'
         })
       });
       const data = await res.json();
       if (res.ok) {
-        setFeedback(data.message || 'Registro eliminado correctamente.');
+        setFeedback(data.message || 'Registro eliminado y números liberados correctamente.');
+        setOrderToDelete(null);
         fetchOrders();
       } else {
         alert(data.error || 'Error al eliminar el registro.');
@@ -193,6 +197,7 @@ export default function AdminSolicitudesPage() {
     } catch {
       alert('Error de red al eliminar el registro.');
     } finally {
+      setDeleting(false);
       setActionLoading(null);
     }
   };
@@ -269,7 +274,7 @@ export default function AdminSolicitudesPage() {
         <form onSubmit={handleSearchSubmit} className="flex gap-2 w-full md:w-auto">
           <input
             type="text"
-            placeholder="Buscar por código, nombre o celular..."
+            placeholder="Buscar por código, nombre, celular o número (ej: 7 o 00007)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full md:w-64 px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
@@ -498,6 +503,74 @@ export default function AdminSolicitudesPage() {
           </div>
         </div>
       </div>
+
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN SEGURO */}
+      {orderToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-red-200 animate-pop space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900">¿Confirmar eliminación definitiva?</h3>
+                <p className="text-xs text-slate-500">Esta acción liberará de inmediato los números asignados.</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50/50 rounded-2xl p-4 border border-red-100 space-y-2 text-xs">
+              <div className="flex justify-between border-b border-red-100/60 pb-1.5">
+                <span className="text-slate-500 font-medium">Código de orden:</span>
+                <span className="font-mono font-bold text-slate-900">{orderToDelete.code}</span>
+              </div>
+              <div className="flex justify-between border-b border-red-100/60 pb-1.5">
+                <span className="text-slate-500 font-medium">Comprador:</span>
+                <span className="font-bold text-slate-900">{orderToDelete.buyer_name} ({orderToDelete.buyer_phone})</span>
+              </div>
+              <div className="flex justify-between border-b border-red-100/60 pb-1.5">
+                <span className="text-slate-500 font-medium">Monto:</span>
+                <span className="font-bold text-slate-900">{formatCurrency(orderToDelete.total_amount)}</span>
+              </div>
+
+              <div className="pt-1">
+                <span className="text-slate-600 font-semibold block mb-1.5">
+                  Números que serán liberados ({orderToDelete.numbers?.length || orderToDelete.numbers_count}):
+                </span>
+                <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto p-1.5 bg-white rounded-xl border border-red-100">
+                  {orderToDelete.numbers && orderToDelete.numbers.length > 0 ? (
+                    orderToDelete.numbers.map(num => (
+                      <span key={num} className="font-mono text-xs px-2 py-0.5 bg-red-50 text-red-700 rounded-md font-bold border border-red-200">
+                        {formatTicketNumber(num)}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 italic">Sin números detallados</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setOrderToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDeleteOrder}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deleting ? 'Eliminando...' : 'Sí, eliminar pedido y liberar números'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

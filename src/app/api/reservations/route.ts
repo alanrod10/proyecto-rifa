@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Debes seleccionar al menos un número para reservar.' }, { status: 400 });
     }
 
-    // Filtrar números únicos válidos del 1 al 80000
+    // Filtrar números únicos válidos del 1 al 100000
     const uniqueNumbers = Array.from(new Set(numbers.map(n => parseInt(n, 10))))
-      .filter(n => !isNaN(n) && n >= 1 && n <= 80000)
+      .filter(n => !isNaN(n) && n >= 1 && n <= 100000)
       .sort((a, b) => a - b);
 
     if (uniqueNumbers.length === 0) {

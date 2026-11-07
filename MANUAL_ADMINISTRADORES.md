@@ -1,5 +1,5 @@
 # Manual de Operación para Administradores
-## Proyecto RIFA (80.000 Números)
+## Proyecto RIFA (100.000 Números)
 
 Este manual está diseñado para **Alan** e **Yilda**, administradores del sistema, para guiar la operativa diaria de la rifa familiar desde cualquier teléfono celular o computadora.
 
@@ -29,7 +29,7 @@ Este manual está diseñado para **Alan** e **Yilda**, administradores del siste
 
 ### A. Dashboard y Resumen General (`/admin`)
 Al ingresar, verás la situación en tiempo real de la rifa:
-- **Números Vendidos:** Cantidad de boletos confirmados y porcentaje de avance sobre los 80.000.
+- **Números Vendidos:** Cantidad de boletos confirmados y porcentaje de avance sobre los 100.000.
 - **Números Reservados:** Boletos apartados a la espera de comprobante de pago.
 - **Números Disponibles:** Boletos libres para reserva pública o venta directa.
 - **Recaudación Efectiva:** Total cobrado desglosado entre **Efectivo** y **Transferencia Bancaria**.
@@ -78,8 +78,8 @@ Esta sección agrupa todas las compras realizadas por una misma persona según s
 ---
 
 ### E. Gestor Global de Números (`/admin/numeros`)
-Permite conocer el estado exacto de cualquiera de los 80.000 números:
-- Ingresá un número puntual (del 1 al 80000) o filtrá por estado (*Disponibles*, *Reservados*, *Vendidos*).
+Permite conocer el estado exacto de cualquiera de los 100.000 números:
+- Ingresá un número puntual (del 1 al 100000) o filtrá por estado (*Disponibles*, *Reservados*, *Vendidos*).
 - Podés ver a qué orden pertenece cada número y el nombre del comprador que lo adquirió.
 
 ---

@@ -29,6 +29,7 @@ export async function PUT(request: NextRequest) {
     const db = getDb();
 
     const allowedKeys = [
+      'raffle_badge',
       'raffle_name',
       'raffle_description',
       'ticket_price',

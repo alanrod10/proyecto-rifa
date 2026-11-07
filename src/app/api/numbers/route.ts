@@ -17,16 +17,16 @@ export async function GET(request: NextRequest) {
 
     const db = getDb();
 
-    // 1. Caso: Selección al azar de N números disponibles (Optimizado por Primary Key para no escanear 80k filas en Turso)
+    // 1. Caso: Selección al azar de N números disponibles (Optimizado por Primary Key para no escanear 100k filas en Turso)
     if (randomCount) {
       const count = Math.min(50, Math.max(1, parseInt(randomCount, 10)));
       const collected: { number: number; status: string }[] = [];
       const seen = new Set<number>();
 
-      // Hasta 3 rondas de muestreo por índice primario (consume ~30-150 lecturas en vez de 80.000)
+      // Hasta 3 rondas de muestreo por índice primario (consume ~30-150 lecturas en vez de 100.000)
       for (let round = 0; round < 3 && collected.length < count; round++) {
         const sampleSize = Math.min(150, Math.max((count - collected.length) * 3, 25));
-        const candidates = pickRandomUniqueInts(sampleSize, 1, 80000).filter(n => !seen.has(n));
+        const candidates = pickRandomUniqueInts(sampleSize, 1, 100000).filter(n => !seen.has(n));
         if (candidates.length === 0) continue;
         candidates.forEach(n => seen.add(n));
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ numbers: [], total: 0 });
       }
 
-      const validTokens = tokens.filter(n => n >= 1 && n <= 80000).slice(0, 50);
+      const validTokens = tokens.filter(n => n >= 1 && n <= 100000).slice(0, 50);
       if (validTokens.length === 0) {
         return NextResponse.json({ numbers: [], total: 0 });
       }
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
       }),
       onlyAvailable
         ? db.execute(`SELECT COUNT(*) as count FROM numbers WHERE status = 'available'`)
-        : Promise.resolve({ rows: [{ count: 80000 }] })
+        : Promise.resolve({ rows: [{ count: 100000 }] })
     ]);
 
     const totalCount = Number(countRes.rows[0].count);

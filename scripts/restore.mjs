@@ -137,13 +137,13 @@ async function runRestore() {
   try {
     const checkNumbers = await testClient.execute('SELECT COUNT(*) as count FROM numbers');
     const numbersCount = Number(checkNumbers.rows[0].count);
-    if (numbersCount !== 80000) {
-      throw new Error(`Integridad fallida: el respaldo contiene ${numbersCount} números en lugar de 80.000.`);
+    if (numbersCount !== 100000 && numbersCount !== 80000) {
+      throw new Error(`Integridad fallida: el respaldo contiene ${numbersCount} números en lugar de 100.000.`);
     }
 
     const checkSettings = await testClient.execute('SELECT COUNT(*) as count FROM settings');
     const checkAdmins = await testClient.execute('SELECT COUNT(*) as count FROM admins');
-    console.log(`✓ Verificación exitosa: 80.000 números, ${checkSettings.rows[0].count} configuraciones, ${checkAdmins.rows[0].count} administradores.`);
+    console.log(`✓ Verificación exitosa: ${numbersCount} números, ${checkSettings.rows[0].count} configuraciones, ${checkAdmins.rows[0].count} administradores.`);
     testClient.close();
 
     if (fs.existsSync(targetDbPath)) {

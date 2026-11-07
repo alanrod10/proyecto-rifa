@@ -1,6 +1,6 @@
-# Proyecto RIFA — Sistema Integral de 80.000 Números
+# Proyecto RIFA — Sistema Integral de 100.000 Números
 
-Aplicación web completa, transaccional y moderna de **costo operativo ARS $0** para gestionar una rifa solidaria familiar de **80.000 números** (del `00001` al `80000`) a un valor inicial de **ARS 100 por número**, orientada a recaudar fondos para afrontar las cuotas de un lote familiar.
+Aplicación web completa, transaccional y moderna de **costo operativo ARS $0** para gestionar una rifa solidaria familiar de **100.000 números** (del `00001` al `100000`) a un valor inicial de **ARS 100 por número**, orientada a recaudar fondos para afrontar las cuotas de un lote familiar.
 
 - **URL de Producción (Vercel):** [proyecto-rifa.vercel.app](https://proyecto-rifa.vercel.app/)
 - **Repositorio GitHub:** [github.com/alanrod10/proyecto-rifa](https://github.com/alanrod10/proyecto-rifa)
@@ -9,9 +9,9 @@ Aplicación web completa, transaccional y moderna de **costo operativo ARS $0** 
 
 ## 1. Problema que Resuelve
 
-La venta masiva de 80.000 boletos de una rifa familiar presenta desafíos operativos críticos:
+La venta masiva de 100.000 boletos de una rifa familiar presenta desafíos operativos críticos:
 - **Riesgo de doble asignación:** Evitar que dos personas aparten o paguen el mismo número simultáneamente.
-- **Sobrecarga del navegador móvil:** Cargar 80.000 números en un celular bloquea la interfaz si no se diseña con paginación optimizada e indexación eficiente.
+- **Sobrecarga del navegador móvil:** Cargar 100.000 números en un celular bloquea la interfaz si no se diseña con paginación optimizada e indexación eficiente.
 - **Protección de datos personales:** Los compradores no deben ver nombres ni teléfonos de otros participantes.
 - **Presupuesto cero ($0):** La infraestructura debe operar sin costos de licencias, pasarelas de pago con comisiones excesivas ni bases de datos de pago.
 - **Administración compartida y coordinada:** Facilitar la gestión colaborativa entre **Alan** e **Yilda**, con trazabilidad completa de cada cobro y venta presencial o virtual.
@@ -22,27 +22,28 @@ La venta masiva de 80.000 boletos de una rifa familiar presenta desafíos operat
 
 1. **Portal Público (`/`):**
    - Interfaz Mobile-First rápida y accesible con selector de apariencia (Modo Claro predeterminado y Modo Oscuro).
-   - Explorador de disponibilidad de 80.000 números mediante paginación reactiva, buscador directo y selección rápida al azar (+1, +3, +5, +10).
-   - Carrito flotante interactivo y modal de solicitud de reserva.
+   - Barra de progreso solidaria en la cabecera reflejando el avance de números vendidos y reservados.
+   - Explorador de disponibilidad de 100.000 números mediante paginación reactiva, buscador directo, selección al azar (+1, +3, +5, +10) y control de salto directo a cualquier número ("Ir al nro: [ ]").
+   - Carrito flotante interactivo y modal de solicitud de reserva con botones de 1 clic para copiar Alias y CBU con confirmación visual.
    - Cálculo del monto exclusivamente en el servidor (prevención de manipulaciones).
    - Bloqueo transaccional exclusivo contra dobles reservas y reversión atómica ante conflictos.
    - Protección estricta de la privacidad: nunca se exponen datos de otros compradores en la API pública.
 
 2. **Consulta Privada del Comprador (`/pedido/[token]` y `/consultar`):**
-   - Acceso seguro mediante token criptográfico de 192 bits (`crypto.randomBytes`).
+   - Acceso seguro mediante token privado o código de pedido (ej: `RF-7B2K9A` o simplemente `7B2K9A`).
    - Comprobante digital en vivo con números asignados, total a pagar y estado del pedido (*Pendiente*, *Pagado*, *Vencido*, *Cancelado*).
-   - Datos bancarios (Alias, CBU, Banco, Titular) para transferencias.
+   - Datos bancarios con botones de 1 clic para copiar Alias y CBU con confirmación visual ("¡Copiado!").
    - Enlace directo a WhatsApp con mensaje preformateado para enviar comprobantes a Alan (`3884152040`) o Yilda (`3884141514`).
-   - Herramienta para buscar y recuperar el enlace mediante código de orden (`/consultar`).
+   - Herramienta para buscar y recuperar el comprobante mediante enlace privado o código de orden (`/consultar`).
 
 3. **Panel Administrativo Protegido (`/admin`):**
    - Autenticación individual para los administradores (**Alan** e **Yilda**) con contraseñas hasheadas en `bcrypt` y protección contra fuerza bruta (rate limiting).
-   - **Dashboard / Métricas:** Recaudación real en vivo (Efectivo vs. Transferencia), dinero pendiente, disponibilidad restante y alertas de reservas por vencer.
+   - **Dashboard / Métricas:** Recaudación real en vivo (Efectivo vs. Transferencia), dinero pendiente, disponibilidad restante de los 100.000 números y alertas de reservas por vencer con diálogo seguro de confirmación antes de eliminar.
    - **Ventas Directas (`/admin/ventas`):** Registro de ventas mano a mano con cobro inmediato o pendiente y selección aleatoria.
-   - **Solicitudes Web (`/admin/solicitudes`):** Validación de transferencias bancarias, confirmación en 1 clic y anulación controlada con liberación de números.
+   - **Solicitudes Web (`/admin/solicitudes`):** Búsqueda inteligente por número de rifa (tanto formato corto `7` como con ceros `00007`), validación de transferencias, confirmación en 1 clic y modal de confirmación seguro detallando la orden, comprador y lista de números a liberar.
    - **Directorio de Compradores (`/admin/compradores`):** Agrupación inteligente por número telefónico, unificación de nombres, balance histórico y botón de resumen unificado por WhatsApp.
-   - **Gestor de Números (`/admin/numeros`):** Trazabilidad completa de cada número del 1 al 80.000 con estado y comprador vinculado.
-   - **Configuración en Vivo (`/admin/configuracion`):** Edición de premios, fecha de sorteo, cuentas bancarias, teléfonos de contacto, actualización de contraseñas de administradores y descarga de copias de seguridad en 1 clic.
+   - **Gestor de Números (`/admin/numeros`):** Trazabilidad completa de cada número del 1 al 100.000 con estado y comprador vinculado.
+   - **Configuración en Vivo (`/admin/configuracion`):** Edición completa de los 3 encabezados (Insignia / Objetivo Solidario, Nombre de la Rifa, Descripción Solidaria), premios, fecha de sorteo, cuentas bancarias, teléfonos de contacto y respaldos.
    - **Auditoría (`/admin/auditoria`):** Registro cronológico inmutable de cada acción sensible realizada por cada administrador.
    - **Exportación:** Descarga de listados de pedidos, compradores y números en CSV compatible con Microsoft Excel.
 
@@ -141,11 +142,11 @@ Proyecto RIFA/
    ```
    *(Verificar que `DATABASE_URL="file:./rifa.db"` esté configurado para uso local).*
 
-4. **Inicializar la base de datos y sembrar los 80.000 números:**
+4. **Inicializar la base de datos y sembrar los 100.000 números:**
    ```bash
    npm run seed
    ```
-   *Crea las tablas, índices, configuraciones iniciales, cuentas de administrador y genera los 80.000 registros indexados en lotes.*
+   *Crea las tablas, índices, configuraciones iniciales, cuentas de administrador y genera los 100.000 registros indexados en lotes.*
 
 5. **Iniciar el servidor de desarrollo:**
    ```bash
@@ -167,7 +168,7 @@ Proyecto RIFA/
 | `npm run build` | Compila la aplicación para producción generando las rutas optimizadas. |
 | `npm run start` | Inicia el servidor optimizado tras la compilación de producción. |
 | `npm run lint` | Ejecuta el análisis de linter de Next.js y TypeScript. |
-| `npm run seed` | Inicializa el esquema DDL y puebla los 80.000 números (`scripts/init-db.mjs`). |
+| `npm run seed` | Inicializa el esquema DDL y puebla los 100.000 números (`scripts/init-db.mjs`). |
 | `npm test` | Ejecuta la suite de **25 pruebas de verificación** en sandbox aislado (`scripts/verify-tests.mjs`). |
 | `npm run backup` | Genera una copia de seguridad SQLite (`.db`) y un volcado JSON en `backups/`. |
 | `npm run restore` | Restaura el último respaldo o un archivo específico previo control de integridad. |
@@ -200,7 +201,7 @@ El proyecto cuenta con una suite automatizada de **25 pruebas obligatorias** que
 npm test
 ```
 **Puntos validados (25/25):**
-1. Disponibilidad pública de 80.000 números.
+1. Disponibilidad pública de 100.000 números.
 2. Selección múltiple de boletos.
 3. Creación transaccional de reservas.
 4. Cálculo estricto de importes en el backend.
@@ -216,7 +217,7 @@ npm test
 14. Validación independiente de credenciales de ambos administradores.
 15. Persistencia de datos entre reinicios.
 16. Exportación a CSV con BOM UTF-8 para Excel.
-17. Respaldo y restauración con verificación de 80.000 registros.
+17. Respaldo y restauración con verificación de 100.000 registros.
 18. Simulación de fallo de red y reversión de transacciones.
 19. Diseño responsive y barra flotante de carrito móvil.
 20. Cero exposición de datos personales en APIs públicas.

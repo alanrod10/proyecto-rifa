@@ -60,7 +60,7 @@ async function runAllTests() {
     const countRes = await client.execute("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available FROM numbers");
     const totalNums = Number(countRes.rows[0].total);
     const availNums = Number(countRes.rows[0].available);
-    assert(totalNums === 80000 && availNums > 0, '1. Consultar disponibilidad pública', `Total: ${totalNums} números, Disponibles: ${availNums}`);
+    assert(totalNums === 100000 && availNums > 0, '1. Consultar disponibilidad pública', `Total: ${totalNums} números, Disponibles: ${availNums}`);
 
     // -------------------------------------------------------------
     // PRUEBA 2: Seleccionar varios números
@@ -369,7 +369,7 @@ async function runAllTests() {
     const backupCheck = await backupClient.execute('SELECT COUNT(*) as count FROM numbers');
     backupClient.close();
     fs.unlinkSync(backupTestPath);
-    assert(Number(backupCheck.rows[0].count) === 80000, '17. Respaldar y restaurar la base', `Respaldo verificado con 80.000 números intactos.`);
+    assert(Number(backupCheck.rows[0].count) === 100000, '17. Respaldar y restaurar la base', `Respaldo verificado con 100.000 números intactos.`);
 
     // -------------------------------------------------------------
     // PRUEBA 18: Simular una interrupción de conexión / Rollback

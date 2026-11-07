@@ -30,10 +30,38 @@ export async function GET(request: NextRequest) {
     }
 
     if (search && search.trim().length > 0) {
-      const q = `%${search.trim()}%`;
-      // Permitir buscar por código, nombre, teléfono o número dentro de la lista
-      whereClause += ' AND (code LIKE ? OR buyer_name LIKE ? OR buyer_phone LIKE ? OR numbers_list LIKE ?)';
-      args.push(q, q, q, q);
+      const trimmed = search.trim();
+      const q = `%${trimmed}%`;
+
+      // Comprobar si la búsqueda corresponde a un número de boleto (ej: "7" o "00007")
+      const parsedNum = /^\d+$/.test(trimmed) ? parseInt(trimmed, 10) : NaN;
+      const isRaffleNumber = !isNaN(parsedNum) && parsedNum >= 1 && parsedNum <= 100000;
+
+      if (isRaffleNumber) {
+        whereClause += ` AND (
+          code LIKE ? 
+          OR buyer_name LIKE ? 
+          OR buyer_phone LIKE ? 
+          OR id IN (SELECT order_id FROM numbers WHERE number = ? AND order_id IS NOT NULL)
+          OR numbers_list LIKE ? 
+          OR numbers_list LIKE ? 
+          OR numbers_list LIKE ? 
+          OR numbers_list LIKE ?
+        )`;
+        args.push(
+          q,
+          q,
+          q,
+          parsedNum,
+          `%[${parsedNum}]%`,
+          `%[${parsedNum},%`,
+          `%,${parsedNum},%`,
+          `%,${parsedNum}]%`
+        );
+      } else {
+        whereClause += ' AND (code LIKE ? OR buyer_name LIKE ? OR buyer_phone LIKE ? OR numbers_list LIKE ?)';
+        args.push(q, q, q, q);
+      }
     }
 
     const countRes = await db.execute({

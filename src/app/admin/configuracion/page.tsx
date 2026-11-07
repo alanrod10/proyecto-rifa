@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 
 interface SettingsData {
+  raffle_badge: string;
   raffle_name: string;
   raffle_description: string;
   ticket_price: string;
@@ -25,6 +26,7 @@ interface SettingsData {
 
 export default function AdminConfiguracionPage() {
   const [formData, setFormData] = useState<SettingsData>({
+    raffle_badge: '',
     raffle_name: '',
     raffle_description: '',
     ticket_price: '100',
@@ -194,50 +196,69 @@ export default function AdminConfiguracionPage() {
             Información Pública y Portada
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
+          <div className="space-y-4">
+            <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Nombre de la Rifa
+                Encabezado 1: Insignia / Objetivo Solidario (Etiqueta superior)
               </label>
               <input
                 type="text"
-                name="raffle_name"
-                value={formData.raffle_name}
+                name="raffle_badge"
+                placeholder="Ej: Objetivo solidario: Pro Terreno Familiar"
+                value={formData.raffle_badge}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
+              <span className="text-[11px] text-slate-400 mt-0.5 block">
+                Texto de la insignia destacada con icono de estrella en la portada.
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Encabezado 2: Nombre de la Rifa (Título Principal)
+                </label>
+                <input
+                  type="text"
+                  name="raffle_name"
+                  value={formData.raffle_name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Precio Unitario Vigente (ARS) *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  name="ticket_price"
+                  value={formData.ticket_price}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-brand-link focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+                <span className="text-[11px] text-slate-400 mt-0.5 block">
+                  Las órdenes ya emitidas conservan su precio histórico.
+                </span>
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Precio Unitario Vigente (ARS) *
+                Encabezado 3: Descripción Solidaria (Subtítulo explicativo)
               </label>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                name="ticket_price"
-                value={formData.ticket_price}
+              <textarea
+                name="raffle_description"
+                rows={2}
+                value={formData.raffle_description}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-brand-link focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
-              <span className="text-[11px] text-slate-400 mt-0.5 block">
-                Las órdenes ya emitidas conservan su precio histórico.
-              </span>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Descripción Solidaria
-            </label>
-            <textarea
-              name="raffle_description"
-              rows={2}
-              value={formData.raffle_description}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

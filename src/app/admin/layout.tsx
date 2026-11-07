@@ -95,7 +95,7 @@ export default function AdminLayout({
             </div>
             <div>
               <span className="font-extrabold text-sm tracking-tight block">Panel de Administración</span>
-              <span className="text-xs text-brand-400">Rifa 80.000 Números</span>
+              <span className="text-xs text-brand-400">Rifa 100.000 Números</span>
             </div>
           </div>
 

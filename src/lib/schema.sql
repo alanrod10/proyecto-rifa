@@ -1,6 +1,6 @@
 -- ========================================================
 -- PROYECTO RIFA - ESQUEMA DE BASE DE DATOS (LibSQL / SQLite)
--- Optimizado para 80.000 números con integridad transaccional
+-- Optimizado para 100.000 números con integridad transaccional
 -- ========================================================
 
 -- Tabla de Configuración Global del Sorteo
@@ -58,9 +58,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_orders_expires ON orders(expires_at);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
 
--- Tabla de 80.000 Números
+-- Tabla de 100.000 Números
 CREATE TABLE IF NOT EXISTS numbers (
-    number INTEGER PRIMARY KEY,                     -- Del 1 al 80000
+    number INTEGER PRIMARY KEY,                     -- Del 1 al 100000
     status TEXT CHECK(status IN ('available', 'reserved', 'sold')) NOT NULL DEFAULT 'available',
     order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

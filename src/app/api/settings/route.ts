@@ -11,7 +11,7 @@ export async function GET() {
     const settings = await getSettings();
     const db = getDb();
 
-    // Obtener estadísticas públicas de los 80.000 números
+    // Obtener estadísticas públicas de los 100.000 números
     const statsRes = await db.execute(`
       SELECT 
         COUNT(*) as total,
@@ -25,6 +25,7 @@ export async function GET() {
 
     return NextResponse.json({
       settings: {
+        raffle_badge: settings.raffle_badge || 'Objetivo solidario: Pro Terreno Familiar',
         raffle_name: settings.raffle_name,
         raffle_description: settings.raffle_description,
         ticket_price: Number(settings.ticket_price) || 100,
@@ -41,7 +42,7 @@ export async function GET() {
         rules_terms: settings.rules_terms,
       },
       stats: {
-        total: Number(stats.total) || 80000,
+        total: Number(stats.total) || 100000,
         available: Number(stats.available) || 0,
         reserved: Number(stats.reserved) || 0,
         sold: Number(stats.sold) || 0,

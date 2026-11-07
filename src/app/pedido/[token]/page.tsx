@@ -23,6 +23,7 @@ interface OrderData {
   expires_at: string;
   paid_at: string | null;
   created_at: string;
+  private_token?: string;
 }
 
 interface RaffleData {
@@ -48,7 +49,20 @@ export default function BuyerPrivateOrderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedAlias, setCopiedAlias] = useState(false);
+  const [copiedCbu, setCopiedCbu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const copyBankField = (text: string, type: 'alias' | 'cbu') => {
+    navigator.clipboard.writeText(text);
+    if (type === 'alias') {
+      setCopiedAlias(true);
+      setTimeout(() => setCopiedAlias(false), 2000);
+    } else {
+      setCopiedCbu(true);
+      setTimeout(() => setCopiedCbu(false), 2000);
+    }
+  };
 
   const fetchOrderData = async (isManualRefresh = false) => {
     if (!token) return;
@@ -148,7 +162,7 @@ export default function BuyerPrivateOrderPage() {
     numbers: order.numbers,
     totalAmount: order.total_amount,
     paymentStatus: order.payment_status,
-    privateToken: token,
+    privateToken: order.private_token || token,
   });
 
   return (
@@ -298,11 +312,51 @@ export default function BuyerPrivateOrderPage() {
               {order.payment_method === 'transfer' ? (
                 <div className="space-y-1.5 text-slate-700">
                   <p>Realizá la transferencia por <strong>{formatCurrency(order.total_amount)}</strong> a la siguiente cuenta:</p>
-                  <div className="p-3 bg-surface rounded-xl border border-amber-200 space-y-1 font-mono text-xs">
-                    {raffle.bank_alias && <p><span className="font-sans font-semibold text-slate-500">Alias:</span> <strong className="text-brand-link font-bold text-sm">{raffle.bank_alias}</strong></p>}
-                    {raffle.bank_cbu && <p><span className="font-sans font-semibold text-slate-500">CBU:</span> {raffle.bank_cbu}</p>}
-                    {raffle.bank_name && <p><span className="font-sans font-semibold text-slate-500">Banco:</span> {raffle.bank_name}</p>}
-                    {raffle.bank_holder && <p><span className="font-sans font-semibold text-slate-500">Titular:</span> {raffle.bank_holder}</p>}
+                  <div className="p-3 bg-surface rounded-xl border border-amber-200 space-y-2 font-mono text-xs">
+                    {raffle.bank_alias && (
+                      <div className="flex items-center justify-between gap-2 p-2 bg-amber-50/60 rounded-lg border border-amber-200/80">
+                        <div className="min-w-0">
+                          <span className="font-sans font-semibold text-slate-500 block text-[11px]">Alias para transferir:</span>
+                          <span className="text-brand-link font-bold text-sm block truncate">{raffle.bank_alias}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyBankField(raffle.bank_alias, 'alias')}
+                          className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold font-sans transition border shadow-sm ${
+                            copiedAlias
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                          }`}
+                        >
+                          {copiedAlias ? <CheckCircle className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                          <span>{copiedAlias ? '¡Copiado!' : 'Copiar Alias'}</span>
+                        </button>
+                      </div>
+                    )}
+                    {raffle.bank_cbu && (
+                      <div className="flex items-center justify-between gap-2 p-2 bg-amber-50/60 rounded-lg border border-amber-200/80">
+                        <div className="min-w-0">
+                          <span className="font-sans font-semibold text-slate-500 block text-[11px]">CBU / CVU:</span>
+                          <span className="text-slate-800 font-medium text-xs block truncate">{raffle.bank_cbu}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyBankField(raffle.bank_cbu, 'cbu')}
+                          className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold font-sans transition border shadow-sm ${
+                            copiedCbu
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                          }`}
+                        >
+                          {copiedCbu ? <CheckCircle className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                          <span>{copiedCbu ? '¡Copiado!' : 'Copiar CBU'}</span>
+                        </button>
+                      </div>
+                    )}
+                    <div className="font-sans text-[11px] text-slate-600 pt-0.5 space-y-0.5">
+                      {raffle.bank_name && <p><strong>Banco / Billetera:</strong> {raffle.bank_name}</p>}
+                      {raffle.bank_holder && <p><strong>Titular:</strong> {raffle.bank_holder}</p>}
+                    </div>
                   </div>
                   <p className="text-xs text-amber-900 pt-1">
                     Una vez realizada la transferencia, envianos el comprobante por WhatsApp a cualquiera de los dos contactos para validar tu pago:

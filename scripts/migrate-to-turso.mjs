@@ -92,16 +92,16 @@ async function migrate() {
     }
     console.log(`   ✓ ${admins.rows.length} administradores migrados con contraseñas seguras intactas.`);
 
-    // 4. Migrar los 80.000 números
+    // 4. Migrar los 100.000 números
     console.log('6. Verificando números en Turso...');
     const remoteNumsCheck = await remote.execute('SELECT COUNT(*) as count FROM numbers');
     const remoteCount = Number(remoteNumsCheck.rows[0].count);
 
-    if (remoteCount < 80000) {
-      console.log(`   Subiendo 80.000 números a Turso en lotes...`);
+    if (remoteCount < 100000) {
+      console.log(`   Subiendo 100.000 números a Turso en lotes...`);
       console.time('   Tiempo de subida');
       const BATCH_SIZE = 2000;
-      const TOTAL = 80000;
+      const TOTAL = 100000;
 
       for (let start = 1; start <= TOTAL; start += BATCH_SIZE) {
         const end = Math.min(start + BATCH_SIZE - 1, TOTAL);

@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'nodejs';
 
-export const alt = 'Gran Rifa Familiar pro Terreno — 80.000 Números';
+export const alt = 'Gran Rifa Familiar pro Terreno — 100.000 Números';
 export const size = {
   width: 1200,
   height: 630,
@@ -65,7 +65,7 @@ export default async function Image() {
             marginBottom: '36px',
           }}
         >
-          80.000 números disponibles • ARS $100 por número • Consulta tu boleto y reserva online con comprobante digital
+          100.000 números disponibles • ARS $100 por número • Consulta tu boleto y reserva online con comprobante digital
         </div>
         <div
           style={{

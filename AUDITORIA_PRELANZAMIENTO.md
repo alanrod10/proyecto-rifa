@@ -1,6 +1,6 @@
 # Informe de Auditoría Técnica y de Seguridad Previa al Lanzamiento
-## Proyecto RIFA (80.000 Números) — `C:\Proyecto RIFA`
-**Última Actualización:** Octubre 2026  
+## Proyecto RIFA (100.000 Números) — `C:\Proyecto RIFA`
+**Última Actualización:** Noviembre 2026  
 **Estado General:** Aprobado para operaciones con recomendaciones operativas y de seguridad activas.
 
 ---
@@ -10,15 +10,15 @@
 Se realizó una auditoría técnica integral sobre la arquitectura, el código fuente, la base de datos, la criptografía y las medidas de seguridad del sistema.
 
 ### Estado Verificado de la Base de Datos Local
-- **Base de datos activa:** `rifa.db` (5.38 MB).
-- **Total de registros en `numbers`:** 80.000 números indexados (del `00001` al `80000`).
-- **Estado de los números:** 80.000 disponibles (0 vendidos y 0 reservados en la base limpia inicial).
+- **Base de datos activa:** `rifa.db`.
+- **Total de registros en `numbers`:** 100.000 números indexados (del `00001` al `100000`).
+- **Estado de los números:** 100.000 disponibles en la base limpia inicial.
 - **Cuentas administrativas registradas en base:**
   - `alan` (Nombre visible: Alan).
   - `yilda` (Nombre visible: Yilda; compatible con identificador histórico `esposa`).
 - **Copias de seguridad verificadas en `backups/`:**
   - Archivos SQLite binarios consistentes generados mediante `VACUUM INTO`.
-  - Archivos de volcado estructurado JSON con metadatos y conteo íntegro de 80.000 números.
+  - Archivos de volcado estructurado JSON con metadatos y conteo íntegro de 100.000 números.
 
 ---
 
@@ -65,7 +65,7 @@ La suite de pruebas en `scripts/verify-tests.mjs` opera de manera segura sobre u
 
 Se ejecutó la suite completa obteniendo **25 de 25 pruebas aprobadas (0 falladas)**:
 
-1. **✓ Consultar disponibilidad pública:** Validación de 80.000 números indexados.
+1. **✓ Consultar disponibilidad pública:** Validación de 100.000 números indexados.
 2. **✓ Seleccionar varios números:** Verificación de estados simultáneos.
 3. **✓ Crear solicitud de reserva:** Creación transaccional con comprador y expiración de 48 hs.
 4. **✓ Cálculo de importe en backend:** Validación del total (ej. 3 × $100 = $300) sin confiar en el cliente.
@@ -81,7 +81,7 @@ Se ejecutó la suite completa obteniendo **25 de 25 pruebas aprobadas (0 fallada
 14. **✓ Validación de permisos de ambos administradores:** Comprobación de roles y display names de Alan e Yilda.
 15. **✓ Persistencia de datos:** Verificación de persistencia tras el cierre y reapertura de la conexión.
 16. **✓ Exportación CSV compatible con Excel:** Inclusión del BOM UTF-8 y codificación de columnas.
-17. **✓ Respaldo y restauración:** Verificación de integridad con 80.000 registros intactos.
+17. **✓ Respaldo y restauración:** Verificación de integridad con 100.000 registros intactos.
 18. **✓ Simulación de fallo de red:** Reversión limpia tras interrupción provocada en transacción.
 19. **✓ Revisión de diseño móvil y escritorio:** Comprobación de viewport y barra flotante de carrito móvil.
 20. **✓ Protección de privacidad en APIs públicas:** Cero filtración de nombres o celulares de compradores en `/api/numbers`.

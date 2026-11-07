@@ -6,7 +6,7 @@ import {
   DollarSign, Ticket, Clock, CheckCircle, AlertTriangle, 
   Download, RefreshCw, ShoppingCart, ArrowRight, Banknote, Landmark, ShieldAlert, Phone, Trash2
 } from 'lucide-react';
-import { formatCurrency, formatDate, buildBuyerWhatsAppUrl } from '@/lib/utils';
+import { formatCurrency, formatDate, buildBuyerWhatsAppUrl, formatTicketNumber } from '@/lib/utils';
 
 interface DashboardMetrics {
   total_numbers: number;
@@ -49,6 +49,8 @@ export default function AdminDashboardPage() {
   const [cleaning, setCleaning] = useState(false);
   const [cleanMessage, setCleanMessage] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<RecentOrder | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchDashboard = async () => {
     try {
@@ -89,30 +91,30 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeleteOrder = async (ord: RecentOrder) => {
-    if (
-      !confirm(
-        `¿Estás seguro de ELIMINAR definitivamente el registro ${ord.code} de "${ord.buyer_name}"?\n\n• Sus ${ord.numbers_count} número(s) volverán a estar disponibles.\n• El pedido se borrará por completo.`
-      )
-    ) {
-      return;
-    }
+  const handleDeleteOrder = (ord: RecentOrder) => {
+    setOrderToDelete(ord);
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
 
     try {
-      setDeletingId(ord.id);
+      setDeleting(true);
+      setDeletingId(orderToDelete.id);
       setCleanMessage(null);
       const res = await fetch('/api/admin/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'delete',
-          order_id: ord.id,
-          reason: 'Eliminación manual desde Resumen General'
+          order_id: orderToDelete.id,
+          reason: 'Eliminación manual confirmada desde Resumen General'
         })
       });
       const data = await res.json();
       if (res.ok) {
-        setCleanMessage(data.message || 'Registro eliminado correctamente.');
+        setCleanMessage(data.message || 'Registro eliminado y números liberados correctamente.');
+        setOrderToDelete(null);
         fetchDashboard();
       } else {
         alert(data.error || 'Error al eliminar el registro.');
@@ -120,6 +122,7 @@ export default function AdminDashboardPage() {
     } catch {
       alert('Error de red al eliminar el registro.');
     } finally {
+      setDeleting(false);
       setDeletingId(null);
     }
   };
@@ -139,7 +142,7 @@ export default function AdminDashboardPage() {
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Resumen General</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Métricas oficiales y estado real de los 80.000 números de la rifa.
+            Métricas oficiales y estado real de los 100.000 números de la rifa.
           </p>
         </div>
 
@@ -266,10 +269,10 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* BLOQUE 2: ESTADO DE LOS 80.000 NÚMEROS */}
+      {/* BLOQUE 2: ESTADO DE LOS 100.000 NÚMEROS */}
       <div className="bg-surface rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-slate-900 text-base">Estado de los 80.000 Números</h3>
+          <h3 className="font-bold text-slate-900 text-base">Estado de los 100.000 Números</h3>
           <Link href="/admin/numeros" className="text-xs font-semibold text-brand-link hover:underline">
             Explorar números →
           </Link>
@@ -442,6 +445,74 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN SEGURO */}
+      {orderToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-red-200 animate-pop space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900">¿Confirmar eliminación definitiva?</h3>
+                <p className="text-xs text-slate-500">Esta acción liberará de inmediato los números asignados.</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50/50 rounded-2xl p-4 border border-red-100 space-y-2 text-xs">
+              <div className="flex justify-between border-b border-red-100/60 pb-1.5">
+                <span className="text-slate-500 font-medium">Código de orden:</span>
+                <span className="font-mono font-bold text-slate-900">{orderToDelete.code}</span>
+              </div>
+              <div className="flex justify-between border-b border-red-100/60 pb-1.5">
+                <span className="text-slate-500 font-medium">Comprador:</span>
+                <span className="font-bold text-slate-900">{orderToDelete.buyer_name} ({orderToDelete.buyer_phone})</span>
+              </div>
+              <div className="flex justify-between border-b border-red-100/60 pb-1.5">
+                <span className="text-slate-500 font-medium">Monto:</span>
+                <span className="font-bold text-slate-900">{formatCurrency(orderToDelete.total_amount)}</span>
+              </div>
+
+              <div className="pt-1">
+                <span className="text-slate-600 font-semibold block mb-1.5">
+                  Números que serán liberados ({orderToDelete.numbers?.length || orderToDelete.numbers_count}):
+                </span>
+                <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto p-1.5 bg-white rounded-xl border border-red-100">
+                  {orderToDelete.numbers && orderToDelete.numbers.length > 0 ? (
+                    orderToDelete.numbers.map(num => (
+                      <span key={num} className="font-mono text-xs px-2 py-0.5 bg-red-50 text-red-700 rounded-md font-bold border border-red-200">
+                        {formatTicketNumber(num)}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 italic">Sin números detallados</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setOrderToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDeleteOrder}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deleting ? 'Eliminando...' : 'Sí, eliminar pedido y liberar números'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

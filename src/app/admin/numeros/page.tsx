@@ -26,7 +26,7 @@ export default function AdminNumerosPage() {
   const [status, setStatus] = useState('all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(80000);
+  const [totalCount, setTotalCount] = useState(100000);
 
   const fetchNumbers = async () => {
     try {
@@ -62,9 +62,9 @@ export default function AdminNumerosPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Gestión de 80.000 Números</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Gestión de 100.000 Números</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Inspeccioná el estado de cualquier número del 00001 al 80000 y sus compradores asignados.
+            Inspeccioná el estado de cualquier número del 00001 al 100000 y sus compradores asignados.
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export default function AdminNumerosPage() {
       <div className="bg-surface p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
           {[
-            { id: 'all', label: 'Todos (80.000)' },
+            { id: 'all', label: 'Todos (100.000)' },
             { id: 'available', label: 'Disponibles' },
             { id: 'reserved', label: 'Reservados' },
             { id: 'sold', label: 'Vendidos' },

@@ -29,6 +29,7 @@ export function getDb(): Client {
 }
 
 export interface SettingsMap {
+  raffle_badge: string;
   raffle_name: string;
   raffle_description: string;
   ticket_price: string;
@@ -53,8 +54,9 @@ export async function getSettings(): Promise<SettingsMap> {
   const db = getDb();
   const res = await db.execute('SELECT key, value FROM settings');
   const defaults: SettingsMap = {
+    raffle_badge: 'Objetivo solidario: Pro Terreno Familiar',
     raffle_name: 'Gran Rifa Familiar pro Terreno',
-    raffle_description: 'Rifa solidaria familiar de 80.000 números para pagar las cuotas de nuestro lote.',
+    raffle_description: 'Rifa solidaria familiar de 100.000 números para pagar las cuotas de nuestro lote.',
     ticket_price: '100',
     prizes: 'Premios a confirmar',
     draw_date: 'Fecha del sorteo a confirmar',

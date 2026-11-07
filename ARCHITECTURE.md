@@ -1,8 +1,8 @@
-# Arquitectura del Sistema — Proyecto RIFA (80.000 Números)
+# Arquitectura del Sistema — Proyecto RIFA (100.000 Números)
 
 ## 1. Resumen Ejecutivo y Especificaciones Técnicas
 
-El sistema **Proyecto RIFA** gestiona una rifa solidaria familiar de **80.000 números** (desde el `00001` hasta el `80000`), a un valor de **ARS 100 por número**, diseñado bajo la premisa de **costo operativo obligatorio de ARS $0 (Cero)**.
+El sistema **Proyecto RIFA** gestiona una rifa solidaria familiar de **100.000 números** (desde el `00001` hasta el `100000`), a un valor de **ARS 100 por número**, diseñado bajo la premisa de **costo operativo obligatorio de ARS $0 (Cero)**.
 
 La arquitectura garantiza:
 - **Consistencia ACID:** Prevención estricta de asignaciones dobles o parciales.
@@ -29,7 +29,7 @@ La arquitectura garantiza:
                                   │             BASE DE DATOS CENTRAL             │
                                   │        (LibSQL / SQLite - WAL Mode)           │
                                   │                                               │
-                                  │  - 80.000 números indexados (numbers)         │
+                                  │  - 100.000 números indexados (numbers)        │
                                   │  - Pedidos y comprobantes (orders)            │
                                   │  - Directorio de compradores (buyers)         │
                                   │  - Administradores individuales (admins)      │
@@ -44,12 +44,12 @@ La arquitectura garantiza:
         │     PORTAL PÚBLICO    │ │    CONSULTA PRIVADA   │ │  PANEL ADMINISTRATIVO │
         │        ( / )          │ │  ( /pedido/[token] )  │ │       ( /admin )      │
         │                       │ │                       │ │                       │
-        │ - Visualizador 80.000 │ │ - Token 192 bits      │ │ - Sesión JWT 7 días   │
+        │ - Visualizador 100k   │ │ - Token 192 bits      │ │ - Sesión JWT 7 días   │
         │ - Carrito flotante    │ │ - Comprobante digital │ │ - Dashboard métricas  │
         │ - Selector al azar    │ │ - Estado en vivo      │ │ - Solicitudes web     │
         │ - Reserva atómica     │ │ - Datos de transfer.  │ │ - Ventas directas     │
         │ - Cero datos ajenos   │ │ - Contacto WhatsApp   │ │ - Direct. Compradores │
-        │ - Modo Claro / Oscuro │ │ - Sin contraseña      │ │ - Gestor de 80.000 n° │
+        │ - Modo Claro / Oscuro │ │ - Sin contraseña      │ │ - Gestor de 100k n°   │
         │                       │ │                       │ │ - Configuración       │
         │                       │ │                       │ │ - Descarga Backups    │
         └───────────────────────┘ └───────────────────────┘ └───────────────────────┘
@@ -62,9 +62,9 @@ La arquitectura garantiza:
 El esquema está definido en [`src/lib/schema.sql`](src/lib/schema.sql) y optimizado con índices específicos para consultas de alta velocidad (< 1 ms):
 
 ```sql
--- 1. Tabla de Números (80.000 registros indexados)
+-- 1. Tabla de Números (100.000 registros indexados)
 CREATE TABLE IF NOT EXISTS numbers (
-  number INTEGER PRIMARY KEY,                      -- 1 al 80000
+  number INTEGER PRIMARY KEY,                      -- 1 al 100000
   status TEXT NOT NULL DEFAULT 'available',        -- 'available' | 'reserved' | 'sold'
   order_id INTEGER,                                -- FK a orders(id)
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -192,7 +192,7 @@ El cliente unificado en [`src/lib/db.ts`](src/lib/db.ts) utiliza `@libsql/client
 - **Entorno en la Nube (Vercel Serverless):**
   - Configuración: `DATABASE_URL="libsql://tu-base.turso.io"`, `DATABASE_AUTH_TOKEN="token"`
   - Conexión sobre protocolo LibSQL HTTP/WebSocket hacia la red distribuida de Turso.
-  - Almacena los 80.000 números y transacciones con persistencia real (resolviendo la limitación del sistema de archivos efímero de Vercel).
+  - Almacena los 100.000 números y transacciones con persistencia real (resolviendo la limitación del sistema de archivos efímero de Vercel).
 
 ---
 
@@ -201,4 +201,4 @@ El cliente unificado en [`src/lib/db.ts`](src/lib/db.ts) utiliza `@libsql/client
 1. **Snapshot Binario con VACUUM INTO (`scripts/backup.mjs`):** Genera una copia consistente en caliente de `rifa.db` sin bloquear las lecturas ni detener el servidor.
 2. **Snapshot JSON Estructurado:** Genera un archivo `.json` con todas las métricas, configuraciones, compradores, órdenes y números ocupados. Funciona idénticamente tanto en SQLite local como en Turso Cloud.
 3. **Descarga en 1 Clic desde el Panel (`/api/admin/backup`):** Permite a los administradores descargar una copia completa en formato JSON desde `/admin/configuracion` en cualquier momento.
-4. **Restauración Verificada (`scripts/restore.mjs`):** Antes de aplicar cualquier reemplazo, verifica que el archivo de respaldo contenga exactamente 80.000 registros y genera una copia de seguridad preventiva (`pre_restore_<timestamp>.db`).
+4. **Restauración Verificada (`scripts/restore.mjs`):** Antes de aplicar cualquier reemplazo, verifica que el archivo de respaldo contenga la cantidad reglamentaria de números (100.000 registros) y genera una copia de seguridad preventiva (`pre_restore_<timestamp>.db`).

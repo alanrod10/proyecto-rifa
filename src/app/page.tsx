@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { 
   Ticket, Search, Shuffle, ShoppingCart, CheckCircle, Clock, AlertTriangle, 
   Copy, Phone, ArrowRight, ShieldCheck, HelpCircle, X, ChevronLeft, ChevronRight,
-  Landmark, Banknote, Sparkles
+  Landmark, Banknote, Sparkles, Target, Check
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { formatTicketNumber, formatCurrency, formatWhatsAppPhone } from '@/lib/utils';
 
 interface RaffleSettings {
+  raffle_badge?: string;
   raffle_name: string;
   raffle_description: string;
   ticket_price: number;
@@ -78,6 +79,46 @@ export default function PublicPortal() {
     expires_at: string;
   } | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Salto directo a cualquier número
+  const [jumpNumberInput, setJumpNumberInput] = useState('');
+  const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null);
+
+  // Copia de alias / CBU en modal de reserva
+  const [copiedAlias, setCopiedAlias] = useState(false);
+  const [copiedCbu, setCopiedCbu] = useState(false);
+
+  const copyBankData = (text: string, type: 'alias' | 'cbu') => {
+    navigator.clipboard.writeText(text);
+    if (type === 'alias') {
+      setCopiedAlias(true);
+      setTimeout(() => setCopiedAlias(false), 2000);
+    } else {
+      setCopiedCbu(true);
+      setTimeout(() => setCopiedCbu(false), 2000);
+    }
+  };
+
+  const handleJumpToNumber = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = parseInt(jumpNumberInput.trim(), 10);
+    if (isNaN(parsed) || parsed < 1 || parsed > 100000) {
+      alert('Por favor ingresá un número válido entre 1 y 100.000.');
+      return;
+    }
+
+    if (gridFilter !== 'all') {
+      setGridFilter('all');
+    }
+
+    const targetPage = Math.floor((parsed - 1) / 60) + 1;
+    setPage(targetPage);
+    setHighlightedNumber(parsed);
+
+    setTimeout(() => {
+      setHighlightedNumber(null);
+    }, 4000);
+  };
 
   // Cargar configuraciones y estadísticas iniciales
   useEffect(() => {
@@ -270,7 +311,7 @@ export default function PublicPortal() {
             </span>
             <div className="min-w-0">
               <h1 className="font-bold text-base sm:text-lg leading-tight tracking-tight truncate">Gran Rifa Familiar</h1>
-              <p className="text-xs sm:text-xs text-slate-300 truncate">80.000 números disponibles</p>
+              <p className="text-xs sm:text-xs text-slate-300 truncate">100.000 números disponibles</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -297,15 +338,61 @@ export default function PublicPortal() {
         <div className="relative max-w-4xl mx-auto text-center space-y-4 stagger">
           <span className="inline-flex items-center gap-1.5 bg-white/10 text-slate-200 text-xs sm:text-sm px-3 py-1 rounded-full border border-white/15">
             <Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" />
-            Objetivo solidario: Pro Terreno Familiar
+            {settings?.raffle_badge || 'Objetivo solidario: Pro Terreno Familiar'}
           </span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
             {settings?.raffle_name || 'Gran Rifa Familiar pro Terreno'}
           </h2>
           <div aria-hidden="true" className="mx-auto h-1 w-12 rounded-full bg-amber-500" />
           <p className="text-slate-300 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
-            {settings?.raffle_description || 'Rifa solidaria familiar de 80.000 números para pagar las cuotas de nuestro lote.'}
+            {settings?.raffle_description || 'Rifa solidaria familiar de 100.000 números para pagar las cuotas de nuestro lote.'}
           </p>
+
+          {/* Barra de Progreso Solidaria hacia la Meta */}
+          {stats && (
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 max-w-2xl mx-auto space-y-2.5 text-left shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs sm:text-sm">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-amber-400 shrink-0" />
+                  Avance hacia la meta de {(stats.total || 100000).toLocaleString('es-AR')} números
+                </span>
+                <span className="font-extrabold text-amber-300 font-mono sm:text-right">
+                  {Math.min(100, (((stats.sold + stats.reserved) / (stats.total || 100000)) * 100)).toFixed(1)}% completado
+                </span>
+              </div>
+
+              {/* Pista de progreso */}
+              <div className="w-full h-3.5 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/20 flex">
+                <div
+                  style={{ width: `${Math.min(100, ((stats.sold / (stats.total || 100000)) * 100))}%` }}
+                  className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full rounded-l-full transition-all duration-700 ease-out"
+                  title={`Vendidos: ${stats.sold.toLocaleString('es-AR')}`}
+                />
+                <div
+                  style={{ width: `${Math.min(100, ((stats.reserved / (stats.total || 100000)) * 100))}%` }}
+                  className="bg-gradient-to-r from-amber-400 to-amber-300 h-full transition-all duration-700 ease-out"
+                  title={`En reserva: ${stats.reserved.toLocaleString('es-AR')}`}
+                />
+              </div>
+
+              {/* Leyenda explicativa */}
+              <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-300 font-medium flex-wrap gap-2 pt-0.5">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+                    <strong>{stats.sold.toLocaleString('es-AR')}</strong> vendidos
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
+                    <strong>{stats.reserved.toLocaleString('es-AR')}</strong> en reserva
+                  </span>
+                </div>
+                <span className="text-slate-400">
+                  Faltan <strong>{Math.max(0, (stats.total || 100000) - (stats.sold + stats.reserved)).toLocaleString('es-AR')}</strong> números
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Tarjetas de Métricas Clave */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-3xl mx-auto stagger">
@@ -317,7 +404,9 @@ export default function PublicPortal() {
             </div>
             <div className="bg-white/5 rounded-xl p-3 border border-white/10 lift hover:border-white/25 hover:bg-white/10">
               <span className="block text-xs text-slate-300 font-medium">Total de números</span>
-              <span className="text-xl sm:text-2xl font-bold text-white">80.000</span>
+              <span className="text-xl sm:text-2xl font-bold text-white">
+                {(stats?.total || 100000).toLocaleString('es-AR')}
+              </span>
             </div>
             <div className="bg-white/5 rounded-xl p-3 border border-white/10 lift hover:border-white/25 hover:bg-white/10">
               <span className="block text-xs text-slate-300 font-medium">Disponibles</span>
@@ -635,22 +724,44 @@ export default function PublicPortal() {
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-1 self-end sm:self-auto">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page <= 1 || loadingNumbers}
-                className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="px-2 font-medium">{page}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages || loadingNumbers}
-                className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+              {/* Control de salto directo a cualquier número del 1 al 100.000 */}
+              <form onSubmit={handleJumpToNumber} className="flex items-center gap-1.5 bg-surface border border-slate-300 rounded-xl px-2 py-1 shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-600 whitespace-nowrap">Ir al nro:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="100000"
+                  placeholder="1 - 100000"
+                  value={jumpNumberInput}
+                  onChange={(e) => setJumpNumberInput(e.target.value)}
+                  className="w-20 px-1.5 py-0.5 text-xs border border-slate-300 rounded-lg text-center font-mono font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+                <button
+                  type="submit"
+                  className="bg-brand-600 hover:bg-brand-700 text-white font-bold text-[11px] px-2.5 py-0.5 rounded-lg transition"
+                >
+                  Ir
+                </button>
+              </form>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1 || loadingNumbers}
+                  className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="px-2 font-medium">{page}</span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || loadingNumbers}
+                  className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -663,6 +774,7 @@ export default function PublicPortal() {
               {availableNumbers.map(item => {
                 const isSelected = selectedNumbers.includes(item.number);
                 const isAvailable = item.status === 'available';
+                const isHighlighted = highlightedNumber === item.number;
 
                 return (
                   <button
@@ -672,7 +784,9 @@ export default function PublicPortal() {
                     onClick={() => toggleSelectNumber(item.number, item.status)}
                     title={isAvailable ? 'Disponible' : item.status === 'reserved' ? 'Reservado' : 'Vendido'}
                     className={`min-h-12 py-2 px-1 rounded-xl text-center font-mono font-bold text-xs sm:text-sm border transition flex flex-col items-center justify-center animate-cell ${
-                      isSelected
+                      isHighlighted
+                        ? 'ring-4 ring-amber-400 scale-105 shadow-xl animate-pulse z-10 bg-amber-50 text-amber-900 border-amber-300'
+                        : isSelected
                         ? 'bg-brand-600 text-white border-brand-700 ring-2 ring-brand-300 shadow-md animate-pop'
                         : isAvailable
                         ? 'bg-surface hover:bg-brand-50 text-slate-800 border-slate-200 hover:border-brand-400'
@@ -888,14 +1002,55 @@ export default function PublicPortal() {
                 </div>
               </div>
 
-              {/* Datos Bancarios Informativos */}
+              {/* Datos Bancarios Informativos con Copia en 1 Clic */}
               {paymentMethod === 'transfer' && settings?.bank_alias && (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1 text-slate-700">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2 text-slate-700">
                   <p className="font-semibold text-slate-900">Datos para la transferencia:</p>
-                  <p><strong>Alias:</strong> <span className="font-mono text-brand-link">{settings.bank_alias}</span></p>
-                  {settings.bank_cbu && <p><strong>CBU:</strong> <span className="font-mono">{settings.bank_cbu}</span></p>}
-                  {settings.bank_name && <p><strong>Banco:</strong> {settings.bank_name}</p>}
-                  {settings.bank_holder && <p><strong>Titular:</strong> {settings.bank_holder}</p>}
+
+                  <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-xs">
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Alias</span>
+                      <span className="font-mono text-brand-link font-bold text-xs truncate block">{settings.bank_alias}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyBankData(settings.bank_alias, 'alias')}
+                      className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md font-semibold transition border ${
+                        copiedAlias
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                      }`}
+                    >
+                      {copiedAlias ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
+                      <span>{copiedAlias ? '¡Copiado!' : 'Copiar Alias'}</span>
+                    </button>
+                  </div>
+
+                  {settings.bank_cbu && (
+                    <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-xs">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">CBU / CVU</span>
+                        <span className="font-mono text-slate-800 font-medium text-xs truncate block">{settings.bank_cbu}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyBankData(settings.bank_cbu, 'cbu')}
+                        className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md font-semibold transition border ${
+                          copiedCbu
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                        }`}
+                      >
+                        {copiedCbu ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
+                        <span>{copiedCbu ? '¡Copiado!' : 'Copiar CBU'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="text-[11px] text-slate-500 pt-0.5 space-y-0.5">
+                    {settings.bank_name && <p><strong>Banco:</strong> {settings.bank_name}</p>}
+                    {settings.bank_holder && <p><strong>Titular:</strong> {settings.bank_holder}</p>}
+                  </div>
                 </div>
               )}
 

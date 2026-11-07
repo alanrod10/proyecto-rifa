@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       generated_at: new Date().toISOString(),
       generated_by: admin.username,
       metrics: {
-        total_numbers: Number(statsRes.rows[0]?.total || 80000),
+        total_numbers: Number(statsRes.rows[0]?.total || 100000),
         available_numbers: Number(statsRes.rows[0]?.available || 0),
         reserved_numbers: Number(statsRes.rows[0]?.reserved || 0),
         sold_numbers: Number(statsRes.rows[0]?.sold || 0),

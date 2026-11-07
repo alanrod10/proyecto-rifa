@@ -39,8 +39,9 @@ async function main() {
     if (settingsCount === 0) {
       console.log('Insertando configuración inicial del sorteo...');
       const initialSettings = [
+        ['raffle_badge', 'Objetivo solidario: Pro Terreno Familiar'],
         ['raffle_name', 'Gran Rifa Familiar pro Terreno'],
-        ['raffle_description', 'Rifa solidaria familiar de 80.000 números para pagar las cuotas de nuestro lote.'],
+        ['raffle_description', 'Rifa solidaria familiar de 100.000 números para pagar las cuotas de nuestro lote.'],
         ['ticket_price', '100'],
         ['prizes', 'Premios a confirmar'],
         ['draw_date', 'Fecha del sorteo a confirmar'],
@@ -99,17 +100,17 @@ async function main() {
       console.log(`✓ Ya existen ${adminCount} administradores registrados.`);
     }
 
-    // 4. Sembrar los 80.000 números
+    // 4. Sembrar los 100.000 números
     const numbersCheck = await client.execute('SELECT COUNT(*) as count FROM numbers');
     const numbersCount = Number(numbersCheck.rows[0].count);
 
-    if (numbersCount < 80000) {
-      console.log(`Poblando 80.000 números (del 1 al 80000)... Actualmente hay ${numbersCount}`);
-      console.time('Tiempo de inserción de 80.000 números');
+    if (numbersCount < 100000) {
+      console.log(`Poblando 100.000 números (del 1 al 100000)... Actualmente hay ${numbersCount}`);
+      console.time('Tiempo de inserción de 100.000 números');
 
       // Insertar en lotes de 2.000 dentro de transacciones para máxima velocidad
       const BATCH_SIZE = 2000;
-      const TOTAL = 80000;
+      const TOTAL = 100000;
 
       for (let start = 1; start <= TOTAL; start += BATCH_SIZE) {
         const end = Math.min(start + BATCH_SIZE - 1, TOTAL);
@@ -129,7 +130,7 @@ async function main() {
         }
       }
 
-      console.timeEnd('Tiempo de inserción de 80.000 números');
+      console.timeEnd('Tiempo de inserción de 100.000 números');
       const finalCountRes = await client.execute('SELECT COUNT(*) as count FROM numbers');
       console.log(`✓ Base de datos sembrada con éxito: ${finalCountRes.rows[0].count} números verificados.`);
     } else {

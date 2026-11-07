@@ -25,9 +25,9 @@ export default function AdminVentasPage() {
   const handleAddManualNumbers = () => {
     if (!numbersInput.trim()) return;
     const tokens = numbersInput.split(/[\s,]+/).filter(t => /^\d+$/.test(t)).map(t => parseInt(t, 10));
-    const valid = tokens.filter(n => n >= 1 && n <= 80000);
+    const valid = tokens.filter(n => n >= 1 && n <= 100000);
     if (valid.length === 0) {
-      setError('No se detectaron números válidos entre 1 y 80.000.');
+      setError('No se detectaron números válidos entre 1 y 100.000.');
       return;
     }
 

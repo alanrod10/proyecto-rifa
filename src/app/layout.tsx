@@ -7,11 +7,11 @@ const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrai
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://proyecto-rifa.vercel.app'),
-  title: 'Gran Rifa Familiar de 80.000 Números | Pro Terreno',
-  description: 'Portal oficial de la rifa solidaria familiar de 80.000 números. Consulta de números disponibles, reserva segura y comprobante digital.',
+  title: 'Gran Rifa Familiar de 100.000 Números | Pro Terreno',
+  description: 'Portal oficial de la rifa solidaria familiar de 100.000 números. Consulta de números disponibles, reserva segura y comprobante digital.',
   openGraph: {
-    title: 'Gran Rifa Familiar de 80.000 Números | Pro Terreno',
-    description: 'Portal oficial de la rifa solidaria familiar de 80.000 números. Consulta números disponibles y reserva online con comprobante digital.',
+    title: 'Gran Rifa Familiar de 100.000 Números | Pro Terreno',
+    description: 'Portal oficial de la rifa solidaria familiar de 100.000 números. Consulta números disponibles y reserva online con comprobante digital.',
     url: 'https://proyecto-rifa.vercel.app',
     siteName: 'Proyecto RIFA',
     locale: 'es_AR',
@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Gran Rifa Familiar de 80.000 Números | Pro Terreno',
-    description: 'Portal oficial de la rifa solidaria familiar de 80.000 números. Consulta números disponibles y reserva online con comprobante digital.',
+    title: 'Gran Rifa Familiar de 100.000 Números | Pro Terreno',
+    description: 'Portal oficial de la rifa solidaria familiar de 100.000 números. Consulta números disponibles y reserva online con comprobante digital.',
   },
 };
 

@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto';
 import type { Client, Transaction } from '@libsql/client';
 
 /**
- * Formatea un número de la rifa en formato de 5 dígitos (ej: 1 -> "00001", 80000 -> "80000")
+ * Formatea un número de la rifa en formato de al menos 5 dígitos (ej: 1 -> "00001", 100000 -> "100000")
  */
 export function formatTicketNumber(num: number): string {
   return num.toString().padStart(5, '0');
@@ -214,7 +214,7 @@ export function sanitizeCsvCell(value: unknown): string {
 /**
  * Genera una lista de N números aleatorios únicos en el rango [min, max]
  */
-export function pickRandomUniqueInts(count: number, min = 1, max = 80000): number[] {
+export function pickRandomUniqueInts(count: number, min = 1, max = 100000): number[] {
   const range = max - min + 1;
   const target = Math.min(count, range);
   const set = new Set<number>();
