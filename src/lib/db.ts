@@ -83,6 +83,50 @@ export async function getSettings(): Promise<SettingsMap> {
 }
 
 /**
+ * Obtiene las configuraciones públicas y estadísticas consolidadas en una sola llamada
+ */
+export async function getPublicSettingsAndStats() {
+  await releaseExpiredReservations().catch(() => {});
+  const settings = await getSettings();
+  const db = getDb();
+  const statsRes = await db.execute(`
+    SELECT 
+      COUNT(*) as total,
+      COALESCE(SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END), 0) as available,
+      COALESCE(SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END), 0) as reserved,
+      COALESCE(SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END), 0) as sold
+    FROM numbers
+  `);
+  const stats = statsRes.rows[0];
+
+  return {
+    settings: {
+      raffle_badge: settings.raffle_badge || 'Objetivo solidario: Pro Terreno Familiar',
+      raffle_name: settings.raffle_name || 'Gran Rifa Familiar pro Terreno',
+      raffle_description: settings.raffle_description || 'Rifa solidaria familiar de 100.000 números para pagar las cuotas de nuestro lote.',
+      ticket_price: Number(settings.ticket_price) || 100,
+      prizes: settings.prizes || 'Premios a confirmar',
+      draw_date: settings.draw_date || 'Fecha del sorteo a confirmar',
+      bank_alias: settings.bank_alias || '',
+      bank_cbu: settings.bank_cbu || '',
+      bank_name: settings.bank_name || '',
+      bank_holder: settings.bank_holder || '',
+      contact_phone: settings.contact_phone || '3884152040',
+      contact_phone_secondary: settings.contact_phone_secondary || '3884141514',
+      reserve_hours: Number(settings.reserve_hours) || 48,
+      public_reservations_enabled: settings.public_reservations_enabled === 'true',
+      rules_terms: settings.rules_terms || '',
+    },
+    stats: {
+      total: Number(stats?.total) || 100000,
+      available: Number(stats?.available) || 0,
+      reserved: Number(stats?.reserved) || 0,
+      sold: Number(stats?.sold) || 0,
+    }
+  };
+}
+
+/**
  * Registra una acción sensible en el historial de auditoría
  */
 export async function logAudit(
