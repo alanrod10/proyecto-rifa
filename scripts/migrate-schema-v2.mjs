@@ -18,7 +18,11 @@ const args = process.argv.slice(2);
 const dbArg = args.find(a => a.startsWith('--db='))?.slice('--db='.length);
 const confirmTurso = args.includes('--confirm-turso');
 
-const rawUrl = dbArg || process.env.MIGRATE_DATABASE_URL || 'file:./rifa.db';
+const rawUrl =
+  dbArg ||
+  process.env.MIGRATE_DATABASE_URL ||
+  (confirmTurso ? process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL : undefined) ||
+  'file:./rifa.db';
 const isRemote = rawUrl.startsWith('libsql://') || rawUrl.startsWith('https://');
 
 if (isRemote && !confirmTurso) {

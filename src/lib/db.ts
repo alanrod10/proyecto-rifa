@@ -250,6 +250,12 @@ export async function checkRateLimit(
         PRIMARY KEY (key, window_start)
       )
     `).catch(() => {});
+    const cols = await executor.execute('PRAGMA table_info(orders)').catch(() => ({ rows: [] }));
+    if (cols.rows.length > 0 && !cols.rows.some((r) => r.name === 'request_id')) {
+      await executor.execute('ALTER TABLE orders ADD COLUMN request_id TEXT').catch(() => {});
+    }
+    await executor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_request_id ON orders(request_id)').catch(() => {});
+    await executor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('max_numbers_per_order', '2000'), ('max_pending_numbers_per_phone', '1000')").catch(() => {});
     rateLimitTableEnsured = true;
   }
 
