@@ -675,6 +675,107 @@ async function runAllTests() {
       `Muestra parseada: ${parsedSample.numbers.length} únicos, tope 2000 validado (exceedsMax=${parsedOver.exceedsMax})`
     );
 
+    // ----------------------------------------------------------------
+    // 30. Fase 5: Confirmación de pagos en lote (transacción por pedido + auditoría) y filtro <6h
+    // ----------------------------------------------------------------
+    const expSoonAt = new Date(Date.now() + 2 * 3600000).toISOString().replace('T', ' ').substring(0, 19);
+    const expLaterAt = new Date(Date.now() + 18 * 3600000).toISOString().replace('T', ' ').substring(0, 19);
+
+    const b1Ins = await newClient.execute({
+      sql: `INSERT INTO orders (code, buyer_id, buyer_name, buyer_phone, payment_method, payment_status, unit_price, numbers_count, total_amount, numbers_list, private_token, expires_at)
+            VALUES ('RF-BATCH1', (SELECT id FROM buyers LIMIT 1), 'Lote Valido', '543884000001', 'transfer', 'pending', 100, 2, 200, '[8001,8002]', ?, ?)`,
+      args: [crypto.randomUUID().replace(/-/g, '') + 'a'.repeat(16), expSoonAt],
+    });
+    const batchOrder1Id = Number(b1Ins.lastInsertRowid);
+    await newClient.execute({
+      sql: `UPDATE numbers SET status = 'reserved', order_id = ? WHERE number IN (8001, 8002) AND status = 'available'`,
+      args: [batchOrder1Id],
+    });
+
+    const b2Ins = await newClient.execute({
+      sql: `INSERT INTO orders (code, buyer_id, buyer_name, buyer_phone, payment_method, payment_status, unit_price, numbers_count, total_amount, numbers_list, private_token, expires_at)
+            VALUES ('RF-BATCH2', (SELECT id FROM buyers LIMIT 1), 'Lote Vencido', '543884000002', 'transfer', 'expired', 100, 1, 100, '[8003]', ?, ?)`,
+      args: [crypto.randomUUID().replace(/-/g, '') + 'b'.repeat(16), expLaterAt],
+    });
+    const batchOrder2Id = Number(b2Ins.lastInsertRowid);
+
+    // Verificar consulta expiring_6h ordenada por expires_at ASC
+    const expiring6hRes = await newClient.execute(
+      `SELECT code FROM orders
+       WHERE payment_status = 'pending' AND datetime(expires_at) >= datetime('now') AND datetime(expires_at) <= datetime('now', '+6 hours')
+       ORDER BY datetime(expires_at) ASC, id ASC`
+    );
+
+    // Procesar lote: cada pedido en su propia transacción
+    const batchResultsSim = [];
+    for (const oid of [batchOrder1Id, batchOrder2Id]) {
+      const bTx = await newClient.transaction('write');
+      const oRowRes = await bTx.execute({
+        sql: 'SELECT id, code, buyer_name, payment_status, numbers_count, total_amount FROM orders WHERE id = ?',
+        args: [oid],
+      });
+      const oRow = oRowRes.rows[0];
+      if (!oRow || oRow.payment_status !== 'pending') {
+        await bTx.rollback();
+        batchResultsSim.push({ order_id: oid, status: 'rejected', reason: `Estado ${oRow?.payment_status}` });
+        continue;
+      }
+      const uNum = await bTx.execute({
+        sql: `UPDATE numbers SET status = 'sold' WHERE order_id = ? AND status = 'reserved'`,
+        args: [oid],
+      });
+      if (Number(uNum.rowsAffected || 0) !== Number(oRow.numbers_count)) {
+        await bTx.rollback();
+        batchResultsSim.push({ order_id: oid, status: 'rejected', reason: 'Inconsistencia' });
+        continue;
+      }
+      await bTx.execute({
+        sql: `UPDATE orders SET payment_status = 'paid', paid_at = CURRENT_TIMESTAMP, confirmed_by_admin = 'alan' WHERE id = ? AND payment_status = 'pending'`,
+        args: [oid],
+      });
+      await bTx.commit();
+      await newClient.execute({
+        sql: `INSERT INTO audit_logs (admin_username, action, details, ip_address) VALUES ('alan', 'CONFIRM_PAYMENT', ?, '127.0.0.1')`,
+        args: [JSON.stringify({ order_id: oid, code: oRow.code, batch: true })],
+      });
+      batchResultsSim.push({ order_id: oid, status: 'confirmed' });
+    }
+
+    const postBatchOrder1 = await newClient.execute({
+      sql: 'SELECT payment_status FROM orders WHERE id = ?',
+      args: [batchOrder1Id],
+    });
+    const postBatchNums1 = await newClient.execute({
+      sql: `SELECT COUNT(*) as c FROM numbers WHERE order_id = ? AND status = 'sold'`,
+      args: [batchOrder1Id],
+    });
+
+    const solicitudesPageContent = fs.readFileSync(path.join(process.cwd(), 'src/app/admin/solicitudes/page.tsx'), 'utf-8');
+    const batchModalContent = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/BatchConfirmModal.tsx'), 'utf-8');
+    const adminOrdersRouteContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/orders/route.ts'), 'utf-8');
+    const orderHelpersContent = fs.readFileSync(path.join(process.cwd(), 'src/lib/order-helpers.ts'), 'utf-8');
+
+    const fase5Checks =
+      expiring6hRes.rows.some((r) => r.code === 'RF-BATCH1') &&
+      batchResultsSim.length === 2 &&
+      batchResultsSim[0].status === 'confirmed' &&
+      batchResultsSim[1].status === 'rejected' &&
+      postBatchOrder1.rows[0].payment_status === 'paid' &&
+      Number(postBatchNums1.rows[0].c) === 2 &&
+      solicitudesPageContent.includes('Seleccionar todos los visibles') &&
+      solicitudesPageContent.includes('Confirmar pago de') &&
+      solicitudesPageContent.includes('Vencen en menos de 6 h') &&
+      !solicitudesPageContent.includes('confirm(') &&
+      batchModalContent.includes('BatchConfirmModal') &&
+      adminOrdersRouteContent.includes('confirm_payment_batch') &&
+      orderHelpersContent.includes('confirmPaymentBatch');
+
+    assert(
+      fase5Checks,
+      '30. Fase 5: Confirmación en lote (transacción independiente + auditoría), modal propio sin confirm() y filtro <6h',
+      `Lote procesado: 1 confirmado (RF-BATCH1 -> paid/sold) y 1 rechazado con motivo (RF-BATCH2 expired)`
+    );
+
     newClient.close();
   } catch (err) {
     console.error('Error fatal durante las pruebas:', err);

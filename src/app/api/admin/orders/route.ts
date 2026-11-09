@@ -6,6 +6,7 @@ import {
   buildAdminOrdersQuery,
   handleChangePaymentMethodInTx,
   handleDeleteOrderInTx,
+  confirmPaymentBatch,
 } from '@/lib/order-helpers';
 
 export async function GET(request: NextRequest) {
@@ -87,7 +88,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, order_id, reason, force_cancel_paid, payment_method } = body;
+    const { action, order_id, order_ids, reason, force_cancel_paid, payment_method } = body;
+    const clientIp = request.headers.get('x-forwarded-for') || 'localhost';
+
+    if (action === 'confirm_payment_batch') {
+      if (!Array.isArray(order_ids) || order_ids.length === 0) {
+        return NextResponse.json(
+          { error: 'Debes indicar al menos un ID de orden en order_ids.' },
+          { status: 400 }
+        );
+      }
+
+      await releaseExpiredReservations().catch(() => {});
+      const batchResult = await confirmPaymentBatch(order_ids, admin.username, clientIp);
+      return NextResponse.json(batchResult);
+    }
 
     if (!order_id) {
       return NextResponse.json({ error: 'ID de orden requerido' }, { status: 400 });
@@ -107,7 +122,6 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
     const tx = await db.transaction('write');
-    const clientIp = request.headers.get('x-forwarded-for') || 'localhost';
 
     try {
       const orderRes = await tx.execute({

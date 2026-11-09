@@ -134,6 +134,7 @@ export interface BuyerItem {
 export interface BatchConfirmResultItem {
   order_id: number;
   code?: string;
+  buyer_name?: string;
   status: 'confirmed' | 'rejected';
   reason?: string;
 }

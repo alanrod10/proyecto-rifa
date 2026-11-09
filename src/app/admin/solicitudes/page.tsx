@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { RefreshCw } from 'lucide-react';
-import { OrderItem } from '@/lib/types';
+import { RefreshCw, CheckSquare } from 'lucide-react';
+import { OrderItem, BatchConfirmResultItem } from '@/lib/types';
 import OrdersTableSection from '@/components/admin/OrdersTableSection';
 import DeleteOrderModal from '@/components/admin/DeleteOrderModal';
+import BatchConfirmModal from '@/components/admin/BatchConfirmModal';
 
 export default function AdminSolicitudesPage() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -18,6 +19,12 @@ export default function AdminSolicitudesPage() {
 
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Selección en lote de pedidos pendientes
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchConfirmResultItem[] | null>(null);
 
   // Modal seguro de confirmación antes de eliminar
   const [orderToDelete, setOrderToDelete] = useState<OrderItem | null>(null);
@@ -46,37 +53,74 @@ export default function AdminSolicitudesPage() {
   };
 
   useEffect(() => {
+    setSelectedOrderIds([]);
     fetchOrders();
   }, [page, statusFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
+    setSelectedOrderIds([]);
     fetchOrders();
   };
 
-  const handleConfirmPayment = async (orderId: number) => {
-    if (!confirm('¿Confirmás que recibiste y verificaste el pago de esta solicitud?')) return;
+  const pendingVisibleOrders = orders.filter((o) => o.payment_status === 'pending');
 
+  const handleToggleSelectOrder = (orderId: number) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
+    );
+  };
+
+  const handleToggleSelectAllVisible = () => {
+    const visiblePendingIds = pendingVisibleOrders.map((o) => o.id);
+    if (visiblePendingIds.length === 0) return;
+    const allSelected = visiblePendingIds.every((id) => selectedOrderIds.includes(id));
+    if (allSelected) {
+      setSelectedOrderIds((prev) => prev.filter((id) => !visiblePendingIds.includes(id)));
+    } else {
+      setSelectedOrderIds((prev) => Array.from(new Set([...prev, ...visiblePendingIds])));
+    }
+  };
+
+  const handleOpenSingleConfirm = (orderId: number) => {
+    setSelectedOrderIds([orderId]);
+    setBatchResults(null);
+    setIsBatchModalOpen(true);
+  };
+
+  const handleOpenBatchConfirm = () => {
+    if (selectedOrderIds.length === 0) return;
+    setBatchResults(null);
+    setIsBatchModalOpen(true);
+  };
+
+  const handleConfirmBatchExecution = async () => {
+    if (selectedOrderIds.length === 0 || batchSubmitting) return;
     try {
-      setActionLoading(orderId);
+      setBatchSubmitting(true);
       setFeedback(null);
       const res = await fetch('/api/admin/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'confirm_payment', order_id: orderId }),
+        body: JSON.stringify({
+          action: 'confirm_payment_batch',
+          order_ids: selectedOrderIds,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
-        setFeedback(data.message || 'Pago confirmado.');
+        setBatchResults(data.results || []);
+        setFeedback(data.message || 'Procesamiento en lote finalizado.');
+        setSelectedOrderIds([]);
         fetchOrders();
       } else {
-        alert(data.error || 'Error al confirmar pago.');
+        alert(data.error || 'Error al confirmar pagos en lote.');
       }
     } catch {
-      alert('Error de red al confirmar pago.');
+      alert('Error de red al confirmar pagos en lote.');
     } finally {
-      setActionLoading(null);
+      setBatchSubmitting(false);
     }
   };
 
@@ -118,12 +162,6 @@ export default function AdminSolicitudesPage() {
   const handleTogglePaymentMethod = async (ord: OrderItem) => {
     const nextMethod = ord.payment_method === 'cash' ? 'transfer' : 'cash';
     const nextLabel = nextMethod === 'cash' ? 'Efectivo' : 'Transferencia';
-    if (
-      !confirm(
-        `¿Cambiar el medio de pago del pedido ${ord.code} (${ord.buyer_name}) a ${nextLabel}?`
-      )
-    )
-      return;
 
     try {
       setActionLoading(ord.id);
@@ -183,6 +221,8 @@ export default function AdminSolicitudesPage() {
     }
   };
 
+  const selectedOrdersList = orders.filter((o) => selectedOrderIds.includes(o.id));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -195,7 +235,28 @@ export default function AdminSolicitudesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+          {pendingVisibleOrders.length > 0 && (
+            <button
+              type="button"
+              onClick={handleToggleSelectAllVisible}
+              className="inline-flex items-center gap-1.5 text-xs bg-surface hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold px-3 py-2 rounded-xl transition shadow-sm"
+            >
+              <CheckSquare className="w-3.5 h-3.5 text-brand-600" />
+              <span>Seleccionar todos los visibles</span>
+            </button>
+          )}
+
+          {selectedOrderIds.length > 0 && (
+            <button
+              type="button"
+              onClick={handleOpenBatchConfirm}
+              className="inline-flex items-center gap-1.5 text-xs bg-brand-600 hover:bg-brand-700 text-white font-bold px-3.5 py-2 rounded-xl transition shadow-md"
+            >
+              <span>Confirmar pago de {selectedOrderIds.length} pedidos</span>
+            </button>
+          )}
+
           <Link
             href="/admin/compradores"
             className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 hover:bg-brand-100 text-emerald-800 border border-emerald-300 font-bold px-3 py-2 rounded-xl transition shadow-sm"
@@ -231,6 +292,7 @@ export default function AdminSolicitudesPage() {
           {[
             { id: 'all', label: 'Todos' },
             { id: 'pending', label: 'Pendientes' },
+            { id: 'expiring_6h', label: 'Vencen en menos de 6 h' },
             { id: 'paid', label: 'Pagados' },
             { id: 'expired', label: 'Vencidos' },
             { id: 'cancelled', label: 'Cancelados' },
@@ -277,10 +339,26 @@ export default function AdminSolicitudesPage() {
         totalOrders={totalOrders}
         actionLoading={actionLoading}
         onPageChange={(newPage) => setPage(newPage)}
-        onConfirmPayment={handleConfirmPayment}
+        onConfirmPayment={handleOpenSingleConfirm}
         onCancelOrder={handleCancelOrder}
         onTogglePaymentMethod={handleTogglePaymentMethod}
         onDeleteOrder={(ord) => setOrderToDelete(ord)}
+        selectedOrderIds={selectedOrderIds}
+        onToggleSelectOrder={handleToggleSelectOrder}
+        onToggleSelectAllVisible={handleToggleSelectAllVisible}
+      />
+
+      <BatchConfirmModal
+        isOpen={isBatchModalOpen}
+        selectedOrders={selectedOrdersList}
+        submitting={batchSubmitting}
+        results={batchResults}
+        onClose={() => {
+          if (batchSubmitting) return;
+          setIsBatchModalOpen(false);
+          setBatchResults(null);
+        }}
+        onConfirmBatch={handleConfirmBatchExecution}
       />
 
       <DeleteOrderModal
