@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, getSettings, logAudit } from '@/lib/db';
+import { getDb, getSettings, logAudit, releaseExpiredReservations, invalidatePublicCache } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 import { generateUniqueOrderCode, generatePrivateToken, cleanPhoneNumber } from '@/lib/utils';
 
@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
     if (uniqueNumbers.length === 0) {
       return NextResponse.json({ error: 'Números inválidos' }, { status: 400 });
     }
+
+    // Liberación reactiva sin throttle antes de venta directa
+    await releaseExpiredReservations().catch(() => {});
 
     const settings = await getSettings();
     const unitPrice = Math.max(1, parseInt(settings.ticket_price || '100', 10));
@@ -142,6 +145,7 @@ export async function POST(request: NextRequest) {
       });
 
       await tx.commit();
+      invalidatePublicCache();
 
       await logAudit(
         admin.username,

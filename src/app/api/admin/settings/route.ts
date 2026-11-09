@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, getSettings, logAudit } from '@/lib/db';
+import { getDb, getSettings, logAudit, invalidatePublicCache } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 import { cleanPhoneNumber } from '@/lib/utils';
 
@@ -69,6 +69,7 @@ export async function PUT(request: NextRequest) {
       request.headers.get('x-forwarded-for') || 'localhost'
     );
 
+    invalidatePublicCache();
     const newSettings = await getSettings();
     return NextResponse.json({
       success: true,

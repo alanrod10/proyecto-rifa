@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, logAudit } from '@/lib/db';
+import { getDb, getNumberStats, logAudit } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -11,19 +11,12 @@ export async function GET(request: NextRequest) {
 
     const db = getDb();
 
-    const [settingsRes, buyersRes, ordersRes, nonAvailNumbersRes, statsRes, auditRes] = await Promise.all([
+    const [settingsRes, buyersRes, ordersRes, nonAvailNumbersRes, numStats, auditRes] = await Promise.all([
       db.execute('SELECT key, value, updated_at FROM settings ORDER BY key ASC'),
       db.execute('SELECT id, name, phone, created_at FROM buyers ORDER BY id ASC'),
       db.execute('SELECT * FROM orders ORDER BY id ASC'),
       db.execute("SELECT number, status, order_id, updated_at FROM numbers WHERE status != 'available' ORDER BY number ASC"),
-      db.execute(`
-        SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
-          SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END) as reserved,
-          SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END) as sold
-        FROM numbers
-      `),
+      getNumberStats(db),
       db.execute('SELECT id, admin_username, action, details, ip_address, created_at FROM audit_logs ORDER BY id DESC LIMIT 500')
     ]);
 
@@ -32,10 +25,10 @@ export async function GET(request: NextRequest) {
       generated_at: new Date().toISOString(),
       generated_by: admin.username,
       metrics: {
-        total_numbers: Number(statsRes.rows[0]?.total || 100000),
-        available_numbers: Number(statsRes.rows[0]?.available || 0),
-        reserved_numbers: Number(statsRes.rows[0]?.reserved || 0),
-        sold_numbers: Number(statsRes.rows[0]?.sold || 0),
+        total_numbers: numStats.total,
+        available_numbers: numStats.available,
+        reserved_numbers: numStats.reserved,
+        sold_numbers: numStats.sold,
         total_orders: ordersRes.rows.length,
         total_buyers: buyersRes.rows.length,
       },

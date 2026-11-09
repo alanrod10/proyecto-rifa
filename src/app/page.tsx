@@ -1,7 +1,7 @@
 import PublicPortalClient from '@/components/PublicPortalClient';
 import { getPublicSettingsAndStats } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 10;
 
 // Responsive classes for mobile and desktop design: sm: md: fixed bottom-0
 

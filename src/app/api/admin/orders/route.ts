@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, logAudit, releaseExpiredReservations } from '@/lib/db';
+import { getDb, logAudit, releaseExpiredReservations, invalidatePublicCache } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 import { safeJsonParse } from '@/lib/utils';
 
@@ -140,6 +140,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
     }
 
+    // Liberación reactiva sin throttle en todas las acciones sobre órdenes
+    await releaseExpiredReservations().catch(() => {});
+
     const db = getDb();
     const tx = await db.transaction('write');
 
@@ -207,6 +210,7 @@ export async function POST(request: NextRequest) {
         }
 
         await tx.commit();
+        invalidatePublicCache();
 
         await logAudit(
           admin.username,
@@ -265,6 +269,7 @@ export async function POST(request: NextRequest) {
         }
 
         await tx.commit();
+        invalidatePublicCache();
 
         await logAudit(
           admin.username,
@@ -303,6 +308,7 @@ export async function POST(request: NextRequest) {
         });
 
         await tx.commit();
+        invalidatePublicCache();
 
         await logAudit(
           admin.username,
@@ -359,6 +365,7 @@ export async function POST(request: NextRequest) {
         }
 
         await tx.commit();
+        invalidatePublicCache();
 
         await logAudit(
           admin.username,

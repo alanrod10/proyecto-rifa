@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDb, getSettings, releaseExpiredReservations } from '@/lib/db';
+import { getDb, getSettings, getNumberStats, releaseExpiredReservations } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 import { safeJsonParse } from '@/lib/utils';
 
@@ -17,20 +17,12 @@ export async function GET() {
     const settings = await getSettings();
     const currentPrice = Number(settings.ticket_price) || 100;
 
-    // 1. Estadísticas de Números
-    const numStatsRes = await db.execute(`
-      SELECT 
-        COUNT(*) as total_numbers,
-        COALESCE(SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END), 0) as available_numbers,
-        COALESCE(SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END), 0) as reserved_numbers,
-        COALESCE(SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END), 0) as sold_numbers
-      FROM numbers
-    `);
-    const numStats = numStatsRes.rows[0];
-    const availableNumbers = Number(numStats.available_numbers);
-    const reservedNumbers = Number(numStats.reserved_numbers);
-    const soldNumbers = Number(numStats.sold_numbers);
-    const totalNumbers = Number(numStats.total_numbers);
+    // 1. Estadísticas de Números (vía idx_numbers_status para 'sold' y 'reserved', sin escanear 100k filas)
+    const numStats = await getNumberStats(db);
+    const availableNumbers = numStats.available;
+    const reservedNumbers = numStats.reserved;
+    const soldNumbers = numStats.sold;
+    const totalNumbers = numStats.total;
 
     // 2. Estadísticas de Órdenes y Recaudación Real
     const orderStatsRes = await db.execute(`

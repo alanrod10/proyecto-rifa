@@ -57,6 +57,10 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
   const [availableNumbers, setAvailableNumbers] = useState<NumberItem[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingNumbers, setLoadingNumbers] = useState(false);
+  const [availableCursor, setAvailableCursor] = useState(0);
+  const [nextAvailableCursor, setNextAvailableCursor] = useState<number | null>(null);
+  const [hasMoreAvailable, setHasMoreAvailable] = useState(true);
+  const [cursorHistory, setCursorHistory] = useState<number[]>([]);
 
   // Búsqueda
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,17 +116,54 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
       return;
     }
 
-    if (gridFilter !== 'all') {
-      setGridFilter('all');
-    }
-
     const targetPage = Math.floor((parsed - 1) / 60) + 1;
-    setPage(targetPage);
+    if (gridFilter === 'available') {
+      setCursorHistory([]);
+      setAvailableCursor(parsed - 1);
+      setPage(targetPage);
+    } else {
+      setPage(targetPage);
+    }
     setHighlightedNumber(parsed);
 
     setTimeout(() => {
       setHighlightedNumber(null);
     }, 4000);
+  };
+
+  const handleFilterChange = (newFilter: 'all' | 'available') => {
+    setGridFilter(newFilter);
+    setPage(1);
+    setAvailableCursor(0);
+    setCursorHistory([]);
+  };
+
+  const handleNextPage = () => {
+    if (gridFilter === 'available') {
+      if (!hasMoreAvailable || nextAvailableCursor === null) return;
+      setCursorHistory(prev => [...prev, availableCursor]);
+      setAvailableCursor(nextAvailableCursor);
+      setPage(p => Math.min(totalPages, p + 1));
+    } else {
+      setPage(p => Math.min(totalPages, p + 1));
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (gridFilter === 'available') {
+      if (cursorHistory.length > 0) {
+        const prevCursor = cursorHistory[cursorHistory.length - 1];
+        setCursorHistory(prev => prev.slice(0, -1));
+        setAvailableCursor(prevCursor);
+        setPage(p => Math.max(1, p - 1));
+      } else if (availableCursor > 0) {
+        const prevCursor = Math.max(0, availableCursor - 60);
+        setAvailableCursor(prevCursor);
+        setPage(Math.floor(prevCursor / 60) + 1);
+      }
+    } else {
+      setPage(p => Math.max(1, p - 1));
+    }
   };
 
   // Cargar configuraciones y estadísticas iniciales
@@ -146,20 +187,31 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
     }
   };
 
-  // Cargar números por página y filtro
+  // Cargar números por página, filtro y cursor
   useEffect(() => {
-    loadPageNumbers(page, gridFilter);
-  }, [page, gridFilter]);
+    loadPageNumbers(page, gridFilter, availableCursor);
+  }, [page, gridFilter, availableCursor]);
 
-  const loadPageNumbers = async (pageNum: number, filterMode: 'all' | 'available' = gridFilter) => {
+  const loadPageNumbers = async (
+    pageNum: number,
+    filterMode: 'all' | 'available' = gridFilter,
+    cursorVal: number = availableCursor
+  ) => {
     try {
       setLoadingNumbers(true);
-      const res = await fetch(`/api/numbers?page=${pageNum}&limit=60&filter=${filterMode}`);
+      const url = filterMode === 'available'
+        ? `/api/numbers?page=${pageNum}&limit=60&filter=available&cursor=${cursorVal}`
+        : `/api/numbers?page=${pageNum}&limit=60&filter=all`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setAvailableNumbers(data.numbers || []);
         if (data.pagination) {
           setTotalPages(data.pagination.totalPages || 1);
+          if (filterMode === 'available') {
+            setNextAvailableCursor(data.pagination.nextCursor ?? null);
+            setHasMoreAvailable(Boolean(data.pagination.hasMore));
+          }
         }
       }
     } catch (err) {
@@ -724,7 +776,7 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
               <div className="inline-flex rounded-lg border border-slate-200 bg-surface p-0.5">
                 <button
                   type="button"
-                  onClick={() => { setGridFilter('all'); setPage(1); }}
+                  onClick={() => handleFilterChange('all')}
                   className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
                     gridFilter === 'all' ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-50'
                   }`}
@@ -733,7 +785,7 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setGridFilter('available'); setPage(1); }}
+                  onClick={() => handleFilterChange('available')}
                   className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
                     gridFilter === 'available' ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-50'
                   }`}
@@ -765,16 +817,16 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
 
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page <= 1 || loadingNumbers}
+                  onClick={handlePrevPage}
+                  disabled={(gridFilter === 'available' ? availableCursor <= 0 : page <= 1) || loadingNumbers}
                   className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <span className="px-2 font-medium">{page}</span>
                 <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages || loadingNumbers}
+                  onClick={handleNextPage}
+                  disabled={(gridFilter === 'available' ? !hasMoreAvailable : page >= totalPages) || loadingNumbers}
                   className="p-1 rounded bg-surface border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -831,8 +883,8 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
           {/* Paginación Inferior */}
           <div className="flex items-center justify-center gap-2 pt-4">
             <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1 || loadingNumbers}
+              onClick={handlePrevPage}
+              disabled={(gridFilter === 'available' ? availableCursor <= 0 : page <= 1) || loadingNumbers}
               className="text-xs px-3 py-1.5 rounded-lg bg-surface border border-slate-300 text-slate-700 disabled:opacity-40 font-medium hover:bg-slate-50 transition"
             >
               Anterior
@@ -841,8 +893,8 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
               Página {page} de {totalPages}
             </span>
             <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || loadingNumbers}
+              onClick={handleNextPage}
+              disabled={(gridFilter === 'available' ? !hasMoreAvailable : page >= totalPages) || loadingNumbers}
               className="text-xs px-3 py-1.5 rounded-lg bg-surface border border-slate-300 text-slate-700 disabled:opacity-40 font-medium hover:bg-slate-50 transition"
             >
               Siguiente

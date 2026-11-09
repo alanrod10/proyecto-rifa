@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, getSettings, releaseExpiredReservations } from '@/lib/db';
+import { getDb, getSettings, releaseExpiredReservations, invalidatePublicCache } from '@/lib/db';
 import { generateUniqueOrderCode, generatePrivateToken, cleanPhoneNumber } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
@@ -152,6 +152,7 @@ export async function POST(request: NextRequest) {
 
       // Confirmar transacción
       await tx.commit();
+      invalidatePublicCache();
 
       return NextResponse.json({
         success: true,

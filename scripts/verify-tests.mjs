@@ -440,6 +440,48 @@ async function runAllTests() {
     const usesJujuyTz = utilsContent.includes('America/Argentina/Jujuy');
     assert(usesIndexedRandom && usesJujuyTz, '25. Optimización Turso (sin ORDER BY RANDOM) y TZ Jujuy', `Muestreo por clave primaria indexada y zona horaria America/Argentina/Jujuy activa.`);
 
+    // -------------------------------------------------------------
+    // PRUEBA 26 (FASE 1): Estadísticas indexadas, caché, throttle y paginación BETWEEN/cursor
+    // -------------------------------------------------------------
+    const dbContent = fs.readFileSync(path.join(process.cwd(), 'src/lib/db.ts'), 'utf-8');
+    const dashboardContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/dashboard/route.ts'), 'utf-8');
+    const backupContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/backup/route.ts'), 'utf-8');
+    const settingsRouteContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/settings/route.ts'), 'utf-8');
+    const directSaleContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/direct-sale/route.ts'), 'utf-8');
+
+    const noFullTableCaseScan =
+      !dbContent.includes("SUM(CASE WHEN status = 'available'") &&
+      !dashboardContent.includes("SUM(CASE WHEN status = 'available'") &&
+      !backupContent.includes("SUM(CASE WHEN status = 'available'");
+
+    const [soldIdxRes, resIdxRes] = await Promise.all([
+      newClient.execute("SELECT COUNT(*) as count FROM numbers WHERE status = 'sold'"),
+      newClient.execute("SELECT COUNT(*) as count FROM numbers WHERE status = 'reserved'")
+    ]);
+    const derivedAvail = 100000 - Number(soldIdxRes.rows[0].count) - Number(resIdxRes.rows[0].count);
+
+    const rangeRes = await newClient.execute({
+      sql: 'SELECT number, status FROM numbers WHERE number BETWEEN ? AND ? ORDER BY number ASC',
+      args: [61, 120]
+    });
+    const cursorRes = await newClient.execute({
+      sql: "SELECT number, status FROM numbers WHERE status = 'available' AND number > ? ORDER BY number ASC LIMIT ?",
+      args: [1500, 10]
+    });
+    const cursorSkipsSold = cursorRes.rows.every(r => Number(r.number) > 1503 && r.status === 'available');
+    const hasCacheAndThrottle =
+      pageContent.includes('revalidate = 10') &&
+      settingsRouteContent.includes('PUBLIC_CACHE_CONTROL') &&
+      numbersRouteContent.includes('PUBLIC_CACHE_CONTROL') &&
+      numbersRouteContent.includes('releaseExpiredReservationsThrottled') &&
+      directSaleContent.includes('releaseExpiredReservations');
+
+    assert(
+      noFullTableCaseScan && derivedAvail > 99990 && rangeRes.rows.length === 60 && cursorSkipsSold && hasCacheAndThrottle,
+      '26. Fase 1: Lecturas indexadas Turso, caché 10s, throttle 60s y paginación BETWEEN/cursor',
+      `Disponibles derivados: ${derivedAvail}, rango BETWEEN: ${rangeRes.rows.length} filas, cursor post-1500 primer libre: ${cursorRes.rows[0]?.number}`
+    );
+
     newClient.close();
   } catch (err) {
     console.error('Error fatal durante las pruebas:', err);
@@ -451,7 +493,7 @@ async function runAllTests() {
   }
 
   console.log('\n================================================================');
-  console.log(`RESUMEN DE PRUEBAS: ${passedCount} PASADAS, ${failedCount} FALLADAS DE 25`);
+  console.log(`RESUMEN DE PRUEBAS: ${passedCount} PASADAS, ${failedCount} FALLADAS DE ${passedCount + failedCount}`);
   console.log('================================================================');
 
   if (failedCount > 0) {

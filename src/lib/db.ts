@@ -1,5 +1,10 @@
-import { createClient, Client } from '@libsql/client';
+import { createClient, Client, Transaction } from '@libsql/client';
 import path from 'path';
+import {
+  TOTAL_NUMBERS,
+  PUBLIC_CACHE_TTL_MS,
+  EXPIRY_THROTTLE_MS,
+} from '@/lib/constants';
 
 let clientInstance: Client | null = null;
 
@@ -82,24 +87,82 @@ export async function getSettings(): Promise<SettingsMap> {
   return defaults;
 }
 
+export interface NumberStats {
+  total: number;
+  available: number;
+  reserved: number;
+  sold: number;
+}
+
 /**
- * Obtiene las configuraciones públicas y estadísticas consolidadas en una sola llamada
+ * Calcula las estadísticas de números usando idx_numbers_status (solo lee filas 'sold' y 'reserved')
+ * y deriva available = TOTAL_NUMBERS - reserved - sold.
  */
-export async function getPublicSettingsAndStats() {
-  await releaseExpiredReservations().catch(() => {});
-  const settings = await getSettings();
-  const db = getDb();
-  const statsRes = await db.execute(`
-    SELECT 
-      COUNT(*) as total,
-      COALESCE(SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END), 0) as available,
-      COALESCE(SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END), 0) as reserved,
-      COALESCE(SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END), 0) as sold
-    FROM numbers
-  `);
-  const stats = statsRes.rows[0];
+export async function getNumberStats(dbOrTx?: Client | Transaction): Promise<NumberStats> {
+  const executor = dbOrTx || getDb();
+  const [soldRes, reservedRes] = await Promise.all([
+    executor.execute("SELECT COUNT(*) as count FROM numbers WHERE status = 'sold'"),
+    executor.execute("SELECT COUNT(*) as count FROM numbers WHERE status = 'reserved'"),
+  ]);
+  const sold = Number(soldRes.rows[0]?.count || 0);
+  const reserved = Number(reservedRes.rows[0]?.count || 0);
+  const available = Math.max(0, TOTAL_NUMBERS - reserved - sold);
 
   return {
+    total: TOTAL_NUMBERS,
+    available,
+    reserved,
+    sold,
+  };
+}
+
+type PublicSettingsAndStatsResult = {
+  settings: {
+    raffle_badge: string;
+    raffle_name: string;
+    raffle_description: string;
+    ticket_price: number;
+    prizes: string;
+    draw_date: string;
+    bank_alias: string;
+    bank_cbu: string;
+    bank_name: string;
+    bank_holder: string;
+    contact_phone: string;
+    contact_phone_secondary: string;
+    reserve_hours: number;
+    public_reservations_enabled: boolean;
+    rules_terms: string;
+  };
+  stats: NumberStats;
+};
+
+let publicStatsCache: {
+  data: PublicSettingsAndStatsResult;
+  expiresAt: number;
+} | null = null;
+
+export function invalidatePublicCache(): void {
+  publicStatsCache = null;
+}
+
+/**
+ * Obtiene las configuraciones públicas y estadísticas consolidadas con caché en memoria de 10 s por instancia
+ */
+export async function getPublicSettingsAndStats(): Promise<PublicSettingsAndStatsResult> {
+  await releaseExpiredReservationsThrottled().catch(() => {});
+
+  const now = Date.now();
+  if (publicStatsCache && publicStatsCache.expiresAt > now) {
+    return publicStatsCache.data;
+  }
+
+  const [settings, stats] = await Promise.all([
+    getSettings(),
+    getNumberStats(),
+  ]);
+
+  const data: PublicSettingsAndStatsResult = {
     settings: {
       raffle_badge: settings.raffle_badge || 'Objetivo solidario: Pro Terreno Familiar',
       raffle_name: settings.raffle_name || 'Gran Rifa Familiar pro Terreno',
@@ -117,13 +180,15 @@ export async function getPublicSettingsAndStats() {
       public_reservations_enabled: settings.public_reservations_enabled === 'true',
       rules_terms: settings.rules_terms || '',
     },
-    stats: {
-      total: Number(stats?.total) || 100000,
-      available: Number(stats?.available) || 0,
-      reserved: Number(stats?.reserved) || 0,
-      sold: Number(stats?.sold) || 0,
-    }
+    stats,
   };
+
+  publicStatsCache = {
+    data,
+    expiresAt: Date.now() + PUBLIC_CACHE_TTL_MS,
+  };
+
+  return data;
 }
 
 /**
@@ -147,12 +212,27 @@ export async function logAudit(
   }
 }
 
+let lastExpiryCheckAt = 0;
+
+/**
+ * Ejecuta releaseExpiredReservations como máximo una vez cada 60 s por instancia (para GET públicos).
+ */
+export async function releaseExpiredReservationsThrottled(): Promise<{ releasedOrdersCount: number; releasedNumbersCount: number }> {
+  const now = Date.now();
+  if (now - lastExpiryCheckAt < EXPIRY_THROTTLE_MS) {
+    return { releasedOrdersCount: 0, releasedNumbersCount: 0 };
+  }
+  lastExpiryCheckAt = now;
+  return releaseExpiredReservations();
+}
+
 /**
  * Libera de forma atómica y segura las reservas vencidas sin requerir un cron externo pago.
  * Realiza tanto la lectura como la liberación dentro de la misma transacción de escritura,
  * verificando que la orden siga 'pending' y los números sigan 'reserved'.
  */
 export async function releaseExpiredReservations(): Promise<{ releasedOrdersCount: number; releasedNumbersCount: number }> {
+  lastExpiryCheckAt = Date.now();
   const db = getDb();
 
   // Verificación rápida de lectura para evitar abrir transacciones innecesarias cuando no hay vencidos
@@ -212,6 +292,7 @@ export async function releaseExpiredReservations(): Promise<{ releasedOrdersCoun
     await tx.commit();
 
     if (releasedOrdersCount > 0) {
+      invalidatePublicCache();
       await logAudit('SYSTEM_AUTO_CLEAN', 'EXPIRE_RESERVATIONS', {
         orderIds,
         releasedOrdersCount,

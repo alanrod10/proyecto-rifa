@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, getSettings, releaseExpiredReservations } from '@/lib/db';
+import { getDb, getSettings, releaseExpiredReservationsThrottled } from '@/lib/db';
 import { safeJsonParse } from '@/lib/utils';
 
 export async function GET(
@@ -14,8 +14,8 @@ export async function GET(
       return NextResponse.json({ error: 'Código o enlace de consulta inválido' }, { status: 400 });
     }
 
-    // Liberación reactiva
-    await releaseExpiredReservations().catch(() => {});
+    // Liberación reactiva con throttle en GET público
+    await releaseExpiredReservationsThrottled().catch(() => {});
 
     const db = getDb();
 
