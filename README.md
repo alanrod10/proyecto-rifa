@@ -69,38 +69,48 @@ Proyecto RIFA/
 ├── scripts/                     # Utilidades operativas y de mantenimiento
 │   ├── backup.mjs               # Generación de copia de seguridad WAL / Turso
 │   ├── change-admin-password.mjs# Cambio interactivo de contraseña por consola
-│   ├── init-db.mjs              # Inicialización de esquema y siembra de 80.000 números
+│   ├── init-db.mjs              # Inicialización de esquema y siembra de 100.000 números
+│   ├── migrate-schema-v2.mjs    # Migración idempotente de esquema (request_id, rate_limits, settings)
 │   ├── migrate-to-turso.mjs     # Asistente de sincronización a Turso Cloud
 │   ├── restore.mjs              # Restauración de copias (.db o .json)
-│   └── verify-tests.mjs         # Suite de 25 pruebas automatizadas en sandbox
+│   └── verify-tests.mjs         # Suite de pruebas automatizadas en sandbox
 ├── src/
 │   ├── app/                     # Rutas y páginas (Next.js App Router)
-│   │   ├── admin/               # Panel administrativo y submódulos
+│   │   ├── admin/               # Panel administrativo y submódulos (noindex + middleware JWT)
 │   │   │   ├── auditoria/       # Registro de auditoría
 │   │   │   ├── compradores/     # Directorio telefónico de compradores
-│   │   │   ├── configuracion/   # Ajustes de sorteo, contraseñas y backups
-│   │   │   ├── login/           # Acceso seguro al panel
-│   │   │   ├── numeros/         # Buscador global de los 80.000 números
-│   │   │   ├── solicitudes/     # Gestión y confirmación de pedidos web
+│   │   │   ├── configuracion/   # Ajustes de sorteo, topes operativos, contraseñas y backups
+│   │   │   ├── login/           # Acceso seguro al panel (ventana de bloqueo de 15 min)
+│   │   │   ├── numeros/         # Buscador global de los 100.000 números
+│   │   │   ├── solicitudes/     # Gestión y confirmación (individual y en lote) de pedidos web
 │   │   │   └── ventas/          # Registro de ventas presenciales directas
 │   │   ├── api/                 # Endpoints REST y Route Handlers
 │   │   │   ├── admin/           # APIs protegidas del panel
-│   │   │   ├── numbers/         # Consulta paginada y números aleatorios
-│   │   │   ├── orders/          # Detalle privado de pedido por token
-│   │   │   ├── reservations/    # Creación transaccional de reservas
-│   │   │   └── settings/        # Configuraciones públicas y estadísticas
-│   │   ├── consultar/           # Búsqueda pública por código de pedido
+│   │   │   ├── numbers/         # Consulta paginada (BETWEEN / cursor), caché 10s y azar
+│   │   │   ├── orders/          # Detalle de pedido (vista completa por token / enmascarada por código)
+│   │   │   ├── reservations/    # Creación transaccional idempotente con rate limiting
+│   │   │   └── settings/        # Configuraciones públicas y estadísticas cacheadas (TTL 10s)
+│   │   ├── consultar/           # Búsqueda pública por código de pedido (noindex)
 │   │   ├── pedido/[token]/      # Comprobante digital privado
 │   │   ├── globals.css          # Variables semánticas, Tailwind v4 y temas
 │   │   ├── layout.tsx           # Layout raíz con script anti-flicker de tema
-│   │   └── page.tsx             # Portada pública y selector de números
+│   │   └── page.tsx             # Portada pública con ISR revalidate = 10
 │   ├── components/
+│   │   ├── admin/               # Secciones modulares del panel administrativo
+│   │   ├── portal/              # NumberGrid, SelectionCart, ReservationForm, PaymentInstructions
+│   │   ├── PublicPortalClient.tsx # Orquestador del portal público
 │   │   └── ThemeToggle.tsx      # Selector de tema oscuro/claro
-│   └── lib/
-│       ├── auth.ts              # Utilidades de autenticación JWT y bcrypt
-│       ├── db.ts                # Conexión LibSQL/SQLite y auditoría
-│       ├── schema.sql           # Esquema DDL con índices optimizados
-│       └── utils.ts             # Normalización de celulares, fechas y códigos
+│   ├── hooks/
+│   │   ├── useCopy.ts           # Hook único useCopyToClipboard
+│   │   └── useNumbers.ts        # Hook de grilla, cursor, búsqueda y selección
+│   ├── lib/
+│   │   ├── auth.ts              # Utilidades de autenticación JWT y bcrypt
+│   │   ├── constants.ts         # Constantes únicas (TOTAL_NUMBERS, teléfonos y defaults)
+│   │   ├── db.ts                # Conexión LibSQL/SQLite, caché 10s, rate limiting y auditoría
+│   │   ├── schema.sql           # Esquema DDL con índices optimizados
+│   │   ├── types.ts             # Tipos TypeScript compartidos
+│   │   └── utils.ts             # Normalización de celulares, fechas, máscaras y códigos
+│   └── middleware.ts            # Protección perimetral JWT para /admin/*
 ├── .env.example                 # Plantilla documental de variables de entorno
 ├── ARCHITECTURE.md              # Documentación de arquitectura técnica
 ├── AUDITORIA_PRELANZAMIENTO.md  # Informe de auditoría técnica y regulatoria
@@ -169,7 +179,8 @@ Proyecto RIFA/
 | `npm run start` | Inicia el servidor optimizado tras la compilación de producción. |
 | `npm run lint` | Ejecuta el análisis de linter de Next.js y TypeScript. |
 | `npm run seed` | Inicializa el esquema DDL y puebla los 100.000 números (`scripts/init-db.mjs`). |
-| `npm test` | Ejecuta la suite de **25 pruebas de verificación** en sandbox aislado (`scripts/verify-tests.mjs`). |
+| `npm run migrate:schema` | Aplica la migración idempotente de esquema (`scripts/migrate-schema-v2.mjs`). |
+| `npm test` | Ejecuta la suite de pruebas de verificación en sandbox aislado (`scripts/verify-tests.mjs`). |
 | `npm run backup` | Genera una copia de seguridad SQLite (`.db`) y un volcado JSON en `backups/`. |
 | `npm run restore` | Restaura el último respaldo o un archivo específico previo control de integridad. |
 | `npm run change-password` | Ejecuta la herramienta de cambio interactivo y enmascarado de contraseña. |

@@ -547,6 +547,69 @@ async function runAllTests() {
       `rate_limits count=${rlRes.rows[0]?.count}, UNIQUE(request_id)=${uniqueReqEnforced}, settings=2000/1000, máscara ***1234 activa`
     );
 
+    // -------------------------------------------------------------
+    // PRUEBA 28 (FASE 3): Modularización (<400 líneas), constants/types/useCopy, gitignore, viewport/inputs, noindex y middleware JWT
+    // -------------------------------------------------------------
+    const requiredModules = [
+      'src/components/portal/NumberGrid.tsx',
+      'src/components/portal/SelectionCart.tsx',
+      'src/components/portal/ReservationForm.tsx',
+      'src/components/portal/PaymentInstructions.tsx',
+      'src/hooks/useNumbers.ts',
+      'src/hooks/useCopy.ts',
+      'src/lib/constants.ts',
+      'src/lib/types.ts',
+      'src/middleware.ts',
+      'src/app/consultar/layout.tsx',
+      'src/app/admin/layout.tsx',
+    ];
+    const allModulesExist = requiredModules.every((p) =>
+      fs.existsSync(path.join(process.cwd(), p))
+    );
+
+    function listFilesRecursive(dir) {
+      let out = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) out = out.concat(listFilesRecursive(full));
+        else out.push(full);
+      }
+      return out;
+    }
+    const srcFiles = listFilesRecursive(path.join(process.cwd(), 'src'));
+    const oversizedFiles = srcFiles.filter(
+      (f) => fs.readFileSync(f, 'utf-8').split('\n').length > 400
+    );
+
+    const gitignoreContent = fs.readFileSync(path.join(process.cwd(), '.gitignore'), 'utf-8');
+    const layoutRootContent = fs.readFileSync(path.join(process.cwd(), 'src/app/layout.tsx'), 'utf-8');
+    const globalsCssContent = fs.readFileSync(path.join(process.cwd(), 'src/app/globals.css'), 'utf-8');
+    const consultarLayoutContent = fs.readFileSync(path.join(process.cwd(), 'src/app/consultar/layout.tsx'), 'utf-8');
+    const adminLayoutContent = fs.readFileSync(path.join(process.cwd(), 'src/app/admin/layout.tsx'), 'utf-8');
+    const middlewareContent = fs.readFileSync(path.join(process.cwd(), 'src/middleware.ts'), 'utf-8');
+    const constantsContent = fs.readFileSync(path.join(process.cwd(), 'src/lib/constants.ts'), 'utf-8');
+    const useCopyContent = fs.readFileSync(path.join(process.cwd(), 'src/hooks/useCopy.ts'), 'utf-8');
+
+    const fase3Checks =
+      allModulesExist &&
+      oversizedFiles.length === 0 &&
+      gitignoreContent.includes('*.tsbuildinfo') &&
+      !layoutRootContent.includes('maximumScale') &&
+      globalsCssContent.includes('16px') &&
+      consultarLayoutContent.includes('index: false') &&
+      adminLayoutContent.includes('index: false') &&
+      middlewareContent.includes('jwtVerify') &&
+      middlewareContent.includes('rifa_admin_session') &&
+      constantsContent.includes('DEFAULT_CONTACT_PHONE') &&
+      constantsContent.includes('DEFAULT_SETTINGS') &&
+      useCopyContent.includes('useCopyToClipboard');
+
+    assert(
+      fase3Checks,
+      '28. Fase 3: Archivos <= 400 líneas, componentes/hooks modulares, .gitignore tsbuildinfo, sin maximum-scale=1, noindex y middleware JWT',
+      `Archivos src verificados: ${srcFiles.length} (excedidos >400: ${oversizedFiles.length}), middleware JWT y noindex activos`
+    );
+
     newClient.close();
   } catch (err) {
     console.error('Error fatal durante las pruebas:', err);

@@ -1,10 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { 
-  Settings, Save, CheckCircle, AlertTriangle, RefreshCw, 
-  DollarSign, Clock, Shield, Sparkles, Landmark, Phone, Lock, Download, Database
+import {
+  Save,
+  CheckCircle,
+  AlertTriangle,
+  RefreshCw,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
+import {
+  DEFAULT_CONTACT_PHONE,
+  DEFAULT_CONTACT_PHONE_SECONDARY,
+  DEFAULT_MAX_NUMBERS_PER_ORDER,
+  DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE,
+} from '@/lib/constants';
+import AdminBankSettingsSection from '@/components/admin/AdminBankSettingsSection';
+import AdminSecurityAndBackups from '@/components/admin/AdminSecurityAndBackups';
 
 interface SettingsData {
   raffle_badge: string;
@@ -38,12 +50,12 @@ export default function AdminConfiguracionPage() {
     bank_cbu: '',
     bank_name: '',
     bank_holder: '',
-    contact_phone: '3884152040',
-    contact_phone_secondary: '3884141514',
+    contact_phone: DEFAULT_CONTACT_PHONE,
+    contact_phone_secondary: DEFAULT_CONTACT_PHONE_SECONDARY,
     reserve_hours: '48',
     public_reservations_enabled: 'true',
-    max_numbers_per_order: '2000',
-    max_pending_numbers_per_phone: '1000',
+    max_numbers_per_order: String(DEFAULT_MAX_NUMBERS_PER_ORDER),
+    max_pending_numbers_per_phone: String(DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE),
     rules_terms: '',
   });
 
@@ -52,21 +64,13 @@ export default function AdminConfiguracionPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Estado para cambio de contraseña desde el panel web
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [pwdFeedback, setPwdFeedback] = useState<string | null>(null);
-  const [pwdError, setPwdError] = useState<string | null>(null);
-
   const fetchSettings = async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/admin/settings');
       if (res.ok) {
         const data = await res.json();
-        setFormData(prev => ({ ...prev, ...data.settings }));
+        setFormData((prev) => ({ ...prev, ...data.settings }));
       }
     } catch (err) {
       console.error('Error al cargar configuración:', err);
@@ -79,9 +83,11 @@ export default function AdminConfiguracionPage() {
     fetchSettings();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,11 +100,13 @@ export default function AdminConfiguracionPage() {
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (res.ok) {
-        setFeedback('¡Configuración guardada exitosamente! Los cambios ya son visibles en el portal público.');
+        setFeedback(
+          '¡Configuración guardada exitosamente! Los cambios ya son visibles en el portal público.'
+        );
         setFormData(data.settings);
       } else {
         setError(data.error || 'Error al guardar la configuración.');
@@ -110,59 +118,22 @@ export default function AdminConfiguracionPage() {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPwdFeedback(null);
-    setPwdError(null);
-
-    if (newPassword.length < 8) {
-      setPwdError('La nueva contraseña debe tener al menos 8 caracteres.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPwdError('La confirmación de la nueva contraseña no coincide.');
-      return;
-    }
-
-    try {
-      setChangingPassword(true);
-      const res = await fetch('/api/admin/auth/password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          current_password: currentPassword,
-          new_password: newPassword,
-          confirm_password: confirmPassword
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPwdFeedback(data.message || 'Contraseña actualizada correctamente.');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        setPwdError(data.error || 'No se pudo actualizar la contraseña.');
-      }
-    } catch {
-      setPwdError('Error de conexión al cambiar la contraseña.');
-    } finally {
-      setChangingPassword(false);
-    }
-  };
-
   if (loading) {
-    return <div className="py-20 text-center text-xs text-slate-400">Cargando configuración...</div>;
+    return (
+      <div className="py-20 text-center text-xs text-slate-400">Cargando configuración...</div>
+    );
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Configuración de la Rifa</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            Configuración de la Rifa
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Ajustá precios, premios, fechas bancarias, respaldos y tu contraseña directamente desde la web.
+            Ajustá precios, premios, fechas bancarias, respaldos y tu contraseña directamente desde
+            la web.
           </p>
         </div>
 
@@ -181,7 +152,12 @@ export default function AdminConfiguracionPage() {
             <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <span>{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-emerald-900 font-bold ml-2">×</button>
+          <button
+            onClick={() => setFeedback(null)}
+            className="text-emerald-900 font-bold ml-2"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -193,7 +169,6 @@ export default function AdminConfiguracionPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* BLOQUE 1: INFORMACIÓN PÚBLICA PRINCIPAL */}
         <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-brand-link" />
@@ -211,7 +186,7 @@ export default function AdminConfiguracionPage() {
                 placeholder="Ej: Objetivo solidario: Pro Terreno Familiar"
                 value={formData.raffle_badge}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
               <span className="text-[11px] text-slate-400 mt-0.5 block">
                 Texto de la insignia destacada con icono de estrella en la portada.
@@ -228,7 +203,7 @@ export default function AdminConfiguracionPage() {
                   name="raffle_name"
                   value={formData.raffle_name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -243,7 +218,7 @@ export default function AdminConfiguracionPage() {
                   name="ticket_price"
                   value={formData.ticket_price}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-brand-link focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm font-bold text-brand-link focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
                 <span className="text-[11px] text-slate-400 mt-0.5 block">
                   Las órdenes ya emitidas conservan su precio histórico.
@@ -260,7 +235,7 @@ export default function AdminConfiguracionPage() {
                 rows={2}
                 value={formData.raffle_description}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
           </div>
@@ -275,7 +250,7 @@ export default function AdminConfiguracionPage() {
                 rows={3}
                 value={formData.prizes}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
 
@@ -288,13 +263,12 @@ export default function AdminConfiguracionPage() {
                 rows={3}
                 value={formData.draw_date}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
           </div>
         </div>
 
-        {/* BLOQUE 2: CONDICIONES DE RESERVAS */}
         <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
             <Clock className="w-4 h-4 text-brand-link" />
@@ -313,7 +287,7 @@ export default function AdminConfiguracionPage() {
                 name="reserve_hours"
                 value={formData.reserve_hours}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
               <span className="text-[11px] text-slate-400 mt-0.5 block">
                 Tiempo que el comprador tiene para enviar comprobante antes de liberar el número.
@@ -328,10 +302,12 @@ export default function AdminConfiguracionPage() {
                 name="public_reservations_enabled"
                 value={formData.public_reservations_enabled}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               >
                 <option value="true">Abierta (Cualquiera puede solicitar números)</option>
-                <option value="false">Pausada (Solo consulta, no se aceptan nuevas reservas)</option>
+                <option value="false">
+                  Pausada (Solo consulta, no se aceptan nuevas reservas)
+                </option>
               </select>
             </div>
 
@@ -346,10 +322,10 @@ export default function AdminConfiguracionPage() {
                 name="max_numbers_per_order"
                 value={formData.max_numbers_per_order}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
               <span className="text-[11px] text-slate-400 mt-0.5 block">
-                Tope de boletos que un comprador puede solicitar en una misma operación (por defecto 2000).
+                Tope de boletos por operación (por defecto {DEFAULT_MAX_NUMBERS_PER_ORDER}).
               </span>
             </div>
 
@@ -364,10 +340,11 @@ export default function AdminConfiguracionPage() {
                 name="max_pending_numbers_per_phone"
                 value={formData.max_pending_numbers_per_phone}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
               <span className="text-[11px] text-slate-400 mt-0.5 block">
-                Tope acumulado de boletos en estado pendiente para un mismo celular (por defecto 1000).
+                Tope acumulado en espera de pago por celular (por defecto{' '}
+                {DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE}).
               </span>
             </div>
           </div>
@@ -381,121 +358,21 @@ export default function AdminConfiguracionPage() {
               rows={3}
               value={formData.rules_terms}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-sans"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-sans"
             />
           </div>
         </div>
 
-        {/* BLOQUE 3: DATOS BANCARIOS Y CONTACTO WHATSAPP */}
-        <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-            <Landmark className="w-4 h-4 text-brand-link" />
-            Datos Bancarios para Transferencias e Instrucciones
-          </h3>
+        <AdminBankSettingsSection
+          bankAlias={formData.bank_alias}
+          bankCbu={formData.bank_cbu}
+          bankName={formData.bank_name}
+          bankHolder={formData.bank_holder}
+          contactPhone={formData.contact_phone}
+          contactPhoneSecondary={formData.contact_phone_secondary}
+          onChange={handleChange}
+        />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Alias Bancario
-              </label>
-              <input
-                type="text"
-                placeholder="ej: MI.RIFA.LOTE"
-                name="bank_alias"
-                value={formData.bank_alias}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono text-brand-link font-bold focus:ring-2 focus:ring-brand-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                CBU / CVU
-              </label>
-              <input
-                type="text"
-                placeholder="22 dígitos"
-                name="bank_cbu"
-                value={formData.bank_cbu}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Banco / Entidad
-              </label>
-              <input
-                type="text"
-                placeholder="ej: Banco Nación / Mercado Pago"
-                name="bank_name"
-                value={formData.bank_name}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Titular de la Cuenta
-              </label>
-              <input
-                type="text"
-                placeholder="Nombre del titular"
-                name="bank_holder"
-                value={formData.bank_holder}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Celular de Contacto 1 — Alan (WhatsApp, sin 54)
-              </label>
-              <div className="flex items-center">
-                <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-xs font-mono font-bold text-slate-600 select-none">
-                  +54
-                </span>
-                <input
-                  type="tel"
-                  placeholder="ej: 3884152040"
-                  name="contact_phone"
-                  value={formData.contact_phone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Celular de Contacto 2 — Yilda (WhatsApp, sin 54)
-              </label>
-              <div className="flex items-center">
-                <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-xs font-mono font-bold text-slate-600 select-none">
-                  +54
-                </span>
-                <input
-                  type="tel"
-                  placeholder="ej: 3884141514"
-                  name="contact_phone_secondary"
-                  value={formData.contact_phone_secondary}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-r-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-          <span className="text-[11px] text-slate-400 block">
-            Ambos contactos (Alan y Yilda) se muestran en el portal público y en los comprobantes digitales.
-          </span>
-        </div>
-
-        {/* Botón Guardar Cambios */}
         <div className="flex justify-end pt-2">
           <button
             type="submit"
@@ -508,129 +385,7 @@ export default function AdminConfiguracionPage() {
         </div>
       </form>
 
-      {/* BLOQUE 4: CAMBIO DE CONTRASEÑA DESDE EL PANEL WEB */}
-      <form onSubmit={handlePasswordChange} className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <Lock className="w-4 h-4 text-brand-link" />
-          Seguridad de Mi Cuenta — Cambiar Contraseña
-        </h3>
-        <p className="text-xs text-slate-500">
-          Actualizá tu contraseña de administrador directamente en la base de datos en la nube (Turso).
-        </p>
-
-        {pwdFeedback && (
-          <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-semibold">
-            <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span>{pwdFeedback}</span>
-          </div>
-        )}
-
-        {pwdError && (
-          <div className="p-3 bg-red-50 border border-red-300 text-red-800 text-xs rounded-xl flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-            <span>{pwdError}</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Contraseña Actual *
-            </label>
-            <input
-              type="password"
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Nueva Contraseña (mín. 8 caracteres) *
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Confirmar Nueva Contraseña *
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={changingPassword}
-            className="bg-night-800 hover:bg-night-700 border border-night-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow flex items-center gap-2 disabled:opacity-50"
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>{changingPassword ? 'Actualizando...' : 'Actualizar Mi Contraseña'}</span>
-          </button>
-        </div>
-      </form>
-
-      {/* BLOQUE 5: RESPALDOS EN LA NUBE Y EXPORTACIÓN */}
-      <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <Database className="w-4 h-4 text-brand-link" />
-          Copias de Seguridad en la Nube y Exportación para Excel
-        </h3>
-        <p className="text-xs text-slate-500">
-          Descargá un respaldo completo en vivo desde Turso o exportá planillas CSV protegidas para abrir en Excel.
-        </p>
-
-        <div className="flex flex-wrap gap-3 pt-1">
-          <a
-            href="/api/admin/backup"
-            className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-            <span>Descargar Respaldo Completo (.JSON)</span>
-          </a>
-
-          <a
-            href="/api/admin/export?type=orders"
-            className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Exportar Pedidos (.CSV)</span>
-          </a>
-
-          <a
-            href="/api/admin/export?type=buyers"
-            className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Exportar Compradores (.CSV)</span>
-          </a>
-
-          <a
-            href="/api/admin/export?type=sold_numbers"
-            className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Exportar Números Ocupados (.CSV)</span>
-          </a>
-        </div>
-      </div>
+      <AdminSecurityAndBackups />
     </div>
   );
 }

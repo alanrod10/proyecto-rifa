@@ -1,26 +1,6 @@
 @import "tailwindcss";
 
-/*
- * SISTEMA DE DISEÑO — Proyecto RIFA
- * ---------------------------------------------------------------
- * Tema oscuro (por defecto) y claro. Se controla con el atributo
- * `data-theme` en <html> (ver ThemeToggle y el script de layout.tsx).
- *
- * Tokens semánticos propios: --background, --surface, --text-*,
- *   --border-subtle, --primary*, --accent-warm, --accent-cool, --focus.
- *
- * Las clases de utilidad existentes (slate / emerald / amber / red /
- * blue / purple) se re-mapean aquí mediante variables, de modo que
- * TODA la interfaz cambia de tema sin editar componente por componente:
- *   slate   → neutros (invertidos en oscuro)
- *   brand   → azul eléctrico (acción principal)
- *   emerald → éxito / pagado (verde)
- *   amber   → terracota (cálido: reservado / pendiente / premios)
- *   blue    → turquesa (acento secundario / información)
- *   red     → error / destructivo (rojo, distinto de la terracota)
- *   night   → azul noche constante (cabeceras, pies y paneles oscuros)
- *   surface → superficie de tarjetas / campos
- */
+/* Sistema de Diseño — Proyecto RIFA (temas claro y oscuro con data-theme) */
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
@@ -347,6 +327,7 @@ body {
   textarea {
     background-color: var(--surface);
     color: var(--text-primary);
+    font-size: max(16px, 1em);
   }
 
   input:disabled,
@@ -393,29 +374,14 @@ html.theme-transition *::after {
 }
 
 /* Barras de desplazamiento */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-slate-100);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-slate-300);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-slate-400);
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--color-slate-100); }
+::-webkit-scrollbar-thumb { background: var(--color-slate-300); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-slate-400); }
 
 /* Movimiento reducido */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

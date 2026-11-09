@@ -42,14 +42,19 @@ Se realizó una auditoría técnica integral sobre la arquitectura, el código f
   1. **Web:** Sección *Seguridad de Mi Cuenta* en `/admin/configuracion`.
   2. **Consola:** Script interactivo `scripts/change-admin-password.mjs` (`npm run change-password <usuario>`) con entrada enmascarada para no dejar registros en el historial del shell (`~/.bash_history` o `ps aux`).
 
-### B. Sesiones Administrativas
+### B. Sesiones Administrativas y Middleware
 - Generadas mediante tokens JWT firmados con el algoritmo HS256 a través de la librería `jose`.
 - Almacenadas en cookies `httpOnly`, con directiva `SameSite=Lax` y vigencia de 7 días.
 - La firma depende de la variable de entorno `ADMIN_SECRET_KEY` (mínimo 32 caracteres criptográficos).
+- `src/middleware.ts` protege perimetralmente `/admin/*` (excepto `/admin/login`) verificando el JWT antes de renderizar, manteniendo `getCurrentAdmin()` en todas las APIs administrativas.
 
-### C. Rate Limiting contra Ataques de Fuerza Bruta
-- El endpoint `/api/admin/auth/login` registra cada intento fallido en `audit_logs` con la acción `ADMIN_LOGIN_FAILED`.
-- Si se acumulan más de 5 fallos en una ventana de 10 minutos para una misma IP o cuenta, el servidor responde automáticamente con un código `HTTP 429 Too Many Requests`.
+### C. Rate Limiting, Idempotencia y Topes Antiabuso
+- **Login (`/api/admin/auth/login`):** Registra cada intento fallido en `audit_logs` con la acción `ADMIN_LOGIN_FAILED`. Si se acumulan 5 o más fallos en una ventana de **15 minutos** para una misma IP o cuenta, responde `HTTP 429 Too Many Requests`.
+- **Reservas y Consultas Públicas (`rate_limits`):** Limita `POST /api/reservations` a 5 solicitudes cada 10 minutos por IP y `GET /api/orders/[token]` a 30 consultas cada 10 minutos por IP (`x-forwarded-for`).
+- **Idempotencia (`orders.request_id`):** Cada intento de reserva envía un UUID `client_request_id` con índice `UNIQUE`; los reintentos devuelven el pedido existente con `HTTP 200`.
+- **Topes Configurables:** `max_numbers_per_order` (default 2000) y `max_pending_numbers_per_phone` (default 1000) validados transaccionalmente.
+- **Privacidad en Consulta por Código Corto:** La consulta por código corto (`RF-XXXXXX`) enmascara el teléfono (`***1234`) y omite `private_token`.
+- **Optimización de Lecturas a Turso y Caché:** Contadores por índice (`idx_numbers_status`), caché de 10 s (`s-maxage=10, stale-while-revalidate=30` + memoria por instancia), paginación por rango `BETWEEN` (`filter=all`) y por cursor (`filter=available`), y throttle de 60 s para `releaseExpiredReservations` en `GET` públicos.
 
 ### D. Sanitización contra Inyección de Fórmulas CSV
 - En la exportación a hojas de cálculo (`/api/admin/export`), se neutraliza cualquier celda que comience con los caracteres `=`, `+`, `-` o `@`, anteponiendo un apóstrofe (`'`) para evitar la ejecución involuntaria de comandos al abrir el archivo en Microsoft Excel.

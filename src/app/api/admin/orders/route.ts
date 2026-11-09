@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb, logAudit, releaseExpiredReservations, invalidatePublicCache } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 import { safeJsonParse } from '@/lib/utils';
+import {
+  buildAdminOrdersQuery,
+  handleChangePaymentMethodInTx,
+  handleDeleteOrderInTx,
+} from '@/lib/order-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,53 +25,11 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     const db = getDb();
-
-    let whereClause = '1=1';
-    const args: (string | number)[] = [];
-
-    if (status && status !== 'all') {
-      whereClause += ' AND payment_status = ?';
-      args.push(status);
-    }
-
-    if (search && search.trim().length > 0) {
-      const trimmed = search.trim();
-      const q = `%${trimmed}%`;
-
-      // Comprobar si la búsqueda corresponde a un número de boleto (ej: "7" o "00007")
-      const parsedNum = /^\d+$/.test(trimmed) ? parseInt(trimmed, 10) : NaN;
-      const isRaffleNumber = !isNaN(parsedNum) && parsedNum >= 1 && parsedNum <= 100000;
-
-      if (isRaffleNumber) {
-        whereClause += ` AND (
-          code LIKE ? 
-          OR buyer_name LIKE ? 
-          OR buyer_phone LIKE ? 
-          OR id IN (SELECT order_id FROM numbers WHERE number = ? AND order_id IS NOT NULL)
-          OR numbers_list LIKE ? 
-          OR numbers_list LIKE ? 
-          OR numbers_list LIKE ? 
-          OR numbers_list LIKE ?
-        )`;
-        args.push(
-          q,
-          q,
-          q,
-          parsedNum,
-          `%[${parsedNum}]%`,
-          `%[${parsedNum},%`,
-          `%,${parsedNum},%`,
-          `%,${parsedNum}]%`
-        );
-      } else {
-        whereClause += ' AND (code LIKE ? OR buyer_name LIKE ? OR buyer_phone LIKE ? OR numbers_list LIKE ?)';
-        args.push(q, q, q, q);
-      }
-    }
+    const { whereClause, args, orderBy } = buildAdminOrdersQuery(status, search);
 
     const countRes = await db.execute({
       sql: `SELECT COUNT(*) as count FROM orders WHERE ${whereClause}`,
-      args: args
+      args,
     });
     const total = Number(countRes.rows[0].count);
 
@@ -75,15 +38,15 @@ export async function GET(request: NextRequest) {
                    unit_price, numbers_count, total_amount, numbers_list, private_token,
                    expires_at, paid_at, confirmed_by_admin, is_direct_sale, created_by_admin,
                    notes, created_at
-            FROM orders 
-            WHERE ${whereClause} 
-            ORDER BY id DESC 
+            FROM orders
+            WHERE ${whereClause}
+            ORDER BY ${orderBy}
             LIMIT ? OFFSET ?`,
-      args: [...args, limit, offset]
+      args: [...args, limit, offset],
     });
 
     return NextResponse.json({
-      orders: listRes.rows.map(r => ({
+      orders: listRes.rows.map((r) => ({
         id: Number(r.id),
         code: r.code as string,
         buyer_name: r.buyer_name as string,
@@ -107,8 +70,8 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('Error al listar órdenes en panel:', error);
@@ -140,17 +103,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
     }
 
-    // Liberación reactiva sin throttle en todas las acciones sobre órdenes
     await releaseExpiredReservations().catch(() => {});
 
     const db = getDb();
     const tx = await db.transaction('write');
+    const clientIp = request.headers.get('x-forwarded-for') || 'localhost';
 
     try {
-      // Leer la orden DENTRO de la transacción de escritura para garantizar aislamiento total
       const orderRes = await tx.execute({
         sql: 'SELECT id, code, buyer_id, buyer_name, buyer_phone, payment_method, payment_status, numbers_count, numbers_list, total_amount FROM orders WHERE id = ? LIMIT 1',
-        args: [order_id]
+        args: [order_id],
       });
 
       if (orderRes.rows.length === 0) {
@@ -158,55 +120,62 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 });
       }
 
-      const order = orderRes.rows[0];
+      const order = orderRes.rows[0] as Record<string, unknown>;
       const currentStatus = order.payment_status as string;
-      const currentPaymentMethod = order.payment_method as string;
       const expectedCount = Number(order.numbers_count);
-      const buyerId = Number(order.buyer_id);
 
-      // ACCIÓN 1: CONFIRMAR PAGO (Solo permitido desde estado 'pending')
       if (action === 'confirm_payment' || action === 'confirm') {
         if (currentStatus === 'paid') {
           await tx.rollback();
-          return NextResponse.json({ error: 'Esta orden ya fue marcada como pagada previamente.' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Esta orden ya fue marcada como pagada previamente.' },
+            { status: 400 }
+          );
         }
 
         if (currentStatus !== 'pending') {
           await tx.rollback();
-          return NextResponse.json({
-            error: `No se puede confirmar el pago de una orden con estado "${currentStatus}" porque sus números ya fueron liberados.`
-          }, { status: 409 });
+          return NextResponse.json(
+            {
+              error: `No se puede confirmar el pago de una orden con estado "${currentStatus}" porque sus números ya fueron liberados.`,
+            },
+            { status: 409 }
+          );
         }
 
-        // 1. Marcar números como 'sold' exigiendo que sigan reservados para esta orden
         const updateNumbersRes = await tx.execute({
           sql: `UPDATE numbers 
                 SET status = 'sold', updated_at = CURRENT_TIMESTAMP 
                 WHERE order_id = ? AND status = 'reserved'`,
-          args: [order_id]
+          args: [order_id],
         });
 
         const affectedNumbers = Number(updateNumbersRes.rowsAffected || 0);
         if (affectedNumbers !== expectedCount) {
           await tx.rollback();
-          return NextResponse.json({
-            error: `Error de integridad: se esperaban ${expectedCount} números reservados para esta orden, pero solo se encontraron ${affectedNumbers}. La operación fue revertida.`
-          }, { status: 409 });
+          return NextResponse.json(
+            {
+              error: `Error de integridad: se esperaban ${expectedCount} números reservados para esta orden, pero solo se encontraron ${affectedNumbers}. La operación fue revertida.`,
+            },
+            { status: 409 }
+          );
         }
 
-        // 2. Actualizar orden exigiendo que continúe 'pending'
         const updateOrderRes = await tx.execute({
           sql: `UPDATE orders 
                 SET payment_status = 'paid', 
                     paid_at = CURRENT_TIMESTAMP, 
                     confirmed_by_admin = ? 
                 WHERE id = ? AND payment_status = 'pending'`,
-          args: [admin.username, order_id]
+          args: [admin.username, order_id],
         });
 
         if (Number(updateOrderRes.rowsAffected || 0) !== 1) {
           await tx.rollback();
-          return NextResponse.json({ error: 'El estado de la orden cambió durante la operación.' }, { status: 409 });
+          return NextResponse.json(
+            { error: 'El estado de la orden cambió durante la operación.' },
+            { status: 409 }
+          );
         }
 
         await tx.commit();
@@ -220,52 +189,61 @@ export async function POST(request: NextRequest) {
             code: order.code,
             buyer_name: order.buyer_name,
             total_amount: order.total_amount,
-            numbers_count: expectedCount
+            numbers_count: expectedCount,
           },
-          request.headers.get('x-forwarded-for') || 'localhost'
+          clientIp
         );
 
         return NextResponse.json({ success: true, message: 'Pago confirmado exitosamente.' });
       }
 
-      // ACCIÓN 2: CANCELAR ORDEN Y LIBERAR NÚMEROS
       if (action === 'cancel') {
         if (currentStatus === 'cancelled') {
           await tx.rollback();
-          return NextResponse.json({ error: 'Esta orden ya se encuentra cancelada.' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Esta orden ya se encuentra cancelada.' },
+            { status: 400 }
+          );
         }
 
         if (currentStatus === 'paid' && !force_cancel_paid) {
           await tx.rollback();
-          return NextResponse.json({
-            error: 'No se puede cancelar una orden que ya figura como PAGADA sin confirmación explícita de anulación.'
-          }, { status: 409 });
+          return NextResponse.json(
+            {
+              error:
+                'No se puede cancelar una orden que ya figura como PAGADA sin confirmación explícita de anulación.',
+            },
+            { status: 409 }
+          );
         }
 
-        // 1. Liberar los números asociados a la orden
         await tx.execute({
           sql: `UPDATE numbers 
                 SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
                 WHERE order_id = ?`,
-          args: [order_id]
+          args: [order_id],
         });
 
-        // 2. Marcar orden como cancelada verificando su estado previo
         const updateCancelRes = await tx.execute({
           sql: `UPDATE orders 
                 SET payment_status = 'cancelled', 
                     notes = COALESCE(notes || ' | ', '') || ? 
                 WHERE id = ? AND payment_status = ?`,
           args: [
-            reason ? `Cancelado por ${admin.username}: ${reason}` : `Cancelado por ${admin.username}`,
+            reason
+              ? `Cancelado por ${admin.username}: ${reason}`
+              : `Cancelado por ${admin.username}`,
             order_id,
-            currentStatus
-          ]
+            currentStatus,
+          ],
         });
 
         if (Number(updateCancelRes.rowsAffected || 0) !== 1) {
           await tx.rollback();
-          return NextResponse.json({ error: 'El estado de la orden cambió durante la cancelación.' }, { status: 409 });
+          return NextResponse.json(
+            { error: 'El estado de la orden cambió durante la cancelación.' },
+            { status: 409 }
+          );
         }
 
         await tx.commit();
@@ -278,116 +256,31 @@ export async function POST(request: NextRequest) {
             order_id,
             code: order.code,
             previous_status: currentStatus,
-            reason: reason || 'Sin motivo especificado'
+            reason: reason || 'Sin motivo especificado',
           },
-          request.headers.get('x-forwarded-for') || 'localhost'
+          clientIp
         );
 
-        return NextResponse.json({ success: true, message: 'Orden cancelada y números liberados correctamente.' });
+        return NextResponse.json({
+          success: true,
+          message: 'Orden cancelada y números liberados correctamente.',
+        });
       }
 
-      // ACCIÓN 3: CAMBIAR MEDIO DE PAGO (Efectivo <-> Transferencia)
       if (action === 'change_payment_method') {
-        const targetMethod =
-          payment_method === 'cash' || payment_method === 'transfer'
-            ? payment_method
-            : currentPaymentMethod === 'cash'
-            ? 'transfer'
-            : 'cash';
-
-        await tx.execute({
-          sql: `UPDATE orders 
-                SET payment_method = ?, 
-                    notes = COALESCE(notes || ' | ', '') || ? 
-                WHERE id = ?`,
-          args: [
-            targetMethod,
-            `Medio de pago cambiado a ${targetMethod === 'cash' ? 'Efectivo' : 'Transferencia'} por ${admin.username}`,
-            order_id
-          ]
-        });
-
-        await tx.commit();
-        invalidatePublicCache();
-
-        await logAudit(
+        const res = await handleChangePaymentMethodInTx(
+          tx,
+          order,
           admin.username,
-          'CHANGE_PAYMENT_METHOD',
-          {
-            order_id,
-            code: order.code,
-            buyer_name: order.buyer_name,
-            previous_method: currentPaymentMethod,
-            new_method: targetMethod
-          },
-          request.headers.get('x-forwarded-for') || 'localhost'
+          payment_method,
+          clientIp
         );
-
-        return NextResponse.json({
-          success: true,
-          payment_method: targetMethod,
-          message: `Medio de pago actualizado a ${targetMethod === 'cash' ? 'Efectivo' : 'Transferencia'}.`
-        });
+        return NextResponse.json(res);
       }
 
-      // ACCIÓN 4: ELIMINAR REGISTRO DEFINITIVAMENTE Y LIBERAR NÚMEROS
       if (action === 'delete') {
-        // 1. Liberar cualquier número que estuviera vinculado a esta orden
-        const releaseRes = await tx.execute({
-          sql: `UPDATE numbers 
-                SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
-                WHERE order_id = ?`,
-          args: [order_id]
-        });
-        const releasedCount = Number(releaseRes.rowsAffected || 0);
-
-        // 2. Eliminar la orden de la base de datos
-        await tx.execute({
-          sql: 'DELETE FROM orders WHERE id = ?',
-          args: [order_id]
-        });
-
-        // 3. Si el comprador ya no tiene ninguna otra orden registrada, eliminar también el registro huérfano del comprador
-        let buyerDeleted = false;
-        if (buyerId) {
-          const remainingOrdersRes = await tx.execute({
-            sql: 'SELECT COUNT(*) as count FROM orders WHERE buyer_id = ?',
-            args: [buyerId]
-          });
-          const remainingCount = Number(remainingOrdersRes.rows[0]?.count || 0);
-          if (remainingCount === 0) {
-            await tx.execute({
-              sql: 'DELETE FROM buyers WHERE id = ?',
-              args: [buyerId]
-            });
-            buyerDeleted = true;
-          }
-        }
-
-        await tx.commit();
-        invalidatePublicCache();
-
-        await logAudit(
-          admin.username,
-          'DELETE_ORDER',
-          {
-            order_id,
-            code: order.code,
-            buyer_name: order.buyer_name,
-            buyer_phone: order.buyer_phone,
-            previous_status: currentStatus,
-            numbers_count: expectedCount,
-            released_numbers: releasedCount,
-            buyer_deleted: buyerDeleted,
-            reason: reason || 'Eliminación manual por administrador'
-          },
-          request.headers.get('x-forwarded-for') || 'localhost'
-        );
-
-        return NextResponse.json({
-          success: true,
-          message: `Registro ${order.code} eliminado definitivamente y sus números quedaron disponibles.`
-        });
+        const res = await handleDeleteOrderInTx(tx, order, admin.username, reason, clientIp);
+        return NextResponse.json(res);
       }
 
       await tx.rollback();

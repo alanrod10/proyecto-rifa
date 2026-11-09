@@ -13,6 +13,7 @@ Este manual está diseñado para **Alan** e **Yilda**, administradores del siste
   - **Administrador 1:** Usuario `alan` | Nombre visible: **Alan**
   - **Administradora 2:** Usuario `yilda` *(también identificada históricamente como `esposa`)* | Nombre visible: **Yilda**
 - **Permisos:** Ambas cuentas tienen facultades completas e independientes. El sistema registra en el historial de auditoría el nombre exacto de la persona que realizó cada cobro, anulación o ajuste.
+- **Protección de Acceso:** Si se ingresan 5 contraseñas incorrectas seguidas, el acceso se bloquea preventivamente durante **15 minutos**.
 - **Cómo Cambiar tu Contraseña:**
   - **Desde la Web (Recomendado):** Ingresá al panel, hacé clic en **Configuración** (`/admin/configuracion`), bajá hasta la sección **Seguridad de Mi Cuenta**, escribí tu contraseña actual, la nueva clave (mínimo 8 caracteres) y confirmá el cambio.
   - **Desde la Consola:** Ejecutá de forma interactiva:
@@ -44,11 +45,12 @@ Aquí llegan las reservas realizadas por los compradores a través del portal p�
 2. El comprador envía su comprobante por WhatsApp.
 3. **Verificación bancaria estricta:** Antes de confirmar, abrí la aplicación de tu banco o billetera virtual (Mercado Pago, banco, etc.) y asegurate de que los fondos figuren efectivamente acreditados.
 4. En **Solicitudes Web**, buscá al comprador por su nombre, teléfono o código de orden (ejemplo: `RF-A1B2C3`).
-5. Hacé clic en el botón verde **Confirmar Pago**.
+5. Hacé clic en el botón verde **Confirmar Pago** (o seleccioná varios pedidos pendientes con las casillas de verificación y usá **Confirmar pago de N pedidos** para aprobarlos en lote).
    - El pedido cambia inmediatamente a **Pagado**.
    - Los números pasan a estado **Vendido** de forma definitiva.
    - El monto se suma a la recaudación oficial.
-6. Si el comprador decide no pagar o se venció el plazo, podés hacer clic en **Cancelar Reserva** para devolver los números al público.
+6. Podés usar el filtro **Vencen en menos de 6 h** para priorizar las reservas próximas a expirar, ordenadas desde la que vence más pronto.
+7. Si el comprador decide no pagar o se venció el plazo, podés hacer clic en **Cancelar** para devolver los números al público.
 
 ---
 
@@ -93,6 +95,8 @@ Permite actualizar la información visible en el portal público sin necesidad d
   - Teléfono principal: Alan (`3884152040`).
   - Teléfono secundario: Yilda (`3884141514`).
 - **Plazo de Reserva:** Cantidad de horas antes de que venza una reserva no abonada (por defecto 48 hs).
+- **Máximo de Números por Pedido (`max_numbers_per_order`):** Tope de boletos que un comprador puede pedir en una sola operación (por defecto 2000).
+- **Máximo de Números Pendientes por Celular (`max_pending_numbers_per_phone`):** Tope acumulado de boletos sin pagar que puede mantener un mismo número de teléfono (por defecto 1000).
 - **Habilitar/Pausar Reservas:** Interruptor para abrir o cerrar temporalmente la recepción de pedidos en la web.
 - Hacé clic en **Guardar Configuración** para aplicar los cambios de forma instantánea.
 

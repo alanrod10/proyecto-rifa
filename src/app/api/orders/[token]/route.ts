@@ -3,6 +3,8 @@ import { getDb, getSettings, checkRateLimit, releaseExpiredReservationsThrottled
 import {
   ORDER_LOOKUP_RATE_LIMIT_MAX,
   ORDER_LOOKUP_RATE_LIMIT_WINDOW_SECONDS,
+  DEFAULT_CONTACT_PHONE,
+  DEFAULT_CONTACT_PHONE_SECONDARY,
 } from '@/lib/constants';
 import { safeJsonParse, maskPhoneNumber, getClientIp } from '@/lib/utils';
 
@@ -96,8 +98,8 @@ export async function GET(
         bank_cbu: settings.bank_cbu,
         bank_name: settings.bank_name,
         bank_holder: settings.bank_holder,
-        contact_phone: settings.contact_phone || '3884152040',
-        contact_phone_secondary: settings.contact_phone_secondary || '3884141514',
+        contact_phone: settings.contact_phone || DEFAULT_CONTACT_PHONE,
+        contact_phone_secondary: settings.contact_phone_secondary || DEFAULT_CONTACT_PHONE_SECONDARY,
         rules_terms: settings.rules_terms,
       }
     });

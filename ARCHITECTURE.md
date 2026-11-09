@@ -101,12 +101,15 @@ CREATE TABLE IF NOT EXISTS orders (
   is_direct_sale BOOLEAN DEFAULT 0,
   created_by_admin TEXT,
   notes TEXT,
+  request_id TEXT,                                 -- UUID de idempotencia generado por el cliente
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_orders_code ON orders(code);
 CREATE INDEX IF NOT EXISTS idx_orders_token ON orders(private_token);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(payment_status);
+CREATE INDEX IF NOT EXISTS idx_orders_status_expires ON orders(payment_status, expires_at);
 CREATE INDEX IF NOT EXISTS idx_orders_buyer_phone ON orders(buyer_phone);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_request_id ON orders(request_id) WHERE request_id IS NOT NULL;
 
 -- 4. Tabla de Cuentas Administrativas
 CREATE TABLE IF NOT EXISTS admins (
@@ -133,51 +136,60 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   ip_address TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 7. Tabla de Rate Limiting por IP y Ventana Temporal
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT NOT NULL,
+  window_start INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (key, window_start)
+);
 ```
 
 ---
 
 ## 4. Control de Concurrencia y Atomicidad (ACID)
 
-### A. Prevención de Doble Asignación y Asignaciones Parciales
+### A. Prevención de Doble Asignación, Idempotencia y Topes Operativos
 Al solicitar una reserva en `/api/reservations`:
-1. El backend abre una transacción de escritura exclusiva (`client.transaction('write')` o `BEGIN IMMEDIATE`).
-2. Verifica en una sola consulta indexada que **todos** los números solicitados posean `status = 'available'`.
-3. Si tan solo uno de los números solicitados ya no está disponible (fue tomado por otro comprador milisegundos antes):
-   - Se ejecuta un **`ROLLBACK` íntegro e inmediato**.
-   - No se crea la orden ni se bloquean los números restantes.
-   - Se responde un código `HTTP 409 Conflict` detallando los números en colisión.
-4. Si todos están disponibles:
-   - Se crea el registro del comprador (`buyers`).
-   - Se crea el pedido (`orders`) con el monto histórico congelado.
-   - Se actualizan los números a `'reserved'`, asociándolos al `order_id`.
-   - Se ejecuta el `COMMIT`.
+1. Se aplica **rate limiting por IP** (`x-forwarded-for`): máximo 5 solicitudes cada 10 minutos (`HTTP 429`).
+2. **Idempotencia (`client_request_id`):** Si el `request_id` ya existe en `orders.request_id` (índice `UNIQUE`), el servidor devuelve la orden existente con `HTTP 200` sin duplicar la reserva.
+3. El backend valida los topes configurables en `settings`:
+   - `max_numbers_per_order` (default `2000`): tope de números por pedido, consultados en bloques `IN` de hasta 500 variables.
+   - `max_pending_numbers_per_phone` (default `1000`): tope acumulado de boletos en estado `pending` para un mismo celular, validado dentro de la transacción de escritura.
+4. El backend abre una transacción de escritura exclusiva (`client.transaction('write')`).
+5. Verifica que **todos** los números solicitados posean `status = 'available'` y ejecuta `UPDATE numbers SET status = 'reserved', order_id = ? WHERE number IN (...) AND status = 'available'`, exigiendo que `rowsAffected === cantidad de números`; ante cualquier discrepancia ejecuta `ROLLBACK` y devuelve `HTTP 409 Conflict`.
 
-### B. Prevención de "Pagos Fantasma"
+### B. Prevención de "Pagos Fantasma" y Confirmación en Lote
 Para evitar que un administrador confirme accidentalmente un pago sobre una orden que ya expiró o fue cancelada:
-- La consulta de confirmación en `/api/admin/orders` verifica dentro de la transacción que la orden mantenga `payment_status = 'pending'` y que los números vinculados continúen en estado `'reserved'`. Si los números ya fueron reasignados o devueltos al público, la confirmación se rechaza de forma segura.
+- La consulta de confirmación en `/api/admin/orders` (tanto individual `confirm_payment` como en lote `confirm_payment_batch`, donde cada orden se procesa en su propia transacción) verifica que la orden mantenga `payment_status = 'pending'` y que los números vinculados continúen en estado `'reserved'` (`rowsAffected === expectedCount`).
 
 ---
 
-## 5. Expiración Reactiva y Gestión del Ciclo de Vida ($0)
+## 5. Optimización de Lecturas a Turso, Caché y Expiración Reactiva ($0)
 
-Para evitar la contratación de servicios de tareas programadas externos (Cron jobs de pago):
-1. **Limpieza Perezosa (Lazy Cleanup):** Antes de resolver cualquier consulta pública de números (`/api/numbers`) o creación de reserva (`/api/reservations`), el backend ejecuta una consulta optimizada que busca pedidos con `payment_status = 'pending'` y `datetime(expires_at) < datetime('now')`.
-   - Devuelve los números asociados al estado `'available'`.
-   - Marca la orden como `'expired'`.
-2. **Liberación Forzada desde el Panel:** El panel administrativo dispone de la acción `/api/admin/release-expired`, que permite a los administradores liberar manualmente números vencidos en cualquier momento y recibir un resumen de cuántos números se reintegraron.
+1. **Contadores por Índice (`idx_numbers_status`):** En `getPublicSettingsAndStats`, `/api/admin/dashboard` y `/api/admin/backup`, se calcula `sold` y `reserved` con `COUNT(*) WHERE status = 'sold' / 'reserved'` y se deriva `available = TOTAL_NUMBERS - reserved - sold` (`TOTAL_NUMBERS = 100000`), evitando escaneos completos sobre las 100.000 filas.
+2. **Caché de 10 s y Paginación sin OFFSET:**
+   - `getPublicSettingsAndStats` mantiene caché en memoria por instancia con TTL de 10 s (invalidada al reservar, confirmar o modificar ajustes).
+   - `GET /api/settings` y `GET /api/numbers` (excepto `random`) emiten `Cache-Control: public, s-maxage=10, stale-while-revalidate=30`, y `src/app/page.tsx` utiliza `revalidate = 10`.
+   - `GET /api/numbers` resuelve `filter=all` por rango primario directo (`BETWEEN ? AND ?`) y `filter=available` mediante paginación por cursor (`WHERE status = 'available' AND number > ? ORDER BY number ASC LIMIT ?`).
+3. **Limpieza Perezosa con Throttle:**
+   - En los `GET` públicos se ejecuta `releaseExpiredReservationsThrottled()` (máximo una vez cada 60 s por instancia).
+   - En `POST /api/reservations`, `POST /api/admin/direct-sale` y todas las acciones de `/api/admin/orders`, `releaseExpiredReservations()` se ejecuta sin throttle.
+4. **Liberación Forzada desde el Panel:** El panel administrativo dispone de `/api/admin/release-expired` para liberar manualmente reservas vencidas en cualquier momento.
 
 ---
 
 ## 6. Autenticación, Sesiones y Seguridad Perimetral
 
 1. **Hasheo de Contraseñas:** Algoritmo `bcrypt` con 10 rondas de salting (`$2b$10$...`).
-2. **Sesiones Criptográficas:** Tokens JWT emitidos con la librería `jose`, firmados mediante el algoritmo HS256 utilizando la variable de entorno `ADMIN_SECRET_KEY` (mínimo 32 caracteres).
-3. **Transporte de Sesión:** Cookie protegida `rifa_admin_session` con flags `httpOnly: true`, `SameSite: 'Lax'` y `path: '/'`, con vigencia de 7 días.
-4. **Protección contra Fuerza Bruta (Rate Limiting):**
-   - El endpoint `/api/admin/auth/login` audita cada intento fallido en `audit_logs` con la acción `ADMIN_LOGIN_FAILED`.
-   - Si se detectan más de 5 intentos fallidos desde una misma IP o hacia un mismo usuario en una ventana de 10 minutos, el sistema bloquea temporalmente las peticiones respondiendo `HTTP 429 Too Many Requests`.
-5. **Sanitización contra Inyección de Fórmulas CSV:** En el endpoint `/api/admin/export`, todas las celdas se procesan con `sanitizeCsvCell()`: si un campo de texto comienza con `=`, `+`, `-` o `@`, se prefija con una comilla simple (`'`) para evitar la ejecución arbitraria de fórmulas en Microsoft Excel.
+2. **Sesiones Criptográficas y Middleware:** Tokens JWT emitidos con `jose` (HS256, `ADMIN_SECRET_KEY`). `src/middleware.ts` protege todas las rutas `/admin/*` (excepto `/admin/login`) verificando el JWT de la cookie `rifa_admin_session`, además de mantener `getCurrentAdmin()` en cada API administrativa. Las rutas `/consultar` y `/admin/*` declaran `robots: noindex, nofollow`.
+3. **Transporte de Sesión:** Cookie `rifa_admin_session` con `httpOnly: true`, `SameSite: 'Lax'` y vigencia de 7 días.
+4. **Protección contra Fuerza Bruta y Abuso (Rate Limiting):**
+   - **Login (`/api/admin/auth/login`):** Audita cada intento fallido en `audit_logs` (`ADMIN_LOGIN_FAILED`). Si se detectan 5 o más intentos fallidos desde una misma IP o usuario en una ventana de **15 minutos**, responde `HTTP 429 Too Many Requests`.
+   - **Reservas (`POST /api/reservations`):** Máximo 5 reservas cada 10 minutos por IP (`rate_limits`).
+   - **Consulta de órdenes (`GET /api/orders/[token]`):** Máximo 30 consultas cada 10 minutos por IP (`rate_limits`). Cuando se consulta por código corto (`RF-XXXXXX`), el servidor devuelve el celular enmascarado (`***1234`) y omite `private_token`.
+5. **Sanitización contra Inyección de Fórmulas CSV:** En `/api/admin/export`, todas las celdas se procesan con `sanitizeCsvCell()`.
 
 ---
 
