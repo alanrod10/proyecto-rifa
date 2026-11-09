@@ -6,6 +6,7 @@ import { Ticket, Phone } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import PortalHero from '@/components/portal/PortalHero';
 import NumberGrid from '@/components/portal/NumberGrid';
+import BulkPasteAndSummary from '@/components/portal/BulkPasteAndSummary';
 import SelectionCart from '@/components/portal/SelectionCart';
 import ReservationForm from '@/components/portal/ReservationForm';
 import PaymentInstructions, { OrderSuccessData } from '@/components/portal/PaymentInstructions';
@@ -77,6 +78,7 @@ export default function PublicPortalClient({
     handleSearch,
     clearSearch,
     toggleSelectNumber,
+    addAvailableNumbersToCart,
     handleRandomSelect,
   } = useNumbers({
     maxNumbersPerOrder,
@@ -236,6 +238,16 @@ export default function PublicPortalClient({
         onClearSearch={clearSearch}
         onToggleSelectNumber={toggleSelectNumber}
         onRandomSelect={handleRandomSelect}
+        maxNumbersPerOrder={maxNumbersPerOrder}
+        extraControls={
+          <BulkPasteAndSummary
+            selectedNumbers={selectedNumbers}
+            unitPrice={unitPrice}
+            maxNumbersPerOrder={maxNumbersPerOrder}
+            onAddAvailableNumbers={addAvailableNumbersToCart}
+            onOpenModal={() => setIsModalOpen(true)}
+          />
+        }
       />
 
       <SelectionCart

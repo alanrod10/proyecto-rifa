@@ -307,3 +307,77 @@ export function safeJsonParse<T>(jsonStr: string, fallback: T): T {
     return fallback;
   }
 }
+
+/**
+ * Parsea una cadena de números y rangos (ej: "100-250, 777, 1500-1510"),
+ * valida contra el rango [1..100000] y contra maxLimit, y deduplica en orden ascendente.
+ */
+export function parseNumbersAndRanges(
+  input: string,
+  maxLimit = 2000,
+  totalNumbers = 100000
+): {
+  numbers: number[];
+  invalidTokens: string[];
+  exceedsMax: boolean;
+} {
+  const normalized = (input || '').replace(/\s*-\s*/g, '-');
+  const rawTokens = normalized
+    .split(/[\s,;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  const uniqueSet = new Set<number>();
+  const invalidTokens: string[] = [];
+  let exceedsMax = false;
+
+  for (const token of rawTokens) {
+    if (/^\d+-\d+$/.test(token)) {
+      const [startStr, endStr] = token.split('-');
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (
+        isNaN(start) ||
+        isNaN(end) ||
+        start < 1 ||
+        end < 1 ||
+        start > totalNumbers ||
+        end > totalNumbers
+      ) {
+        invalidTokens.push(token);
+        continue;
+      }
+      const from = Math.min(start, end);
+      const to = Math.max(start, end);
+      if (to - from + 1 > maxLimit) {
+        exceedsMax = true;
+      }
+      for (let n = from; n <= to; n++) {
+        if (uniqueSet.size >= maxLimit) {
+          exceedsMax = true;
+          break;
+        }
+        uniqueSet.add(n);
+      }
+    } else if (/^\d+$/.test(token)) {
+      const n = parseInt(token, 10);
+      if (isNaN(n) || n < 1 || n > totalNumbers) {
+        invalidTokens.push(token);
+        continue;
+      }
+      if (uniqueSet.size >= maxLimit && !uniqueSet.has(n)) {
+        exceedsMax = true;
+        continue;
+      }
+      uniqueSet.add(n);
+    } else {
+      invalidTokens.push(token);
+    }
+  }
+
+  return {
+    numbers: Array.from(uniqueSet).sort((a, b) => a - b),
+    invalidTokens,
+    exceedsMax,
+  };
+}

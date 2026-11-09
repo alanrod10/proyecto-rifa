@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Shuffle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NumberItem } from '@/lib/types';
 import { formatTicketNumber } from '@/lib/utils';
+import { DEFAULT_MAX_NUMBERS_PER_ORDER } from '@/lib/constants';
 
 interface NumberGridProps {
   selectedNumbers: number[];
@@ -29,6 +30,7 @@ interface NumberGridProps {
   onClearSearch: () => void;
   onToggleSelectNumber: (num: number, status: string) => void;
   onRandomSelect: (count: number) => void;
+  maxNumbersPerOrder?: number;
   extraControls?: React.ReactNode;
 }
 
@@ -56,8 +58,20 @@ export default function NumberGrid({
   onClearSearch,
   onToggleSelectNumber,
   onRandomSelect,
+  maxNumbersPerOrder = DEFAULT_MAX_NUMBERS_PER_ORDER,
   extraControls,
 }: NumberGridProps) {
+  const [customRandomCount, setCustomRandomCount] = useState('');
+
+  const handleCustomRandomSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = parseInt(customRandomCount.trim(), 10);
+    if (isNaN(parsed) || parsed < 1) return;
+    const bounded = Math.min(maxNumbersPerOrder, parsed);
+    onRandomSelect(bounded);
+    setCustomRandomCount('');
+  };
+
   return (
     <main className="max-w-5xl mx-auto px-4 py-8 flex-1 w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
@@ -68,7 +82,7 @@ export default function NumberGrid({
           </p>
         </div>
 
-        {/* Botones de Azar Rápido */}
+        {/* Botones de Azar Rápido + Input "N al azar" */}
         <div className="flex items-center flex-wrap gap-1.5">
           <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
             <Shuffle className="w-3.5 h-3.5" /> Al azar:
@@ -83,6 +97,24 @@ export default function NumberGrid({
               +{cnt}
             </button>
           ))}
+          <form onSubmit={handleCustomRandomSubmit} className="inline-flex items-center gap-1 ml-1">
+            <input
+              type="number"
+              min={1}
+              max={maxNumbersPerOrder}
+              placeholder="N al azar"
+              value={customRandomCount}
+              onChange={(e) => setCustomRandomCount(e.target.value)}
+              className="w-24 px-2 py-1 text-base sm:text-xs bg-surface border border-brand-200 rounded-lg text-center font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+            <button
+              type="submit"
+              disabled={!customRandomCount.trim() || loadingNumbers}
+              className="text-xs bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold px-2.5 py-1.5 rounded-lg transition"
+            >
+              +Elegir
+            </button>
+          </form>
         </div>
       </div>
 

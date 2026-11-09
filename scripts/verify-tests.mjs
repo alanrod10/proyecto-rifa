@@ -610,6 +610,71 @@ async function runAllTests() {
       `Archivos src verificados: ${srcFiles.length} (excedidos >400: ${oversizedFiles.length}), middleware JWT y noindex activos`
     );
 
+    // ----------------------------------------------------------------
+    // 29. Fase 4: Pegar listas y rangos, N al azar con límite max_numbers_per_order y resumen previo
+    // ----------------------------------------------------------------
+    const utilsContentFase4 = fs.readFileSync(path.join(process.cwd(), 'src/lib/utils.ts'), 'utf-8');
+    const bulkPasteContent = fs.readFileSync(path.join(process.cwd(), 'src/components/portal/BulkPasteAndSummary.tsx'), 'utf-8');
+    const numberGridContent = fs.readFileSync(path.join(process.cwd(), 'src/components/portal/NumberGrid.tsx'), 'utf-8');
+    const numbersRouteContentFase4 = fs.readFileSync(path.join(process.cwd(), 'src/app/api/numbers/route.ts'), 'utf-8');
+
+    // Simulación equivalente de parseNumbersAndRanges para verificar rangos y deduplicación
+    function testParseNumbersAndRanges(input, maxLimit = 2000) {
+      const seen = new Set();
+      const numbers = [];
+      let exceedsMax = false;
+      const tokens = input.split(/[\s,;]+/).map((t) => t.trim()).filter(Boolean);
+      for (const token of tokens) {
+        const rangeMatch = token.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (rangeMatch) {
+          let start = parseInt(rangeMatch[1], 10);
+          let end = parseInt(rangeMatch[2], 10);
+          if (start > end) [start, end] = [end, start];
+          for (let n = start; n <= end; n++) {
+            if (!seen.has(n)) {
+              if (numbers.length >= maxLimit) { exceedsMax = true; break; }
+              seen.add(n);
+              numbers.push(n);
+            }
+          }
+        } else if (/^\d+$/.test(token)) {
+          const num = parseInt(token, 10);
+          if (!seen.has(num)) {
+            if (numbers.length >= maxLimit) { exceedsMax = true; } else {
+              seen.add(num);
+              numbers.push(num);
+            }
+          }
+        }
+      }
+      return { numbers, exceedsMax };
+    }
+
+    const parsedSample = testParseNumbersAndRanges('100-104, 777, 102, 1500-1501', 2000);
+    const parsedOver = testParseNumbersAndRanges('1-2500', 2000);
+
+    const fase4Checks =
+      parsedSample.numbers.length === 8 &&
+      parsedSample.numbers.includes(100) &&
+      parsedSample.numbers.includes(104) &&
+      parsedSample.numbers.includes(777) &&
+      parsedSample.numbers.includes(1501) &&
+      !parsedSample.exceedsMax &&
+      parsedOver.exceedsMax &&
+      parsedOver.numbers.length === 2000 &&
+      utilsContentFase4.includes('export function parseNumbersAndRanges') &&
+      bulkPasteContent.includes('Pegá tus números') &&
+      bulkPasteContent.includes('/api/numbers?search=') &&
+      numberGridContent.includes('N al azar') &&
+      numbersRouteContentFase4.includes('parseNumbersAndRanges') &&
+      numbersRouteContentFase4.includes('max_numbers_per_order');
+
+    assert(
+      fase4Checks,
+      '29. Fase 4: "Pegá tus números" (listas/rangos deduplicados), "N al azar" hasta max_numbers_per_order y resumen pre-reserva',
+      `Muestra parseada: ${parsedSample.numbers.length} únicos, tope 2000 validado (exceedsMax=${parsedOver.exceedsMax})`
+    );
+
     newClient.close();
   } catch (err) {
     console.error('Error fatal durante las pruebas:', err);

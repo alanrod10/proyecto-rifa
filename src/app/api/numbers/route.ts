@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, getPublicSettingsAndStats, releaseExpiredReservationsThrottled } from '@/lib/db';
-import { TOTAL_NUMBERS, PUBLIC_CACHE_CONTROL } from '@/lib/constants';
-import { pickRandomUniqueInts } from '@/lib/utils';
+import {
+  TOTAL_NUMBERS,
+  PUBLIC_CACHE_CONTROL,
+  SQL_IN_CHUNK_SIZE,
+  DEFAULT_MAX_NUMBERS_PER_ORDER,
+} from '@/lib/constants';
+import { pickRandomUniqueInts, chunkArray, parseNumbersAndRanges } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     const randomCount = searchParams.get('random');
-    const filter = searchParams.get('filter') || 'all'; // 'all' | 'available'
+    const filter = searchParams.get('filter') || 'all';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(10, parseInt(searchParams.get('limit') || '60', 10)));
     const cursorParam = searchParams.get('cursor');
@@ -18,31 +23,46 @@ export async function GET(request: NextRequest) {
 
     const db = getDb();
 
-    // 1. Caso: Selección al azar de N números disponibles (Optimizado por Primary Key para no escanear 100k filas en Turso)
+    // 1. Caso: Selección al azar de N números disponibles (alineado a max_numbers_per_order, muestreo por PK)
     if (randomCount) {
-      const count = Math.min(50, Math.max(1, parseInt(randomCount, 10)));
+      const publicData = await getPublicSettingsAndStats();
+      const maxNumbersPerOrder =
+        publicData.settings.max_numbers_per_order || DEFAULT_MAX_NUMBERS_PER_ORDER;
+      const count = Math.min(
+        maxNumbersPerOrder,
+        Math.max(1, parseInt(randomCount, 10) || 1)
+      );
       const collected: { number: number; status: string }[] = [];
       const seen = new Set<number>();
 
-      // Hasta 3 rondas de muestreo por índice primario (consume ~30-150 lecturas en vez de 100.000)
-      for (let round = 0; round < 3 && collected.length < count; round++) {
-        const sampleSize = Math.min(150, Math.max((count - collected.length) * 3, 25));
-        const candidates = pickRandomUniqueInts(sampleSize, 1, TOTAL_NUMBERS).filter(n => !seen.has(n));
+      // Hasta 4 rondas de muestreo por índice primario en bloques de 500
+      for (let round = 0; round < 4 && collected.length < count; round++) {
+        const remaining = count - collected.length;
+        const sampleSize = Math.min(
+          maxNumbersPerOrder * 2,
+          Math.max(remaining * 2, 30)
+        );
+        const candidates = pickRandomUniqueInts(sampleSize, 1, TOTAL_NUMBERS).filter(
+          (n) => !seen.has(n)
+        );
         if (candidates.length === 0) continue;
-        candidates.forEach(n => seen.add(n));
+        candidates.forEach((n) => seen.add(n));
 
-        const placeholders = candidates.map(() => '?').join(',');
-        const sampleRes = await db.execute({
-          sql: `SELECT number, status FROM numbers WHERE number IN (${placeholders}) AND status = 'available'`,
-          args: candidates
-        });
+        for (const chunk of chunkArray(candidates, SQL_IN_CHUNK_SIZE)) {
+          if (collected.length >= count) break;
+          const placeholders = chunk.map(() => '?').join(',');
+          const sampleRes = await db.execute({
+            sql: `SELECT number, status FROM numbers WHERE number IN (${placeholders}) AND status = 'available'`,
+            args: chunk,
+          });
 
-        for (const r of sampleRes.rows) {
-          if (collected.length < count) {
-            collected.push({
-              number: Number(r.number),
-              status: r.status as string,
-            });
+          for (const r of sampleRes.rows) {
+            if (collected.length < count) {
+              collected.push({
+                number: Number(r.number),
+                status: r.status as string,
+              });
+            }
           }
         }
       }
@@ -50,19 +70,20 @@ export async function GET(request: NextRequest) {
       // Fallback si quedaran muy pocos números disponibles en toda la rifa
       if (collected.length < count) {
         const needed = count - collected.length;
-        const excludeList = Array.from(seen);
-        const fallbackSql = excludeList.length > 0
-          ? `SELECT number, status FROM numbers WHERE status = 'available' AND number NOT IN (${excludeList.map(() => '?').join(',')}) LIMIT ?`
-          : `SELECT number, status FROM numbers WHERE status = 'available' LIMIT ?`;
+        const collectedSet = new Set(collected.map((c) => c.number));
         const fallbackRes = await db.execute({
-          sql: fallbackSql,
-          args: excludeList.length > 0 ? [...excludeList, needed] : [needed]
+          sql: `SELECT number, status FROM numbers WHERE status = 'available' LIMIT ?`,
+          args: [needed + collectedSet.size],
         });
         for (const r of fallbackRes.rows) {
-          collected.push({
-            number: Number(r.number),
-            status: r.status as string,
-          });
+          const num = Number(r.number);
+          if (!collectedSet.has(num) && collected.length < count) {
+            collectedSet.add(num);
+            collected.push({
+              number: num,
+              status: r.status as string,
+            });
+          }
         }
       }
 
@@ -72,39 +93,43 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Caso: Búsqueda de números específicos (ej: "12345" o "10, 25, 999")
+    // 2. Caso: Búsqueda de números específicos o rangos (ej: "100-250, 777, 1500-1510")
     if (search && search.trim().length > 0) {
-      const tokens = search.split(/[\s,]+/).filter(t => /^\d+$/.test(t)).map(t => parseInt(t, 10));
-      if (tokens.length === 0) {
+      const publicData = await getPublicSettingsAndStats();
+      const maxNumbersPerOrder =
+        publicData.settings.max_numbers_per_order || DEFAULT_MAX_NUMBERS_PER_ORDER;
+      const parsed = parseNumbersAndRanges(search, maxNumbersPerOrder, TOTAL_NUMBERS);
+
+      if (parsed.numbers.length === 0) {
         return NextResponse.json(
           { numbers: [], total: 0 },
           { headers: { 'Cache-Control': PUBLIC_CACHE_CONTROL } }
         );
       }
 
-      const validTokens = tokens.filter(n => n >= 1 && n <= TOTAL_NUMBERS).slice(0, 50);
-      if (validTokens.length === 0) {
-        return NextResponse.json(
-          { numbers: [], total: 0 },
-          { headers: { 'Cache-Control': PUBLIC_CACHE_CONTROL } }
-        );
+      const foundRows: { number: number; status: string }[] = [];
+      for (const chunk of chunkArray(parsed.numbers, SQL_IN_CHUNK_SIZE)) {
+        const placeholders = chunk.map(() => '?').join(',');
+        const searchRes = await db.execute({
+          sql: `SELECT number, status FROM numbers 
+                WHERE number IN (${placeholders}) 
+                ORDER BY number ASC`,
+          args: chunk,
+        });
+        for (const r of searchRes.rows) {
+          foundRows.push({
+            number: Number(r.number),
+            status: r.status as string,
+          });
+        }
       }
 
-      const placeholders = validTokens.map(() => '?').join(',');
-      const searchRes = await db.execute({
-        sql: `SELECT number, status FROM numbers 
-              WHERE number IN (${placeholders}) 
-              ORDER BY number ASC`,
-        args: validTokens
-      });
+      foundRows.sort((a, b) => a.number - b.number);
 
       return NextResponse.json(
         {
-          numbers: searchRes.rows.map(r => ({
-            number: Number(r.number),
-            status: r.status as string,
-          })),
-          total: searchRes.rows.length
+          numbers: foundRows,
+          total: foundRows.length,
         },
         { headers: { 'Cache-Control': PUBLIC_CACHE_CONTROL } }
       );
@@ -112,10 +137,10 @@ export async function GET(request: NextRequest) {
 
     // 3. Caso: Listado paginado de números
     if (filter === 'available') {
-      // Paginación por cursor para disponibles: WHERE status = 'available' AND number > ? ORDER BY number ASC LIMIT ?
-      const cursor = cursorParam !== null
-        ? Math.max(0, parseInt(cursorParam, 10) || 0)
-        : (page - 1) * limit;
+      const cursor =
+        cursorParam !== null
+          ? Math.max(0, parseInt(cursorParam, 10) || 0)
+          : (page - 1) * limit;
 
       const [listRes, publicData] = await Promise.all([
         db.execute({
@@ -123,13 +148,13 @@ export async function GET(request: NextRequest) {
                 WHERE status = 'available' AND number > ? 
                 ORDER BY number ASC 
                 LIMIT ?`,
-          args: [cursor, limit]
+          args: [cursor, limit],
         }),
-        getPublicSettingsAndStats()
+        getPublicSettingsAndStats(),
       ]);
 
       const totalCount = publicData.stats.available;
-      const numbers = listRes.rows.map(r => ({
+      const numbers = listRes.rows.map((r) => ({
         number: Number(r.number),
         status: r.status as string,
       }));
@@ -145,8 +170,9 @@ export async function GET(request: NextRequest) {
             totalPages: Math.max(1, Math.ceil(totalCount / limit)),
             cursor,
             nextCursor,
-            hasMore: numbers.length === limit && (nextCursor ?? TOTAL_NUMBERS) < TOTAL_NUMBERS,
-          }
+            hasMore:
+              numbers.length === limit && (nextCursor ?? TOTAL_NUMBERS) < TOTAL_NUMBERS,
+          },
         },
         { headers: { 'Cache-Control': PUBLIC_CACHE_CONTROL } }
       );
@@ -156,18 +182,19 @@ export async function GET(request: NextRequest) {
     const startNumber = (page - 1) * limit + 1;
     const endNumber = Math.min(page * limit, TOTAL_NUMBERS);
 
-    const listRes = startNumber <= TOTAL_NUMBERS
-      ? await db.execute({
-          sql: `SELECT number, status FROM numbers 
-                WHERE number BETWEEN ? AND ? 
-                ORDER BY number ASC`,
-          args: [startNumber, endNumber]
-        })
-      : { rows: [] };
+    const listRes =
+      startNumber <= TOTAL_NUMBERS
+        ? await db.execute({
+            sql: `SELECT number, status FROM numbers 
+                  WHERE number BETWEEN ? AND ? 
+                  ORDER BY number ASC`,
+            args: [startNumber, endNumber],
+          })
+        : { rows: [] };
 
     return NextResponse.json(
       {
-        numbers: listRes.rows.map(r => ({
+        numbers: listRes.rows.map((r) => ({
           number: Number(r.number),
           status: r.status as string,
         })),
@@ -175,8 +202,8 @@ export async function GET(request: NextRequest) {
           page,
           limit,
           total: TOTAL_NUMBERS,
-          totalPages: Math.ceil(TOTAL_NUMBERS / limit)
-        }
+          totalPages: Math.ceil(TOTAL_NUMBERS / limit),
+        },
       },
       { headers: { 'Cache-Control': PUBLIC_CACHE_CONTROL } }
     );
