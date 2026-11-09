@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, getSettings, logAudit, releaseExpiredReservations, invalidatePublicCache } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
-import { generateUniqueOrderCode, generatePrivateToken, cleanPhoneNumber } from '@/lib/utils';
+import { TOTAL_NUMBERS, SQL_IN_CHUNK_SIZE, DEFAULT_MAX_NUMBERS_PER_ORDER } from '@/lib/constants';
+import { generateUniqueOrderCode, generatePrivateToken, cleanPhoneNumber, chunkArray, getClientIp } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,8 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Debes seleccionar al menos un número' }, { status: 400 });
     }
 
-    const uniqueNumbers = Array.from(new Set(numbers.map(n => parseInt(n, 10))))
-      .filter(n => !isNaN(n) && n >= 1 && n <= 100000)
+    const uniqueNumbers = Array.from(new Set(numbers.map(n => parseInt(String(n), 10))))
+      .filter(n => !isNaN(n) && n >= 1 && n <= TOTAL_NUMBERS)
       .sort((a, b) => a - b);
 
     if (uniqueNumbers.length === 0) {
@@ -38,6 +39,17 @@ export async function POST(request: NextRequest) {
     await releaseExpiredReservations().catch(() => {});
 
     const settings = await getSettings();
+    const maxNumbersPerOrder = Math.max(
+      1,
+      parseInt(settings.max_numbers_per_order || String(DEFAULT_MAX_NUMBERS_PER_ORDER), 10) || DEFAULT_MAX_NUMBERS_PER_ORDER
+    );
+    if (uniqueNumbers.length > maxNumbersPerOrder) {
+      return NextResponse.json(
+        { error: `No es posible asignar más de ${maxNumbersPerOrder} números en una única operación.` },
+        { status: 400 }
+      );
+    }
+
     const unitPrice = Math.max(1, parseInt(settings.ticket_price || '100', 10));
     const totalAmount = uniqueNumbers.length * unitPrice;
     const reserveHours = Math.max(1, parseInt(settings.reserve_hours || '48', 10));
@@ -53,20 +65,22 @@ export async function POST(request: NextRequest) {
     try {
       const orderCode = await generateUniqueOrderCode(tx);
 
-      // 1. Verificar disponibilidad de los números
-      const placeholders = uniqueNumbers.map(() => '?').join(',');
-      const checkRes = await tx.execute({
-        sql: `SELECT number, status FROM numbers WHERE number IN (${placeholders})`,
-        args: uniqueNumbers
-      });
-
+      // 1. Verificar disponibilidad de los números (en bloques de 500)
       const unavailable: number[] = [];
       const foundSet = new Set<number>();
 
-      for (const row of checkRes.rows) {
-        foundSet.add(Number(row.number));
-        if (row.status !== 'available') {
-          unavailable.push(Number(row.number));
+      for (const chunk of chunkArray(uniqueNumbers, SQL_IN_CHUNK_SIZE)) {
+        const placeholders = chunk.map(() => '?').join(',');
+        const checkRes = await tx.execute({
+          sql: `SELECT number, status FROM numbers WHERE number IN (${placeholders})`,
+          args: chunk,
+        });
+
+        for (const row of checkRes.rows) {
+          foundSet.add(Number(row.number));
+          if (row.status !== 'available') {
+            unavailable.push(Number(row.number));
+          }
         }
       }
 
@@ -76,17 +90,20 @@ export async function POST(request: NextRequest) {
 
       if (unavailable.length > 0) {
         await tx.rollback();
-        return NextResponse.json({
-          error: 'Algunos números ya no están disponibles',
-          conflictNumbers: unavailable
-        }, { status: 409 });
+        return NextResponse.json(
+          {
+            error: 'Algunos números ya no están disponibles',
+            conflictNumbers: unavailable,
+          },
+          { status: 409 }
+        );
       }
 
       // 2. Comprador
       let buyerId: number;
       const existingBuyer = await tx.execute({
         sql: 'SELECT id, name FROM buyers WHERE phone = ? LIMIT 1',
-        args: [cleanPhone]
+        args: [cleanPhone],
       });
 
       if (existingBuyer.rows.length > 0) {
@@ -96,13 +113,13 @@ export async function POST(request: NextRequest) {
         if (buyer_name.trim().length > currentName.length) {
           await tx.execute({
             sql: 'UPDATE buyers SET name = ? WHERE id = ?',
-            args: [buyer_name.trim(), buyerId]
+            args: [buyer_name.trim(), buyerId],
           });
         }
       } else {
         const insertBuyer = await tx.execute({
           sql: 'INSERT INTO buyers (name, phone) VALUES (?, ?)',
-          args: [buyer_name.trim(), cleanPhone]
+          args: [buyer_name.trim(), cleanPhone],
         });
         buyerId = Number(insertBuyer.lastInsertRowid);
       }
@@ -130,19 +147,32 @@ export async function POST(request: NextRequest) {
           admin.username,
           is_paid ? new Date().toISOString() : null,
           is_paid ? admin.username : null,
-          notes ? `Venta directa por ${admin.username}: ${notes}` : `Venta directa por ${admin.username}`
-        ]
+          notes ? `Venta directa por ${admin.username}: ${notes}` : `Venta directa por ${admin.username}`,
+        ],
       });
 
       const orderId = Number(insertOrder.lastInsertRowid);
 
-      // 4. Asignar números
-      await tx.execute({
-        sql: `UPDATE numbers 
-              SET status = ?, order_id = ?, updated_at = CURRENT_TIMESTAMP 
-              WHERE number IN (${placeholders})`,
-        args: [numberStatus, orderId, ...uniqueNumbers]
-      });
+      // 4. Asignar números exigiendo AND status = 'available' y rowsAffected === cantidad
+      let updatedRowsCount = 0;
+      for (const chunk of chunkArray(uniqueNumbers, SQL_IN_CHUNK_SIZE)) {
+        const placeholders = chunk.map(() => '?').join(',');
+        const updRes = await tx.execute({
+          sql: `UPDATE numbers 
+                SET status = ?, order_id = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE number IN (${placeholders}) AND status = 'available'`,
+          args: [numberStatus, orderId, ...chunk],
+        });
+        updatedRowsCount += Number(updRes.rowsAffected || 0);
+      }
+
+      if (updatedRowsCount !== uniqueNumbers.length) {
+        await tx.rollback();
+        return NextResponse.json(
+          { error: 'Algunos números acaban de ser tomados por otra operación.' },
+          { status: 409 }
+        );
+      }
 
       await tx.commit();
       invalidatePublicCache();
@@ -156,9 +186,9 @@ export async function POST(request: NextRequest) {
           buyer_name: buyer_name.trim(),
           numbers_count: uniqueNumbers.length,
           is_paid,
-          total_amount: totalAmount
+          total_amount: totalAmount,
         },
-        request.headers.get('x-forwarded-for') || 'localhost'
+        getClientIp(request.headers)
       );
 
       return NextResponse.json({
@@ -169,11 +199,11 @@ export async function POST(request: NextRequest) {
           private_token: privateToken,
           numbers: uniqueNumbers,
           total_amount: totalAmount,
-          payment_status: status
-        }
+          payment_status: status,
+        },
       });
     } catch (txError) {
-      await tx.rollback();
+      await tx.rollback().catch(() => {});
       throw txError;
     }
   } catch (error) {

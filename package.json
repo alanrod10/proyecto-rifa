@@ -12,6 +12,7 @@
     "backup": "node scripts/backup.mjs",
     "restore": "node scripts/restore.mjs",
     "change-password": "node scripts/change-admin-password.mjs",
+    "migrate:schema": "node scripts/migrate-schema-v2.mjs",
     "migrate:turso": "node scripts/migrate-to-turso.mjs"
   },
   "dependencies": {

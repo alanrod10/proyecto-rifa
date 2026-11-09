@@ -43,6 +43,8 @@ export async function PUT(request: NextRequest) {
       'contact_phone_secondary',
       'reserve_hours',
       'public_reservations_enabled',
+      'max_numbers_per_order',
+      'max_pending_numbers_per_phone',
       'rules_terms'
     ];
 

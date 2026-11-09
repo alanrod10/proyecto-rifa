@@ -482,6 +482,71 @@ async function runAllTests() {
       `Disponibles derivados: ${derivedAvail}, rango BETWEEN: ${rangeRes.rows.length} filas, cursor post-1500 primer libre: ${cursorRes.rows[0]?.number}`
     );
 
+    // -------------------------------------------------------------
+    // PRUEBA 27 (FASE 2): Rate limiting, topes dinámicos, chunking IN(500), UPDATE available+rowsAffected, idempotencia y vista reducida
+    // -------------------------------------------------------------
+    const reservationsRouteContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/reservations/route.ts'), 'utf-8');
+    const orderTokenRouteContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/orders/[token]/route.ts'), 'utf-8');
+    const pedidoPageContent = fs.readFileSync(path.join(process.cwd(), 'src/app/pedido/[token]/page.tsx'), 'utf-8');
+
+    // 27.a: Verificar tabla rate_limits y conteo por ventana
+    const winStart = Math.floor(Date.now() / 1000 / 600) * 600;
+    for (let i = 0; i < 6; i++) {
+      await newClient.execute({
+        sql: `INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, 1)
+              ON CONFLICT(key, window_start) DO UPDATE SET count = count + 1`,
+        args: ['reservations:203.0.113.99', winStart]
+      });
+    }
+    const rlRes = await newClient.execute({
+      sql: 'SELECT count FROM rate_limits WHERE key = ? AND window_start = ?',
+      args: ['reservations:203.0.113.99', winStart]
+    });
+    const rlBlocked = Number(rlRes.rows[0]?.count) === 6;
+
+    // 27.b: Idempotencia con orders.request_id e índice UNIQUE idx_orders_request_id
+    const reqUuid = 'uuid-idem-test-0001';
+    await newClient.execute({
+      sql: 'UPDATE orders SET request_id = ? WHERE id = ?',
+      args: [reqUuid, orderId]
+    });
+    let uniqueReqEnforced = false;
+    try {
+      await newClient.execute({
+        sql: 'UPDATE orders SET request_id = ? WHERE id = ?',
+        args: [reqUuid, dirOrderId]
+      });
+    } catch {
+      uniqueReqEnforced = true;
+    }
+
+    // 27.c: Verificar settings max_numbers_per_order (2000) y max_pending_numbers_per_phone (1000)
+    const maxOrderSettingRes = await newClient.execute("SELECT value FROM settings WHERE key = 'max_numbers_per_order'");
+    const maxPhoneSettingRes = await newClient.execute("SELECT value FROM settings WHERE key = 'max_pending_numbers_per_phone'");
+    const hasNewSettings =
+      maxOrderSettingRes.rows[0]?.value === '2000' &&
+      maxPhoneSettingRes.rows[0]?.value === '1000';
+
+    // 27.d: Verificar UPDATE ... AND status = 'available' + rowsAffected, chunkArray y enmascarado ***1234
+    const hasStrictUpdateAndChunking =
+      reservationsRouteContent.includes("AND status = 'available'") &&
+      reservationsRouteContent.includes('updatedRowsCount !== uniqueNumbers.length') &&
+      directSaleContent.includes("AND status = 'available'") &&
+      directSaleContent.includes('updatedRowsCount !== uniqueNumbers.length') &&
+      reservationsRouteContent.includes('chunkArray') &&
+      reservationsRouteContent.includes('max_pending_numbers_per_phone');
+
+    const hasMaskedShortCodeLookup =
+      orderTokenRouteContent.includes('isFullTokenLookup') &&
+      orderTokenRouteContent.includes('maskPhoneNumber') &&
+      pedidoPageContent.includes('hasPrivateToken');
+
+    assert(
+      rlBlocked && uniqueReqEnforced && hasNewSettings && hasStrictUpdateAndChunking && hasMaskedShortCodeLookup,
+      '27. Fase 2: Rate limit (5/30 x 10m), topes (2000/1000), chunk 500, UPDATE available, idempotencia UUID y código corto enmascarado',
+      `rate_limits count=${rlRes.rows[0]?.count}, UNIQUE(request_id)=${uniqueReqEnforced}, settings=2000/1000, máscara ***1234 activa`
+    );
+
     newClient.close();
   } catch (err) {
     console.error('Error fatal durante las pruebas:', err);

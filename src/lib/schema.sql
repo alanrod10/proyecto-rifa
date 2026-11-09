@@ -50,10 +50,12 @@ CREATE TABLE IF NOT EXISTS orders (
     paid_at DATETIME,
     confirmed_by_admin TEXT,                        -- Usuario del admin que verificó el pago
     notes TEXT,
+    request_id TEXT,                                -- UUID de idempotencia generado por el cliente
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_orders_code ON orders(code);
 CREATE INDEX IF NOT EXISTS idx_orders_token ON orders(private_token);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_request_id ON orders(request_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_orders_expires ON orders(expires_at);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
@@ -83,3 +85,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_admin ON audit_logs(admin_username);
 CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
+
+-- Tabla de Rate Limiting (Protección antiabuso por IP y ventana de tiempo)
+CREATE TABLE IF NOT EXISTS rate_limits (
+    key TEXT NOT NULL,
+    window_start INTEGER NOT NULL,
+    count INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (key, window_start)
+);

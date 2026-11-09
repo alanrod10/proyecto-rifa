@@ -25,6 +25,8 @@ export interface RaffleSettings {
   contact_phone_secondary: string;
   reserve_hours: number;
   public_reservations_enabled: boolean;
+  max_numbers_per_order?: number;
+  max_pending_numbers_per_phone?: number;
   rules_terms: string;
 }
 
@@ -75,6 +77,19 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [conflictNumbers, setConflictNumbers] = useState<number[]>([]);
+  const [clientRequestId, setClientRequestId] = useState<string>(() =>
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+
+  const regenerateRequestId = () => {
+    setClientRequestId(
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
+  };
 
   // Éxito de reserva
   const [orderSuccess, setOrderSuccess] = useState<{
@@ -248,17 +263,20 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
     setSearchResults(null);
   };
 
+  const maxNumbersPerOrder = settings?.max_numbers_per_order || 2000;
+
   // Agregar número al carrito
   const toggleSelectNumber = (num: number, status: string) => {
     if (status !== 'available' && !selectedNumbers.includes(num)) {
       return;
     }
+    regenerateRequestId();
     setSelectedNumbers(prev => {
       if (prev.includes(num)) {
         return prev.filter(n => n !== num);
       } else {
-        if (prev.length >= 500) {
-          alert('Podés seleccionar hasta un máximo de 500 números por solicitud.');
+        if (prev.length >= maxNumbersPerOrder) {
+          alert(`Podés seleccionar hasta un máximo de ${maxNumbersPerOrder} números por solicitud.`);
           return prev;
         }
         return [...prev, num].sort((a, b) => a - b);
@@ -274,9 +292,10 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
       if (res.ok) {
         const data = await res.json();
         const randNums = (data.numbers || []).map((n: NumberItem) => n.number);
+        regenerateRequestId();
         setSelectedNumbers(prev => {
           const combined = Array.from(new Set([...prev, ...randNums])).sort((a, b) => a - b);
-          return combined.slice(0, 500);
+          return combined.slice(0, maxNumbersPerOrder);
         });
       }
     } catch (err) {
@@ -289,6 +308,7 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
   // Enviar formulario de reserva
   const handleSubmitReservation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setErrorMessage(null);
     setConflictNumbers([]);
 
@@ -307,6 +327,7 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
           buyer_phone: buyerPhone,
           payment_method: paymentMethod,
           numbers: selectedNumbers,
+          client_request_id: clientRequestId,
         })
       });
 
@@ -329,6 +350,7 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
         buyer_name: buyerName.trim(),
       });
       setSelectedNumbers([]);
+      regenerateRequestId();
       setIsModalOpen(false);
       fetchSettings(); // Actualizar estadísticas
     } catch (err) {
@@ -343,6 +365,7 @@ export default function PublicPortalClient({ initialSettings, initialStats }: Pu
     setSelectedNumbers(prev => prev.filter(n => !conflictNumbers.includes(n)));
     setConflictNumbers([]);
     setErrorMessage(null);
+    regenerateRequestId();
   };
 
   const copyPrivateUrl = () => {

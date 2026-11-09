@@ -1,5 +1,37 @@
 import { randomBytes } from 'crypto';
 import type { Client, Transaction } from '@libsql/client';
+import { SQL_IN_CHUNK_SIZE } from '@/lib/constants';
+
+/**
+ * Divide un arreglo en bloques de tamaño máximo `size` (por defecto 500 para listas SQL IN)
+ */
+export function chunkArray<T>(items: readonly T[], size: number = SQL_IN_CHUNK_SIZE): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/**
+ * Enmascara un número de celular dejando visibles únicamente los últimos 4 dígitos (***1234)
+ */
+export function maskPhoneNumber(phone: string): string {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length >= 4) {
+    return `***${digits.slice(-4)}`;
+  }
+  return '***';
+}
+
+/**
+ * Extrae la IP del cliente a partir de la cabecera x-forwarded-for
+ */
+export function getClientIp(headers: Headers): string {
+  const forwarded = headers.get('x-forwarded-for');
+  if (!forwarded) return 'localhost';
+  return forwarded.split(',')[0].trim() || 'localhost';
+}
 
 /**
  * Formatea un número de la rifa en formato de al menos 5 dígitos (ej: 1 -> "00001", 100000 -> "100000")

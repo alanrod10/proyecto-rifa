@@ -21,6 +21,8 @@ interface SettingsData {
   contact_phone_secondary: string;
   reserve_hours: string;
   public_reservations_enabled: string;
+  max_numbers_per_order: string;
+  max_pending_numbers_per_phone: string;
   rules_terms: string;
 }
 
@@ -40,6 +42,8 @@ export default function AdminConfiguracionPage() {
     contact_phone_secondary: '3884141514',
     reserve_hours: '48',
     public_reservations_enabled: 'true',
+    max_numbers_per_order: '2000',
+    max_pending_numbers_per_phone: '1000',
     rules_terms: '',
   });
 
@@ -329,6 +333,42 @@ export default function AdminConfiguracionPage() {
                 <option value="true">Abierta (Cualquiera puede solicitar números)</option>
                 <option value="false">Pausada (Solo consulta, no se aceptan nuevas reservas)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Máximo de Números por Pedido (`max_numbers_per_order`)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                name="max_numbers_per_order"
+                value={formData.max_numbers_per_order}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              />
+              <span className="text-[11px] text-slate-400 mt-0.5 block">
+                Tope de boletos que un comprador puede solicitar en una misma operación (por defecto 2000).
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Máximo de Números Pendientes por Celular (`max_pending_numbers_per_phone`)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                name="max_pending_numbers_per_phone"
+                value={formData.max_pending_numbers_per_phone}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              />
+              <span className="text-[11px] text-slate-400 mt-0.5 block">
+                Tope acumulado de boletos en estado pendiente para un mismo celular (por defecto 1000).
+              </span>
             </div>
           </div>
 

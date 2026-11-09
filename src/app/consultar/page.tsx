@@ -58,7 +58,7 @@ export default function ConsultarPage() {
             </div>
             <h2 className="text-2xl font-black text-slate-900">Consultar Mi Reserva</h2>
             <p className="text-xs text-slate-500 max-w-xs mx-auto">
-              Ingresá tu código de pedido (ej: RF-7B2K9A) o el enlace privado que recibiste al completar tu solicitud.
+              Ingresá tu código de pedido (ej: RF-7B2K9A, muestra vista resumida con celular protegido) o tu enlace privado completo.
             </p>
           </div>
 

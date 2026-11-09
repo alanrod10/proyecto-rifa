@@ -20,3 +20,13 @@ export const PUBLIC_CACHE_CONTROL = 'public, s-maxage=10, stale-while-revalidate
 
 /** Intervalo mínimo (ms) entre ejecuciones de la liberación perezosa de vencidos en GET públicos. */
 export const EXPIRY_THROTTLE_MS = 60_000;
+
+/** Topes operativos por defecto (configurables en settings). */
+export const DEFAULT_MAX_NUMBERS_PER_ORDER = 2000;
+export const DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE = 1000;
+
+/** Ventanas y límites de Rate Limiting por IP. */
+export const RESERVATIONS_RATE_LIMIT_MAX = 5;
+export const RESERVATIONS_RATE_LIMIT_WINDOW_SECONDS = 600; // 10 minutos
+export const ORDER_LOOKUP_RATE_LIMIT_MAX = 30;
+export const ORDER_LOOKUP_RATE_LIMIT_WINDOW_SECONDS = 600; // 10 minutos

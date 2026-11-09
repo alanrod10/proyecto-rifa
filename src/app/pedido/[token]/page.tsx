@@ -166,16 +166,20 @@ export default function BuyerPrivateOrderPage() {
   const whatsappUrlAlan = `https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(whatsappMsg)}`;
   const whatsappUrlYilda = `https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(whatsappMsg)}`;
 
-  // Enlace para enviar el comprobante al WhatsApp del comprador
-  const buyerWaVoucherUrl = buildBuyerWhatsAppUrl({
-    buyerName: order.buyer_name,
-    buyerPhone: order.buyer_phone,
-    orderCode: order.code,
-    numbers: order.numbers,
-    totalAmount: order.total_amount,
-    paymentStatus: order.payment_status,
-    privateToken: order.private_token || token,
-  });
+  const hasPrivateToken = Boolean(order.private_token);
+
+  // Enlace para enviar el comprobante al WhatsApp del comprador (solo disponible con token privado completo)
+  const buyerWaVoucherUrl = hasPrivateToken
+    ? buildBuyerWhatsAppUrl({
+        buyerName: order.buyer_name,
+        buyerPhone: order.buyer_phone,
+        orderCode: order.code,
+        numbers: order.numbers,
+        totalAmount: order.total_amount,
+        paymentStatus: order.payment_status,
+        privateToken: order.private_token!,
+      })
+    : '';
 
   return (
     <div className="min-h-screen bg-page py-6 px-4 flex flex-col items-center">
@@ -216,15 +220,19 @@ export default function BuyerPrivateOrderPage() {
           <h2 className="text-2xl font-black mt-2">{raffle.name}</h2>
           <p className="text-xs text-slate-300 mt-1">
             Titular: <strong className="text-white">{order.buyer_name}</strong> •{' '}
-            <a
-              href={buyerWaVoucherUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-white font-mono"
-              title="Enviar este comprobante al WhatsApp del comprador"
-            >
-              {order.buyer_phone}
-            </a>
+            {hasPrivateToken ? (
+              <a
+                href={buyerWaVoucherUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-white font-mono"
+                title="Enviar este comprobante al WhatsApp del comprador"
+              >
+                {order.buyer_phone}
+              </a>
+            ) : (
+              <span className="font-mono text-slate-200">{order.buyer_phone}</span>
+            )}
           </p>
 
           {/* Insignia de Estado */}
@@ -450,24 +458,28 @@ export default function BuyerPrivateOrderPage() {
 
           {/* Botones Compartir / Enviar a Comprador / Copiar Enlace */}
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2 print:hidden">
-            <a
-              href={buyerWaVoucherUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
-            >
-              <Share2 className="w-4 h-4" />
-              Enviar comprobante al WhatsApp de {order.buyer_name}
-            </a>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                onClick={copyUrl}
-                className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 rounded-xl text-xs transition"
+            {hasPrivateToken && (
+              <a
+                href={buyerWaVoucherUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
               >
-                <Copy className="w-4 h-4" />
-                {copied ? '¡Enlace copiado!' : 'Copiar enlace privado'}
-              </button>
+                <Share2 className="w-4 h-4" />
+                Enviar comprobante al WhatsApp de {order.buyer_name}
+              </a>
+            )}
+
+            <div className={`grid grid-cols-1 ${hasPrivateToken ? 'sm:grid-cols-2' : ''} gap-2`}>
+              {hasPrivateToken && (
+                <button
+                  onClick={copyUrl}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 rounded-xl text-xs transition"
+                >
+                  <Copy className="w-4 h-4" />
+                  {copied ? '¡Enlace copiado!' : 'Copiar enlace privado'}
+                </button>
+              )}
 
               <button
                 onClick={() => window.print()}
@@ -477,9 +489,15 @@ export default function BuyerPrivateOrderPage() {
                 Imprimir / PDF
               </button>
             </div>
-            <p className="text-xs text-slate-400 text-center">
-              Guardá este enlace. Te permitirá volver a consultar esta constancia en cualquier momento.
-            </p>
+            {hasPrivateToken ? (
+              <p className="text-xs text-slate-400 text-center">
+                Guardá este enlace. Te permitirá volver a consultar esta constancia en cualquier momento.
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400 text-center">
+                Estás viendo la consulta resumida por código de referencia ({order.code}) con teléfono protegido.
+              </p>
+            )}
           </div>
         </div>
       </div>

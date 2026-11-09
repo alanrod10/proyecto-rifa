@@ -4,7 +4,11 @@ import {
   TOTAL_NUMBERS,
   PUBLIC_CACHE_TTL_MS,
   EXPIRY_THROTTLE_MS,
+  SQL_IN_CHUNK_SIZE,
+  DEFAULT_MAX_NUMBERS_PER_ORDER,
+  DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE,
 } from '@/lib/constants';
+import { chunkArray } from '@/lib/utils';
 
 let clientInstance: Client | null = null;
 
@@ -48,6 +52,8 @@ export interface SettingsMap {
   contact_phone_secondary: string;
   reserve_hours: string;
   public_reservations_enabled: string;
+  max_numbers_per_order: string;
+  max_pending_numbers_per_phone: string;
   rules_terms: string;
   [key: string]: string;
 }
@@ -73,6 +79,8 @@ export async function getSettings(): Promise<SettingsMap> {
     contact_phone_secondary: '3884141514',
     reserve_hours: '48',
     public_reservations_enabled: 'true',
+    max_numbers_per_order: String(DEFAULT_MAX_NUMBERS_PER_ORDER),
+    max_pending_numbers_per_phone: String(DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE),
     rules_terms: '1. El valor de cada número es de ARS 100.\n2. Los pagos se reciben por transferencia bancaria o en efectivo coordinando con los administradores.\n3. Una vez realizada la reserva, contás con el plazo establecido para enviar el comprobante de pago antes de que el número sea liberado.\n4. El sorteo se realizará en la fecha a confirmar.',
   };
 
@@ -132,6 +140,8 @@ type PublicSettingsAndStatsResult = {
     contact_phone_secondary: string;
     reserve_hours: number;
     public_reservations_enabled: boolean;
+    max_numbers_per_order: number;
+    max_pending_numbers_per_phone: number;
     rules_terms: string;
   };
   stats: NumberStats;
@@ -178,6 +188,8 @@ export async function getPublicSettingsAndStats(): Promise<PublicSettingsAndStat
       contact_phone_secondary: settings.contact_phone_secondary || '3884141514',
       reserve_hours: Number(settings.reserve_hours) || 48,
       public_reservations_enabled: settings.public_reservations_enabled === 'true',
+      max_numbers_per_order: Math.max(1, parseInt(settings.max_numbers_per_order || String(DEFAULT_MAX_NUMBERS_PER_ORDER), 10) || DEFAULT_MAX_NUMBERS_PER_ORDER),
+      max_pending_numbers_per_phone: Math.max(1, parseInt(settings.max_pending_numbers_per_phone || String(DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE), 10) || DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE),
       rules_terms: settings.rules_terms || '',
     },
     stats,
@@ -210,6 +222,55 @@ export async function logAudit(
   } catch (err) {
     console.error('Error al registrar auditoría:', err);
   }
+}
+
+let rateLimitTableEnsured = false;
+
+/**
+ * Controla límites de tasa por clave y ventana de tiempo en la tabla `rate_limits (key, window_start, count)`.
+ */
+export async function checkRateLimit(
+  key: string,
+  maxRequests: number,
+  windowSeconds: number,
+  dbOrTx?: Client | Transaction
+): Promise<{ allowed: boolean; count: number; retryAfterSeconds: number }> {
+  const executor = dbOrTx || getDb();
+  if (!rateLimitTableEnsured && !dbOrTx) {
+    await executor.execute(`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        key TEXT NOT NULL,
+        window_start INTEGER NOT NULL,
+        count INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (key, window_start)
+      )
+    `).catch(() => {});
+    rateLimitTableEnsured = true;
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const windowStart = Math.floor(nowSeconds / windowSeconds) * windowSeconds;
+
+  await executor.execute({
+    sql: `INSERT INTO rate_limits (key, window_start, count)
+          VALUES (?, ?, 1)
+          ON CONFLICT(key, window_start) DO UPDATE SET count = count + 1`,
+    args: [key, windowStart],
+  });
+
+  const countRes = await executor.execute({
+    sql: 'SELECT count FROM rate_limits WHERE key = ? AND window_start = ? LIMIT 1',
+    args: [key, windowStart],
+  });
+
+  const count = Number(countRes.rows[0]?.count || 1);
+  const retryAfterSeconds = Math.max(1, windowStart + windowSeconds - nowSeconds);
+
+  return {
+    allowed: count <= maxRequests,
+    count,
+    retryAfterSeconds,
+  };
 }
 
 let lastExpiryCheckAt = 0;
@@ -248,6 +309,7 @@ export async function releaseExpiredReservations(): Promise<{ releasedOrdersCoun
   const tx = await db.transaction('write');
   let orderIds: number[] = [];
   let releasedNumbersCount = 0;
+  let releasedOrdersCount = 0;
 
   try {
     // 1. Buscar órdenes vencidas pendientes DENTRO de la transacción de escritura
@@ -264,30 +326,33 @@ export async function releaseExpiredReservations(): Promise<{ releasedOrdersCoun
     }
 
     orderIds = expiredOrdersRes.rows.map(r => Number(r.id));
-    const placeholders = orderIds.map(() => '?').join(',');
 
-    // 2. Marcar como vencidas ÚNICAMENTE las órdenes que continúen en estado 'pending'
-    const updateOrdersRes = await tx.execute({
-      sql: `UPDATE orders 
-            SET payment_status = 'expired' 
-            WHERE id IN (${placeholders}) 
-            AND payment_status = 'pending' 
-            AND datetime(expires_at) < datetime('now')`,
-      args: orderIds
-    });
+    // Procesar en bloques de 500 para respetar límites de variables SQL
+    for (const chunk of chunkArray(orderIds, SQL_IN_CHUNK_SIZE)) {
+      const placeholders = chunk.map(() => '?').join(',');
 
-    // 3. Liberar ÚNICAMENTE los números en estado 'reserved' pertenecientes a órdenes que ahora están 'expired'
-    const updateNumbersRes = await tx.execute({
-      sql: `UPDATE numbers 
-            SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
-            WHERE order_id IN (${placeholders}) 
-            AND status = 'reserved'
-            AND order_id IN (SELECT id FROM orders WHERE id IN (${placeholders}) AND payment_status = 'expired')`,
-      args: [...orderIds, ...orderIds]
-    });
+      // 2. Marcar como vencidas ÚNICAMENTE las órdenes que continúen en estado 'pending'
+      const updateOrdersRes = await tx.execute({
+        sql: `UPDATE orders 
+              SET payment_status = 'expired' 
+              WHERE id IN (${placeholders}) 
+              AND payment_status = 'pending' 
+              AND datetime(expires_at) < datetime('now')`,
+        args: chunk
+      });
+      releasedOrdersCount += Number(updateOrdersRes.rowsAffected || 0);
 
-    releasedNumbersCount = Number(updateNumbersRes.rowsAffected || 0);
-    const releasedOrdersCount = Number(updateOrdersRes.rowsAffected || 0);
+      // 3. Liberar ÚNICAMENTE los números en estado 'reserved' pertenecientes a órdenes que ahora están 'expired'
+      const updateNumbersRes = await tx.execute({
+        sql: `UPDATE numbers 
+              SET status = 'available', order_id = NULL, updated_at = CURRENT_TIMESTAMP 
+              WHERE order_id IN (${placeholders}) 
+              AND status = 'reserved'
+              AND order_id IN (SELECT id FROM orders WHERE id IN (${placeholders}) AND payment_status = 'expired')`,
+        args: [...chunk, ...chunk]
+      });
+      releasedNumbersCount += Number(updateNumbersRes.rowsAffected || 0);
+    }
 
     await tx.commit();
 

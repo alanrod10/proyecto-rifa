@@ -20,6 +20,19 @@ async function main() {
     const schemaPath = path.join(process.cwd(), 'src/lib/schema.sql');
     const schemaSql = fs.readFileSync(schemaPath, 'utf-8');
 
+    // Verificar primero si la tabla orders ya existe sin la columna request_id (migración idempotente)
+    const existingOrdersTable = await client.execute(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='orders'"
+    );
+    if (existingOrdersTable.rows.length > 0) {
+      const colsRes = await client.execute('PRAGMA table_info(orders)');
+      const hasRequestId = colsRes.rows.some(r => r.name === 'request_id');
+      if (!hasRequestId) {
+        await client.execute('ALTER TABLE orders ADD COLUMN request_id TEXT');
+        console.log('✓ Columna orders.request_id agregada de forma idempotente.');
+      }
+    }
+
     // Separar por sentencias (evitando comentarios vacíos)
     const statements = schemaSql
       .split(';')
@@ -36,26 +49,28 @@ async function main() {
     const settingsCheck = await client.execute('SELECT COUNT(*) as count FROM settings');
     const settingsCount = Number(settingsCheck.rows[0].count);
 
+    const initialSettings = [
+      ['raffle_badge', 'Objetivo solidario: Pro Terreno Familiar'],
+      ['raffle_name', 'Gran Rifa Familiar pro Terreno'],
+      ['raffle_description', 'Rifa solidaria familiar de 100.000 números para pagar las cuotas de nuestro lote.'],
+      ['ticket_price', '100'],
+      ['prizes', 'Premios a confirmar'],
+      ['draw_date', 'Fecha del sorteo a confirmar'],
+      ['bank_alias', ''],
+      ['bank_cbu', ''],
+      ['bank_name', ''],
+      ['bank_holder', ''],
+      ['contact_phone', '3884152040'],
+      ['contact_phone_secondary', '3884141514'],
+      ['reserve_hours', '48'],
+      ['public_reservations_enabled', 'true'],
+      ['max_numbers_per_order', '2000'],
+      ['max_pending_numbers_per_phone', '1000'],
+      ['rules_terms', '1. Cada número tiene un valor de ARS 100.\n2. Los pagos se reciben por transferencia bancaria o en efectivo coordinando con los administradores.\n3. Una vez solicitada la reserva, contás con 48 hs para enviar el comprobante de pago.\n4. El sorteo se realizará ante escribano o transmisión pública en la fecha a confirmar.']
+    ];
+
     if (settingsCount === 0) {
       console.log('Insertando configuración inicial del sorteo...');
-      const initialSettings = [
-        ['raffle_badge', 'Objetivo solidario: Pro Terreno Familiar'],
-        ['raffle_name', 'Gran Rifa Familiar pro Terreno'],
-        ['raffle_description', 'Rifa solidaria familiar de 100.000 números para pagar las cuotas de nuestro lote.'],
-        ['ticket_price', '100'],
-        ['prizes', 'Premios a confirmar'],
-        ['draw_date', 'Fecha del sorteo a confirmar'],
-        ['bank_alias', ''],
-        ['bank_cbu', ''],
-        ['bank_name', ''],
-        ['bank_holder', ''],
-        ['contact_phone', '3884152040'],
-        ['contact_phone_secondary', '3884141514'],
-        ['reserve_hours', '48'],
-        ['public_reservations_enabled', 'true'],
-        ['rules_terms', '1. Cada número tiene un valor de ARS 100.\n2. Los pagos se reciben por transferencia bancaria o en efectivo coordinando con los administradores.\n3. Una vez solicitada la reserva, contás con 48 hs para enviar el comprobante de pago.\n4. El sorteo se realizará ante escribano o transmisión pública en la fecha a confirmar.']
-      ];
-
       for (const [key, val] of initialSettings) {
         await client.execute({
           sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
@@ -64,7 +79,13 @@ async function main() {
       }
       console.log('✓ Configuraciones iniciales insertadas.');
     } else {
-      console.log(`✓ Ya existen ${settingsCount} registros de configuración.`);
+      for (const [key, val] of initialSettings) {
+        await client.execute({
+          sql: 'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)',
+          args: [key, val]
+        });
+      }
+      console.log(`✓ Ya existen ${settingsCount} registros de configuración (nuevas claves sincronizadas).`);
     }
 
     // 3. Crear los dos administradores individuales
