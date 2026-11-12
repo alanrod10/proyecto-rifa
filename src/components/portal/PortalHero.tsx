@@ -188,10 +188,10 @@ export default function PortalHero({ settings, stats, unitPrice }: PortalHeroPro
             </div>
           </div>
 
-          {/* Información del Sorteo y Premios */}
+          {/* Información del Sorteo y Cómo Participar (el detalle visual completo de premios está en el flyer) */}
           <div className="md:col-span-7 space-y-4">
             {/* Fecha del sorteo */}
-            <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4 flex items-start gap-3.5">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50/70 border border-blue-200/80 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5">
               <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm shrink-0">
                 <Calendar className="w-5 h-5" />
               </div>
@@ -213,8 +213,8 @@ export default function PortalHero({ settings, stats, unitPrice }: PortalHeroPro
               </div>
             </div>
 
-            {/* Lista de premios */}
-            <div className="bg-surface rounded-2xl border border-slate-200/80 p-4 space-y-2.5">
+            {/* Tarjeta de premios y pasos */}
+            <div className="bg-surface rounded-2xl border border-slate-200/80 p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-amber-100 text-amber-700 rounded-lg">
@@ -222,24 +222,40 @@ export default function PortalHero({ settings, stats, unitPrice }: PortalHeroPro
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-900 text-sm">20 Premios en Juego</h4>
-                    <p className="text-[11px] text-slate-500">Conocé todo lo que podés ganar</p>
+                    <p className="text-[11px] text-slate-500">
+                      Freidora de aire, termos 1.3L, cubiertos x24, planchas de pelo, pavas, tartas y más
+                    </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsFlyerModalOpen(true)}
-                  className="text-xs text-brand-600 hover:text-brand-700 font-semibold"
+                  className="text-xs text-brand-600 hover:text-brand-700 font-semibold shrink-0 ml-2"
                 >
                   Ver fotos en flyer →
                 </button>
               </div>
 
-              <div className="text-xs text-slate-700 font-mono bg-slate-50 rounded-xl p-3 border border-slate-200/60 max-h-56 overflow-y-auto leading-relaxed whitespace-pre-line">
-                {settings?.prizes || 'Premios a confirmar'}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-xs">
+                <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+                  <span className="font-bold text-brand-600 block mb-0.5">1. Elegí</span>
+                  <p className="text-slate-600 text-[11px] leading-snug">
+                    Buscá tus números favoritos en la grilla abajo o seleccioná al azar.
+                  </p>
+                </div>
+                <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+                  <span className="font-bold text-brand-600 block mb-0.5">2. Reservá</span>
+                  <p className="text-slate-600 text-[11px] leading-snug">
+                    Ingresá tus datos para obtener tu enlace privado y código único.
+                  </p>
+                </div>
+                <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+                  <span className="font-bold text-brand-600 block mb-0.5">3. Aboná</span>
+                  <p className="text-slate-600 text-[11px] leading-snug">
+                    Transferí por Alias/CBU o coordiná en efectivo por WhatsApp.
+                  </p>
+                </div>
               </div>
-              <p className="text-[11px] text-slate-500 italic">
-                * Todos los premios están detallados con imágenes en el flyer oficial.
-              </p>
             </div>
           </div>
 
