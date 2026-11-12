@@ -179,7 +179,7 @@ export default function PublicPortalClient({
             </span>
             <div className="min-w-0">
               <h1 className="font-bold text-base sm:text-lg leading-tight tracking-tight truncate">
-                Gran Rifa Familiar
+                {settings?.raffle_name || 'Gran Rifa de Fin de Año'}
               </h1>
               <p className="text-xs sm:text-xs text-slate-300 truncate">
                 100.000 números disponibles
@@ -287,7 +287,7 @@ export default function PublicPortalClient({
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-night-800 pb-6 mb-6">
           <div className="text-center sm:text-left">
             <h4 className="text-white font-bold text-sm">
-              {settings?.raffle_name || 'Gran Rifa Familiar pro Terreno'}
+              {settings?.raffle_name || 'Gran Rifa de Fin de Año'}
             </h4>
             <p className="text-slate-400 mt-1 max-w-md">
               Rifa solidaria familiar para la adquisición del lote.
@@ -296,7 +296,7 @@ export default function PublicPortalClient({
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5">
             <a
               href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(
-                '¡Hola Alan! Quisiera hacerte una consulta sobre la Gran Rifa Familiar.'
+                '¡Hola Alan! Quisiera hacerte una consulta sobre la Gran Rifa de Fin de Año.'
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -307,7 +307,7 @@ export default function PublicPortalClient({
             </a>
             <a
               href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(
-                '¡Hola Yilda! Quisiera hacerte una consulta sobre la Gran Rifa Familiar.'
+                '¡Hola Yilda! Quisiera hacerte una consulta sobre la Gran Rifa de Fin de Año.'
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -319,7 +319,7 @@ export default function PublicPortalClient({
           </div>
         </div>
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-slate-400 gap-2">
-          <p>© {new Date().getFullYear()} Gran Rifa Familiar. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} {settings?.raffle_name || 'Gran Rifa de Fin de Año'}. Todos los derechos reservados.</p>
           <div className="flex items-center space-x-4">
             <Link href="/consultar" className="hover:text-white transition">
               Consultar Pedido

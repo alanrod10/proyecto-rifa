@@ -17,6 +17,7 @@ import {
 } from '@/lib/constants';
 import AdminBankSettingsSection from '@/components/admin/AdminBankSettingsSection';
 import AdminSecurityAndBackups from '@/components/admin/AdminSecurityAndBackups';
+import AdminFlyerCard from '@/components/admin/AdminFlyerCard';
 
 interface SettingsData {
   raffle_badge: string;
@@ -384,6 +385,8 @@ export default function AdminConfiguracionPage() {
           </button>
         </div>
       </form>
+
+      <AdminFlyerCard />
 
       <AdminSecurityAndBackups />
     </div>

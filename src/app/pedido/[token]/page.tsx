@@ -134,14 +134,14 @@ export default function BuyerPrivateOrderPage() {
   const whatsappMsg =
     order.payment_method === 'cash'
       ? `¡Hola! Soy *${order.buyer_name}*.\n\n` +
-        `★ Tengo la reserva de la *Gran Rifa Familiar*:\n` +
+        `★ Tengo la reserva de la *${raffle.name || 'Gran Rifa de Fin de Año'}*:\n` +
         `• *Código:* ${order.code}\n` +
         `• *Números (${order.numbers_count}):* ${formattedNumbers}\n` +
         `• *Total:* ${formatCurrency(order.total_amount)}\n` +
         `• *Método de pago:* En efectivo\n\n` +
         `► Me comunico para coordinar la entrega del dinero. ¡Muchas gracias!`
       : `¡Hola! Soy *${order.buyer_name}*.\n\n` +
-        `★ Tengo la reserva de la *Gran Rifa Familiar*:\n` +
+        `★ Tengo la reserva de la *${raffle.name || 'Gran Rifa de Fin de Año'}*:\n` +
         `• *Código:* ${order.code}\n` +
         `• *Números (${order.numbers_count}):* ${formattedNumbers}\n` +
         `• *Total:* ${formatCurrency(order.total_amount)}\n` +
@@ -323,7 +323,7 @@ export default function BuyerPrivateOrderPage() {
             <p>
               <strong>Contacto Organización:</strong>{' '}
               <a
-                href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(`¡Hola Alan! Te escribo por mi reserva *${order.code}* de la Gran Rifa Familiar.`)}`}
+                href={`https://wa.me/${formatWhatsAppPhone(phoneAlan)}?text=${encodeURIComponent(`¡Hola Alan! Te escribo por mi reserva *${order.code}* de la Gran Rifa de Fin de Año.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-brand-link font-semibold hover:underline"
@@ -332,7 +332,7 @@ export default function BuyerPrivateOrderPage() {
               </a>
               {' • '}
               <a
-                href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(`¡Hola Yilda! Te escribo por mi reserva *${order.code}* de la Gran Rifa Familiar.`)}`}
+                href={`https://wa.me/${formatWhatsAppPhone(phoneYilda)}?text=${encodeURIComponent(`¡Hola Yilda! Te escribo por mi reserva *${order.code}* de la Gran Rifa de Fin de Año.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-brand-link font-semibold hover:underline"

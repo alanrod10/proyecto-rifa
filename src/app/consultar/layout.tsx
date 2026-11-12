@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Consultar Reserva | Gran Rifa Familiar',
+  title: 'Consultar Reserva | Gran Rifa de Fin de Año',
   robots: {
     index: false,
     follow: false,

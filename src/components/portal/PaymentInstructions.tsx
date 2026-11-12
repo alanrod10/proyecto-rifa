@@ -40,17 +40,19 @@ export default function PaymentInstructions({
   const phoneYilda = settings?.contact_phone_secondary || DEFAULT_CONTACT_PHONE_SECONDARY;
   const formattedSuccessNums = orderSuccess.numbers.map(formatTicketNumber).join(', ');
 
+  const raffleTitle = settings?.raffle_name || 'Gran Rifa de Fin de Año';
+
   const msg =
     orderSuccess.payment_method === 'cash'
       ? `¡Hola! Soy *${orderSuccess.buyer_name}*.\n\n` +
-        `★ Acabo de hacer una reserva en la *Gran Rifa Familiar*:\n` +
+        `★ Acabo de hacer una reserva en la *${raffleTitle}*:\n` +
         `• *Código:* ${orderSuccess.code}\n` +
         `• *Números (${orderSuccess.numbers_count}):* ${formattedSuccessNums}\n` +
         `• *Total:* ${formatCurrency(orderSuccess.total_amount)}\n` +
         `• *Método de pago:* En efectivo\n\n` +
         `► Me comunico para coordinar la entrega del dinero. ¡Muchas gracias!`
       : `¡Hola! Soy *${orderSuccess.buyer_name}*.\n\n` +
-        `★ Acabo de hacer una reserva en la *Gran Rifa Familiar*:\n` +
+        `★ Acabo de hacer una reserva en la *${raffleTitle}*:\n` +
         `• *Código:* ${orderSuccess.code}\n` +
         `• *Números (${orderSuccess.numbers_count}):* ${formattedSuccessNums}\n` +
         `• *Total:* ${formatCurrency(orderSuccess.total_amount)}\n` +

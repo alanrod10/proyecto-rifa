@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Ticket,
   Shield,
+  Download,
 } from 'lucide-react';
 
 interface AdminUser {
@@ -121,6 +122,16 @@ export default function AdminLayoutClient({
             )}
 
             <ThemeToggle variant="night" />
+
+            <a
+              href="/flyer-gran-rifa.png"
+              download="Gran-Rifa-de-Fin-de-Ano.png"
+              title="Descargar Flyer Oficial en Alta Definición"
+              className="text-xs text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1.5 rounded-lg border border-amber-500/30 flex items-center gap-1.5 transition font-semibold"
+            >
+              <Download className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Descargar Flyer</span>
+            </a>
 
             <Link
               href="/"

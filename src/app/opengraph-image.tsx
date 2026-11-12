@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'nodejs';
 
-export const alt = 'Gran Rifa Familiar pro Terreno — 100.000 Números';
+export const alt = 'Gran Rifa de Fin de Año — 100.000 Números';
 export const size = {
   width: 1200,
   height: 630,
@@ -40,7 +40,7 @@ export default async function Image() {
             color: '#93c5fd',
           }}
         >
-          🎟️ Sorteo Solidario Familiar • Jujuy
+          🎟️ Sorteo Solidario de Fin de Año • 31/12
         </div>
         <div
           style={{
@@ -53,7 +53,7 @@ export default async function Image() {
             maxWidth: '1000px',
           }}
         >
-          Gran Rifa Familiar pro Terreno
+          Gran Rifa de Fin de Año
         </div>
         <div
           style={{

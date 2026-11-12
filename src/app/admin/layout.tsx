@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import AdminLayoutClient from '@/components/admin/AdminLayoutClient';
 
 export const metadata: Metadata = {
-  title: 'Administración | Gran Rifa Familiar',
+  title: 'Administración | Gran Rifa de Fin de Año',
   robots: {
     index: false,
     follow: false,

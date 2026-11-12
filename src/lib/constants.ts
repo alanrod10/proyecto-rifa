@@ -21,12 +21,13 @@ export const DEFAULT_MAX_PENDING_NUMBERS_PER_PHONE = 1000;
 /** Valores por defecto de todas las configuraciones públicas y operativas. */
 export const DEFAULT_SETTINGS = {
   raffle_badge: 'Objetivo solidario: Pro Terreno Familiar',
-  raffle_name: 'Gran Rifa Familiar pro Terreno',
+  raffle_name: 'Gran Rifa de Fin de Año',
   raffle_description:
     'Rifa solidaria familiar de 100.000 números para pagar las cuotas de nuestro lote.',
   ticket_price: DEFAULT_TICKET_PRICE,
-  prizes: 'Premios a confirmar',
-  draw_date: 'Fecha del sorteo a confirmar',
+  prizes:
+    '1.° Freidora de aire\n2.° y 3.° Termos de 1.3 L\n4.° al 6.° Cajas de cubiertos x24\n7.° y 8.° Planchas de pelo\n9.° y 10.° Pavas eléctricas\n11.° Valija mediana de maquillaje\n12.° al 15.° Deliciosas tartas frutales\n16.° y 17.° Juegos de sábanas (2 plazas)\n18.° al 20.° Juegos de toallas',
+  draw_date: '31/12 — Víspera de Fin de Año',
   bank_alias: '',
   bank_cbu: '',
   bank_name: '',

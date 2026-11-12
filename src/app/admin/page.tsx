@@ -7,6 +7,7 @@ import { DashboardMetrics, RecentOrder } from '@/lib/types';
 import DashboardMetricsSection from '@/components/admin/DashboardMetricsSection';
 import RecentOrdersTable from '@/components/admin/RecentOrdersTable';
 import DeleteOrderModal from '@/components/admin/DeleteOrderModal';
+import AdminFlyerCard from '@/components/admin/AdminFlyerCard';
 
 export default function AdminDashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -162,6 +163,15 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex items-center flex-wrap gap-2">
+          <a
+            href="/flyer-gran-rifa.png"
+            download="Gran-Rifa-de-Fin-de-Ano.png"
+            className="inline-flex items-center gap-1.5 text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 border border-amber-300 font-bold px-3 py-2 rounded-xl transition shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-700" />
+            <span>Descargar Flyer</span>
+          </a>
+
           <button
             onClick={handleReleaseExpired}
             disabled={cleaning}
@@ -213,6 +223,8 @@ export default function AdminDashboardPage() {
         onQuickSearch={handleQuickSearch}
         onQuickConfirmPayment={handleQuickConfirmPayment}
       />
+
+      <AdminFlyerCard />
 
       <RecentOrdersTable
         recentOrders={recentOrders}

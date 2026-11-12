@@ -43,3 +43,6 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
+
+# Local raw assets (optimized copies in public/)
+/Gran Rifa Solidaria de Fin de Año.png

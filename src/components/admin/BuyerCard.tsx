@@ -66,7 +66,7 @@ export default function BuyerCard({
           orders: buyer.orders,
         })
       : `https://wa.me/${formatWhatsAppPhone(buyer.phone)}?text=${encodeURIComponent(
-          `¡Hola ${buyer.name}! Te escribimos desde la administración de la *Gran Rifa Familiar*.`
+          `¡Hola ${buyer.name}! Te escribimos desde la administración de la *Gran Rifa de Fin de Año*.`
         )}`;
 
   const copyUrl = (token: string) => {
