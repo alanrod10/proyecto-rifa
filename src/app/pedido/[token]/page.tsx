@@ -15,33 +15,18 @@ import {
 import { useCopyToClipboard } from '@/hooks/useCopy';
 
 interface OrderData {
-  code: string;
-  buyer_name: string;
-  buyer_phone: string;
+  code: string; buyer_name: string; buyer_phone: string;
   payment_method: 'transfer' | 'cash';
   payment_status: 'pending' | 'paid' | 'cancelled' | 'expired';
-  unit_price: number;
-  numbers_count: number;
-  total_amount: number;
-  numbers: number[];
-  expires_at: string;
-  paid_at: string | null;
-  created_at: string;
-  private_token?: string;
+  unit_price: number; numbers_count: number; total_amount: number;
+  numbers: number[]; expires_at: string; paid_at: string | null;
+  created_at: string; private_token?: string;
 }
 
 interface RaffleData {
-  name: string;
-  description: string;
-  prizes: string;
-  draw_date: string;
-  bank_alias: string;
-  bank_cbu: string;
-  bank_name: string;
-  bank_holder: string;
-  contact_phone: string;
-  contact_phone_secondary: string;
-  rules_terms: string;
+  name: string; description: string; prizes: string; draw_date: string;
+  bank_alias: string; bank_cbu: string; bank_name: string; bank_holder: string;
+  contact_phone: string; contact_phone_secondary: string; rules_terms: string;
 }
 
 export default function BuyerPrivateOrderPage() {
@@ -317,9 +302,24 @@ export default function BuyerPrivateOrderPage() {
             />
           )}
 
-          <div className="border-t border-slate-100 pt-4 space-y-2 text-xs text-slate-600">
+          <div className="border-t border-slate-100 pt-4 space-y-2.5 text-xs text-slate-600">
             <p><strong>Fecha del sorteo:</strong> {raffle.draw_date}</p>
-            <p><strong>Premios:</strong> {raffle.prizes}</p>
+            <div>
+              <strong>Premios en juego:</strong>
+              <div className="mt-1 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-700 whitespace-pre-line">
+                {raffle.prizes}
+              </div>
+            </div>
+            <p>
+              <a
+                href="/flyer-gran-rifa.png"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-brand-600 hover:text-brand-700 font-semibold"
+              >
+                <span>🖼️ Ver Flyer Oficial con fotos de los 20 premios</span>
+              </a>
+            </p>
             <p>
               <strong>Contacto Organización:</strong>{' '}
               <a
